@@ -1,0 +1,24 @@
+{
+  "name": "agentcore-echo-tool",
+  "version": "1.0.0",
+  "description": "AgentCore Gateway Echo/Ping Tool Lambda Function",
+  "main": "dist/handler.js",
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "test": "jest"
+  },
+  "dependencies": {
+    "@types/aws-lambda": "^8.10.130"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.5",
+    "@types/node": "^20.6.2",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.1",
+    "typescript": "~5.2.2"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

@@ -1,6 +1,7 @@
 import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
 import { AgentCoreGateway } from "./constructs/agentcore-gateway";
+import { AgentCoreLambdaTarget } from "./constructs/agentcore-lambda-target";
 
 export interface AgentCoreStackProps extends cdk.StackProps {
   /**
@@ -41,6 +42,11 @@ export class AgentCoreStack extends cdk.Stack {
    */
   public readonly gateway: AgentCoreGateway;
 
+  /**
+   * 作成された Echo Tool Lambda Target
+   */
+  public readonly echoToolTarget: AgentCoreLambdaTarget;
+
   constructor(scope: Construct, id: string, props?: AgentCoreStackProps) {
     super(scope, id, props);
 
@@ -56,9 +62,28 @@ export class AgentCoreStack extends cdk.Stack {
       jwtConfig: props?.jwtConfig,
       mcpConfig: {
         instructions:
-          "このGatewayを使用してAgentCoreツールと外部サービス間の統合を行います",
+          "このGatewayを使用してAgentCoreツールと外部サービス間の統合を行います。Echo/Ping ツールが利用可能です。",
       },
     });
+
+    // Echo Tool Lambda Target の作成
+    this.echoToolTarget = new AgentCoreLambdaTarget(this, "EchoToolTarget", {
+      targetName: "echo-tool",
+      description: "Echo/Ping ツールを提供するLambda関数",
+      lambdaCodePath: "lambda/echo-tool",
+      toolSchemaPath: "lambda/echo-tool/tool-schema.json",
+      timeout: 30,
+      memorySize: 256,
+      environment: {
+        LOG_LEVEL: "INFO",
+      },
+    });
+
+    // Gateway に Lambda Target を追加
+    const echoTarget = this.echoToolTarget.addToGateway(
+      this.gateway.gateway,
+      "EchoToolGatewayTarget"
+    );
 
     // CloudFormation出力
     new cdk.CfnOutput(this, "GatewayArn", {
@@ -71,6 +96,18 @@ export class AgentCoreStack extends cdk.Stack {
       value: this.gateway.gatewayId,
       description: "AgentCore Gateway ID",
       exportName: `${id}-GatewayId`,
+    });
+
+    new cdk.CfnOutput(this, "EchoToolLambdaArn", {
+      value: this.echoToolTarget.lambdaFunction.functionArn,
+      description: "Echo Tool Lambda Function ARN",
+      exportName: `${id}-EchoToolLambdaArn`,
+    });
+
+    new cdk.CfnOutput(this, "EchoToolLambdaName", {
+      value: this.echoToolTarget.lambdaFunction.functionName,
+      description: "Echo Tool Lambda Function Name",
+      exportName: `${id}-EchoToolLambdaName`,
     });
 
     // タグの追加
