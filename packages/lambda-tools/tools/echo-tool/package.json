@@ -9,7 +9,7 @@
     "test": "jest"
   },
   "dependencies": {
-    "@types/aws-lambda": "^8.10.130"
+    "@types/aws-lambda": "^8.10.159"
   },
   "devDependencies": {
     "@types/jest": "^29.5.5",
