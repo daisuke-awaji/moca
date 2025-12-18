@@ -86,10 +86,6 @@ async function main(): Promise<void> {
     await cognitoAuth.authenticate();
     logger.info("✅ Cognito 認証完了");
 
-    // ツール一覧表示
-    const tools = await mcpClient.listTools();
-    logger.info(`✅ 利用可能なツール: ${tools.length}個`);
-
     // 対話型 CLI モード開始
     await runInteractiveMode();
   } catch (error) {
