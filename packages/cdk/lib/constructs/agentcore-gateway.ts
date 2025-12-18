@@ -1,5 +1,6 @@
 import { Construct } from "constructs";
 import * as agentcore from "@aws-cdk/aws-bedrock-agentcore-alpha";
+import { CognitoAuth } from "./cognito-auth.js";
 
 export interface AgentCoreGatewayProps {
   /**
@@ -20,6 +21,12 @@ export interface AgentCoreGatewayProps {
    * デフォルト: cognito
    */
   readonly authType?: "cognito" | "iam" | "jwt";
+
+  /**
+   * Cognito認証設定 (authType が 'cognito' の場合に必要)
+   * 外部で作成されたCognitoAuthを使用
+   */
+  readonly cognitoAuth?: CognitoAuth;
 
   /**
    * JWTの設定 (authType が 'jwt' の場合に必要)
@@ -97,9 +104,16 @@ export class AgentCoreGateway extends Construct {
 
       case "cognito":
       default:
-        // Cognito認証（デフォルト）- 自動的にCognitoユーザープールが作成される
-        // authorizerConfigurationを指定しない場合、デフォルトでCognito認証が使用される
-        authorizerConfiguration = undefined;
+        // 外部で作成されたCognito認証を使用
+        if (!props.cognitoAuth) {
+          throw new Error("Cognito認証を使用する場合、cognitoAuthが必要です");
+        }
+
+        const jwtConfig = props.cognitoAuth.getJwtAuthorizerConfig();
+        authorizerConfiguration = agentcore.GatewayAuthorizer.usingCustomJwt({
+          discoveryUrl: jwtConfig.discoveryUrl,
+          allowedClients: jwtConfig.allowedClients,
+        });
         break;
     }
 

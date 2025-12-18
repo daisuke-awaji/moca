@@ -4,13 +4,26 @@
  */
 
 import express, { Request, Response, NextFunction } from "express";
+import { Agent } from "@strands-agents/sdk";
 import { createAgent } from "./agent.js";
 
 const PORT = process.env.PORT || 8080;
 const app = express();
 
-// Agent インスタンスを作成
-const agent = createAgent();
+// Agent インスタンス（非同期で初期化）
+let agent: Agent | null = null;
+
+// Agent の初期化
+async function initializeAgent(): Promise<void> {
+  try {
+    console.log("🤖 AgentCore AI Agent を初期化中...");
+    agent = await createAgent();
+    console.log("✅ AI Agent の準備が完了しました！");
+  } catch (error) {
+    console.error("💥 AI Agent の初期化に失敗しました:", error);
+    throw error;
+  }
+}
 
 // リクエストボディを raw データとして受け取る設定
 app.use("/invocations", express.raw({ type: "application/octet-stream" }));
@@ -33,6 +46,14 @@ app.get("/ping", (req: Request, res: Response) => {
  */
 app.post("/invocations", async (req: Request, res: Response) => {
   try {
+    // Agent が初期化されているかチェック
+    if (!agent) {
+      return res.status(503).json({
+        error: "Service Unavailable",
+        message: "Agent is not initialized yet",
+      });
+    }
+
     // リクエストボディからプロンプトを取得
     const prompt = req.body?.toString("utf-8") || "";
 
@@ -104,13 +125,29 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
 });
 
 /**
- * サーバー開始
+ * アプリケーション開始
  */
-app.listen(PORT, () => {
-  console.log(`🚀 AgentCore Runtime server listening on port ${PORT}`);
-  console.log(`📋 Health check: http://localhost:${PORT}/ping`);
-  console.log(`🤖 Agent endpoint: POST http://localhost:${PORT}/invocations`);
-});
+async function startServer(): Promise<void> {
+  try {
+    // Agent初期化
+    await initializeAgent();
+
+    // HTTPサーバー開始
+    app.listen(PORT, () => {
+      console.log(`🚀 AgentCore Runtime server listening on port ${PORT}`);
+      console.log(`📋 Health check: http://localhost:${PORT}/ping`);
+      console.log(
+        `🤖 Agent endpoint: POST http://localhost:${PORT}/invocations`
+      );
+    });
+  } catch (error) {
+    console.error("💥 サーバー開始に失敗しました:", error);
+    process.exit(1);
+  }
+}
+
+// サーバー開始
+startServer();
 
 // Graceful shutdown の処理
 process.on("SIGTERM", () => {

@@ -3,6 +3,7 @@ import { Construct } from "constructs";
 import { AgentCoreGateway } from "./constructs/agentcore-gateway";
 import { AgentCoreLambdaTarget } from "./constructs/agentcore-lambda-target";
 import { AgentCoreRuntime } from "./constructs/agentcore-runtime";
+import { CognitoAuth } from "./constructs/cognito-auth";
 
 export interface AgentCoreStackProps extends cdk.StackProps {
   /**
@@ -23,6 +24,12 @@ export interface AgentCoreStackProps extends cdk.StackProps {
   readonly authType?: "cognito" | "iam" | "jwt";
 
   /**
+   * Runtime の認証タイプ (オプション)
+   * デフォルト: jwt (Gateway と同じ Cognito を使用)
+   */
+  readonly runtimeAuthType?: "iam" | "jwt";
+
+  /**
    * JWTの設定 (authType が 'jwt' の場合に必要)
    */
   readonly jwtConfig?: {
@@ -38,6 +45,11 @@ export interface AgentCoreStackProps extends cdk.StackProps {
  * AgentCore Gateway とその他の関連リソースをデプロイするためのCDKスタック
  */
 export class AgentCoreStack extends cdk.Stack {
+  /**
+   * 作成された Cognito 認証システム
+   */
+  public readonly cognitoAuth: CognitoAuth;
+
   /**
    * 作成された AgentCore Gateway
    */
@@ -59,12 +71,20 @@ export class AgentCoreStack extends cdk.Stack {
     // Gateway名の設定
     const gatewayName = props?.gatewayName || "default-gateway";
 
-    // AgentCore Gateway の作成
+    // 1. Cognito 認証システムの作成（Gateway と Runtime で共有）
+    this.cognitoAuth = new CognitoAuth(this, "CognitoAuth", {
+      userPoolName: `${gatewayName}-user-pool`,
+      appClientName: `${gatewayName}-client`,
+      deletionProtection: false, // 開発環境用
+    });
+
+    // 2. AgentCore Gateway の作成
     this.gateway = new AgentCoreGateway(this, "AgentCoreGateway", {
       gatewayName: gatewayName,
       description:
         props?.gatewayDescription || `AgentCore Gateway - ${gatewayName}`,
       authType: props?.authType || "cognito",
+      cognitoAuth: this.cognitoAuth,
       jwtConfig: props?.jwtConfig,
       mcpConfig: {
         instructions:
@@ -116,31 +136,43 @@ export class AgentCoreStack extends cdk.Stack {
       exportName: `${id}-EchoToolLambdaName`,
     });
 
-    // Cognito User Pool の情報を出力
-    if (this.gateway.gateway.authorizerConfiguration) {
-      // Cognito User Pool が作成されている場合の出力
-      // Note: Gateway の内部実装により、Cognito User Pool の ARN/ID にアクセスする方法が必要
-      // 現在のAPIでは直接アクセスできないため、Gateway IDから推測または手動確認が必要
-    }
+    // 3. AgentCore Runtime の作成（同じ Cognito User Pool を使用）
+    this.agentRuntime = new AgentCoreRuntime(this, "AgentCoreRuntime", {
+      runtimeName: "StrandsAgentsTS",
+      description: "TypeScript版Strands Agent Runtime",
+      region: this.region,
+      authType: props?.runtimeAuthType || "jwt",
+      cognitoAuth: this.cognitoAuth,
+    });
 
+    // 4. CloudFormation 追加出力（認証関連）
     new cdk.CfnOutput(this, "GatewayMcpEndpoint", {
       value: `https://${this.gateway.gatewayId}.gateway.bedrock-agentcore.${this.region}.amazonaws.com/mcp`,
       description: "AgentCore Gateway MCP Endpoint",
       exportName: `${id}-GatewayMcpEndpoint`,
     });
 
-    new cdk.CfnOutput(this, "CognitoInstructions", {
-      value:
-        "Cognito User Pool ID と Client ID は AWS コンソールで確認してください。Gateway ID: " +
-        this.gateway.gatewayId,
-      description: "Cognito 設定確認のための指示",
+    new cdk.CfnOutput(this, "RuntimeInvocationEndpoint", {
+      value: `https://bedrock-agentcore.${this.region}.amazonaws.com/runtimes/${this.agentRuntime.runtimeArn}/invocations?qualifier=DEFAULT`,
+      description:
+        "AgentCore Runtime Invocation Endpoint (JWT Bearer Token required)",
+      exportName: `${id}-RuntimeInvocationEndpoint`,
     });
 
-    // AgentCore Runtime の作成
-    this.agentRuntime = new AgentCoreRuntime(this, "AgentCoreRuntime", {
-      runtimeName: "StrandsAgentsTS",
-      description: "TypeScript版Strands Agent Runtime",
-      region: this.region,
+    new cdk.CfnOutput(this, "AuthenticationSummary", {
+      value: `Gateway: JWT認証, Runtime: JWT認証 (共通Cognito User Pool: ${this.cognitoAuth.userPoolId})`,
+      description: "認証設定サマリー",
+    });
+
+    // テスト用ユーザー作成のヘルパー出力
+    new cdk.CfnOutput(this, "CreateTestUserCommand", {
+      value: `aws cognito-idp admin-create-user --user-pool-id ${this.cognitoAuth.userPoolId} --username testuser --message-action SUPPRESS --region ${this.region}`,
+      description: "テストユーザー作成コマンド例",
+    });
+
+    new cdk.CfnOutput(this, "SetUserPasswordCommand", {
+      value: `aws cognito-idp admin-set-user-password --user-pool-id ${this.cognitoAuth.userPoolId} --username testuser --password YourPassword123! --permanent --region ${this.region}`,
+      description: "ユーザーパスワード設定コマンド例",
     });
 
     new cdk.CfnOutput(this, "AgentRuntimeArn", {
