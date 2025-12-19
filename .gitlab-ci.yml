@@ -1,25 +1,138 @@
+# GitLab CI/CD Pipeline for fullstack-agentcore
+# Stages: lint → test → build → deploy
+
 stages:
+  - lint
+  - test
   - build
   - deploy
 
-build:
-  stage: build
+# Common template for Node.js jobs
+.node_template: &node_template
   image: node:18
+  cache:
+    key: npm-cache
+    paths:
+      - node_modules/
+      - packages/*/node_modules/
+  before_script:
+    - npm ci --prefer-offline --no-audit
+
+# ========================================
+# LINT STAGE
+# ========================================
+
+lint:eslint:
+  <<: *node_template
+  stage: lint
   script:
-    - npm install -g redoc-cli
-    - redoc build openapi.yaml --output public/index.html
+    - npm run lint
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+lint:prettier:
+  <<: *node_template
+  stage: lint
+  script:
+    - npm run format:check
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+lint:openapi:
+  <<: *node_template
+  stage: lint
+  script:
+    - npm run docs:lint
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+# ========================================
+# TEST STAGE
+# ========================================
+
+test:
+  <<: *node_template
+  stage: test
+  script:
+    - npm run test
+  coverage: '/All files[^|]*\|[^|]*\s+([\d\.]+)/'
+  artifacts:
+    when: always
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage/cobertura-coverage.xml
+    paths:
+      - coverage/
+    expire_in: 1 week
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+# ========================================
+# BUILD STAGE
+# ========================================
+
+build:docs:
+  <<: *node_template
+  stage: build
+  script:
+    - npm run docs:build
+    - mkdir -p public
+    - mv api.html public/index.html
+  artifacts:
+    paths:
+      - public/
+    expire_in: 1 week
+  only:
+    - main
+
+build:packages:
+  <<: *node_template
+  stage: build
+  script:
+    - npm run build
+  artifacts:
+    paths:
+      - packages/*/dist/
+      - packages/*/build/
+    expire_in: 1 week
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+# ========================================
+# DEPLOY STAGE
+# ========================================
+
+pages:
+  stage: deploy
+  dependencies:
+    - build:docs
+  script:
+    - echo "Deploying OpenAPI documentation to GitLab Pages"
+    - ls -la public/
   artifacts:
     paths:
       - public/
   only:
     - main
 
-pages:
-  stage: deploy
+# ========================================
+# MANUAL JOBS (for debugging)
+# ========================================
+
+debug:environment:
+  <<: *node_template
+  stage: lint
   script:
-    - echo "Deploying to GitLab Pages"
-  artifacts:
-    paths:
-      - public/
-  only:
-    - main
+    - node --version
+    - npm --version
+    - pwd
+    - ls -la
+    - cat package.json
+  when: manual
+  allow_failure: true
