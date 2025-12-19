@@ -185,20 +185,6 @@ interface SessionHistory {
 // セッション履歴を保存するMap（本来はRedisなどの永続化ストレージを使用）
 const sessionHistories = new Map<string, SessionHistory>();
 
-// セッション履歴のクリーンアップ（1時間以上アクセスされていないものを削除）
-setInterval(
-  () => {
-    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
-    for (const [sessionId, history] of sessionHistories.entries()) {
-      if (history.lastAccessed < oneHourAgo) {
-        sessionHistories.delete(sessionId);
-        console.log(`🗑️ セッション履歴をクリーンアップ: ${sessionId}`);
-      }
-    }
-  },
-  15 * 60 * 1000
-); // 15分ごとにチェック
-
 /**
  * セッション履歴を取得または作成
  */

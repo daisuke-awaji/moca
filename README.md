@@ -1,102 +1,37 @@
 # Fullstack AgentCore
 
-AWS Bedrock AgentCore を使用したフルスタック AI エージェントシステム。JWT 認証による安全なマルチエージェント通信を実現します。
+AWS Bedrock AgentCore を使用したフルスタック AI エージェントシステム。ローカル開発とAWSデプロイの両方をサポートします。
 
 ## 🏗️ アーキテクチャ概要
 
-### システム構成図
+### ローカル開発構成
 
 ```mermaid
 flowchart TB
-    subgraph Client["📱 Client (CLI)"]
-        CLI[CLI Commands]
+    subgraph Local["ローカル環境"]
+        CLI[CLI Client<br/>localhost:コマンド]
+        Frontend[Frontend <br/> localhost:5173]
+        Agent[Agent <br/> localhost:8080]
     end
 
-    subgraph Auth["🔐 Cognito"]
-        UserPool[User Pool]
+    subgraph AWS["☁️ AWS"]
+        Bedrock[Bedrock API<br/>Claude 4.5 Sonnet]
     end
 
-    subgraph Runtime["☁️ AgentCore Runtime"]
-        Express[Express Server]
-        Agent[Strands Agent<br/>+ Local Tools]
-        MCP[MCP Client]
-    end
+    CLI --> Agent
+    Frontend --> Agent
+    Agent --> Bedrock
 
-    subgraph Gateway["🌐 AgentCore Gateway"]
-        GatewayMCP[MCP Endpoint]
-    end
-
-    subgraph Lambda["⚡ Lambda Tools"]
-        EchoPing[Echo / Ping]
-    end
-
-    CLI -->|1. JWT取得| UserPool
-    UserPool -->|2. Token| CLI
-    CLI -->|3. invoke + JWT| Express
-    Express --> Agent
-    Agent --> MCP
-    MCP -->|4. tools/call + JWT| GatewayMCP
-    GatewayMCP --> EchoPing
-
-    style Runtime fill:#e3f2fd
-    style Gateway fill:#f3e5f5
+    style Local fill:#e3f2fd
+    style AWS fill:#f3e5f5
 ```
 
-### JWT 認証フロー
+### システム構成
 
-```mermaid
-sequenceDiagram
-    participant C as Client (CLI)
-    participant Cognito as Cognito User Pool
-    participant R as AgentCore Runtime
-    participant A as Strands Agent
-    participant G as AgentCore Gateway
-    participant L as Lambda Tools
-
-    C->>Cognito: 1. 認証リクエスト
-    Cognito-->>C: 2. JWT Access Token
-
-    C->>R: 3. POST /invocations (Bearer Token)
-    R->>A: 4. リクエスト + JWT Context
-
-    A->>A: 5. ローカルツール実行 (Weather)
-
-    A->>G: 6. MCP tools/call (JWT転送)
-    G->>G: 7. JWT検証
-    G->>L: 8. Lambda Invoke
-    L-->>G: 9. ツール結果
-    G-->>A: 10. MCP Response
-
-    A-->>R: 11. Agent Response
-    R-->>C: 12. HTTP Response
-```
-
-## 🔑 JWT 認証ヘッダー転送機能
-
-### 実装された機能
-
-#### 1. AgentCore Runtime レベル
-
-- **CDK L2 Construct**: `requestHeaderConfiguration.allowlistedHeaders: ["Authorization"]`
-- JWT Bearer Token の完全な転送機能
-- AWS 公式仕様に完全準拠
-
-#### 2. Express Server レベル
-
-- Authorization ヘッダーの受信と処理
-- AsyncLocalStorage によるリクエストスコープ管理
-- JWT コンテキストでの Agent 初期化（遅延初期化パターン）
-
-#### 3. MCP Client レベル
-
-- JWT 伝播ロジックの実装
-- ツール呼び出し時の認証ヘッダー転送
-- 認証レベル分離（ツール一覧取得：認証不要、実行：必須）
-
-#### 4. エンドツーエンド動作
-
-- Client → AgentCore Runtime → Express → MCP Client → Gateway
-- 完全な JWT 認証チェーンの確立
+- **Frontend**: React + Vite + Tailwind CSS
+- **Agent**: Express + Strands Agents SDK
+- **AI Model**: AWS Bedrock Claude 4.5 Sonnet
+- **CLI**: Commander.js ベースのクライアント
 
 ## 📁 プロジェクト構造
 
@@ -105,207 +40,235 @@ fullstack-agentcore/
 ├── packages/
 │   ├── cdk/                    # AWS インフラストラクチャ (CDK)
 │   │   ├── lib/                # スタックと Construct 定義
-│   │   └── scripts/            # JWT 認証テストスクリプト
+│   │   └── bin/                # CDK アプリケーション
 │   │
 │   ├── agent/                  # Agent Runtime (Express + Strands)
-│   │   ├── src/                # JWT 伝播機能付き Agent 実装
-│   │   └── scripts/            # ローカル開発・テスト用スクリプト
+│   │   ├── src/                # Agent 実装
+│   │   ├── scripts/            # 開発スクリプト
+│   │   └── docker-compose.yml  # Docker 設定
+│   │
+│   ├── frontend/               # React Frontend (Vite)
+│   │   ├── src/                # Frontend コード
+│   │   └── public/             # 静的ファイル
 │   │
 │   ├── client/                 # CLI クライアント
-│   │   └── src/                # Cognito 認証付き API クライアント
+│   │   └── src/                # CLI 実装
 │   │
 │   └── lambda-tools/           # AgentCore Gateway ツール
-│       └── tools/echo-tool/    # サンプル Lambda ツール実装
+│       └── tools/echo-tool/    # サンプル Lambda ツール
 │
-├── cdk.json                    # CDK 設定
-└── README.md                   # このファイル
+├── package.json                # Workspace 設定
+├── openapi.yaml               # API ドキュメント
+└── README.md                  # このファイル
 ```
 
-## 🚀 セットアップ・実行方法
+## 🚀 Getting Started (ローカル開発)
 
 ### 前提条件
 
-- Node.js 18+
-- AWS CLI 設定済み
-- Docker
-- AWS CDK v2
+- **Node.js 18+**
+- **Docker** (推奨)
+- **AWS CLI** 設定済み (Bedrock API 利用のため)
 
-### 1. 依存関係のインストール
+### Step 1: 依存関係のインストール
 
 ```bash
 # ルートディレクトリで実行
 npm install
-
-# 各パッケージのインストール
-cd packages/cdk && npm install
-cd ../agent && npm install
-cd ../lambda-tools/tools/echo-tool && npm install
 ```
 
-### 2. デプロイ
+### Step 2: Agent の環境設定・起動
+
+#### 環境変数の設定
 
 ```bash
-# CDK デプロイ
-cdk deploy --require-approval never
+# Agent 環境変数設定
+cp packages/agent/.env.example packages/agent/.env
 ```
 
-### 3. JWT 認証機能のテスト
-
-#### 基本認証テスト
+`packages/agent/.env` を編集：
 
 ```bash
-cd packages/cdk/scripts
-./test-jwt-auth.sh
+# AWS 認証情報
+AWS_ACCESS_KEY_ID=your_access_key_id
+AWS_SECRET_ACCESS_KEY=your_secret_access_key
+AWS_REGION=us-west-2
+
+# Bedrock 設定
+BEDROCK_MODEL_ID=global.anthropic.claude-sonnet-4-5-20250929-v1:0
+BEDROCK_REGION=us-west-2
+
+# 開発設定
+LOG_LEVEL=info
+DEBUG_MCP=false
 ```
 
-#### JWT 伝播テスト（エンドツーエンド）
+#### Agent の起動（2つの方法）
+
+**方法A: Docker で起動 (推奨)**
 
 ```bash
-cd packages/cdk/scripts
-./test-jwt-propagation.sh
+npm run agent:docker
 ```
 
-### 4. ログ確認
-
-CloudWatch でリアルタイムログを確認：
+**方法B: 直接起動**
 
 ```bash
-# Runtime ログ確認
-aws logs describe-log-groups --log-group-name-prefix "/aws/bedrock-agentcore/runtimes"
+npm run agent:dev
+```
 
-# 最新ログストリーム確認
-aws logs describe-log-streams \
-  --log-group-name "/aws/bedrock-agentcore/runtimes/StrandsAgentsTS-XXXXX-DEFAULT" \
-  --order-by LastEventTime --descending --max-items 1
+### Step 3: 動作確認
 
-# ログ内容確認
-aws logs get-log-events \
-  --log-group-name "/aws/bedrock-agentcore/runtimes/StrandsAgentsTS-XXXXX-DEFAULT" \
-  --log-stream-name "STREAM_NAME"
+#### 方法A: CLI で確認
+
+```bash
+# CLI 環境設定
+cp packages/client/.env.example packages/client/.env
+
+# CLI で Agent に質問
+npm run client:dev -- invoke "今日の天気を教えて"
+```
+
+#### 方法B: Frontend で確認
+
+```bash
+# Frontend 環境設定
+cp packages/frontend/.env.example packages/frontend/.env
+```
+
+`packages/frontend/.env` を編集：
+
+```bash
+# Agent API 設定
+VITE_AGENT_ENDPOINT=http://localhost:8080/invocations
+
+# Cognito 設定（必要に応じて）
+VITE_COGNITO_USER_POOL_ID=us-east-1_xxxxxxxxx
+VITE_COGNITO_CLIENT_ID=xxxxxxxxxxxxxxxxxxxxxxxxxx
+VITE_AWS_REGION=us-east-1
+```
+
+Frontend 起動：
+
+```bash
+npm run frontend:dev
+```
+
+ブラウザで http://localhost:5173 にアクセス
+
+## ☁️ AWS デプロイ
+
+### CDK デプロイ
+
+```bash
+# CDK の初回デプロイ
+npm run deploy
+```
+
+### デプロイ後の設定
+
+デプロイ完了後、出力された情報を使って環境変数を更新：
+
+```bash
+# CLI で AWS に接続
+# packages/client/.env
+AGENTCORE_RUNTIME_ARN=arn:aws:bedrock-agentcore:us-east-1:ACCOUNT_ID:runtime/YOUR_RUNTIME_ID
+
+# Frontend で AWS に接続
+# packages/frontend/.env  
+VITE_AGENT_ENDPOINT=https://your-gateway-id.bedrock-agentcore.us-east-1.amazonaws.com/invocations
+```
+
+## 🛠️ 開発コマンド
+
+### Agent 関連
+
+```bash
+npm run agent:dev              # Agent 開発サーバー起動
+npm run agent:docker           # Docker で起動
+npm run agent:docker:detach    # Docker バックグラウンド起動
+npm run agent:docker:stop      # Docker 停止
+```
+
+### Frontend 関連
+
+```bash
+npm run frontend:dev           # 開発サーバー起動
+npm run frontend:build         # ビルド
+npm run frontend:preview       # プレビュー
+```
+
+### CLI 関連
+
+```bash
+npm run client:dev             # CLI 開発モード
+npm run client:dev -- invoke "質問"  # 直接実行
+```
+
+### CDK 関連
+
+```bash
+npm run deploy                 # デプロイ
+npm run synth                  # テンプレート生成
+npm run diff                   # 差分確認
 ```
 
 ## 🔧 技術仕様
 
 ### 使用技術
 
-- **Runtime**: AWS Bedrock AgentCore Runtime
-- **AI Model**: Claude 4.5 Sonnet (グローバル推論プロファイル)
-- **Agent Framework**: Strands Agents SDK
-- **Authentication**: Amazon Cognito User Pool (JWT)
-- **API Gateway**: AgentCore Gateway with Lambda integration
-- **Infrastructure**: AWS CDK (TypeScript)
+| 分野 | 技術 |
+|------|------|
+| **Runtime** | AWS Bedrock AgentCore Runtime |
+| **AI Model** | Claude 4.5 Sonnet (グローバル推論プロファイル) |
+| **Agent Framework** | Strands Agents SDK |
+| **Frontend** | React 19 + Vite + Tailwind CSS |
+| **Authentication** | Amazon Cognito User Pool (JWT) |
+| **API Gateway** | AgentCore Gateway |
+| **Infrastructure** | AWS CDK (TypeScript) |
+| **CLI** | Commander.js + Chalk |
 
-### 認証設定
-
-#### Cognito User Pool
-
-- **User Pool ID**: `us-east-1_OZ6KUvSn3`
-- **Client ID**: `19duob1sqr877jesho69aildbn`
-- **Token Type**: Access Token (Bearer)
-- **Validation**: JWT signature + expiration
-
-#### JWT Claims
-
-```json
-{
-  "sub": "user-uuid",
-  "client_id": "19duob1sqr877jesho69aildbn",
-  "iss": "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_OZ6KUvSn3",
-  "exp": 1734507600,
-  "token_use": "access"
-}
-```
-
-### Runtime 設定
+### 環境設定
 
 ```typescript
-// CDK Configuration
-requestHeaderConfiguration: {
-  allowlistedHeaders: ["Authorization"];
-}
+// Agent 設定
+BEDROCK_MODEL_ID: "global.anthropic.claude-sonnet-4-5-20250929-v1:0"
+PORT: 8080
 
-// Environment Variables
-BEDROCK_MODEL_ID: "global.anthropic.claude-sonnet-4-5-20250929-v1:0";
-AGENTCORE_GATEWAY_ENDPOINT: "https://api.gateway.endpoint";
+// Frontend 設定
+VITE_AGENT_ENDPOINT: "http://localhost:8080/invocations"
+
+// CLI 設定
+AGENTCORE_ENDPOINT: "http://localhost:8080"
 ```
 
-## 🧪 テスト
+## 🧪 テスト・デバッグ
 
-### JWT 伝播テストの期待される動作
-
-1. **JWT 認証通過**: HTTP 200 ステータス
-2. **ツール実行成功**: echo-tool, ping-tool の正常応答
-3. **ログ確認**:
-   ```
-   authorization: 'PRESENT'
-   hasAuth: true
-   authType: 'Bearer'
-   リクエストコンテキストから JWT を使用
-   ```
-
-### テスト成功例
+### Agent のログ確認
 
 ```bash
-HTTP Status: 200
-✅ リクエスト成功!
-📋 レスポンス: {"response":{"type":"agentResult","stopReason":"endTurn"...
-🆔 Request ID: 2095fd8a-9ceb-4689-9b3b-f7f59998a382
+# Docker ログ確認
+npm run agent:docker:logs
+
+# 開発モードではコンソールに直接出力
+npm run agent:dev
 ```
 
-## 🛠️ 開発
-
-### ローカル開発
+### デバッグモードの有効化
 
 ```bash
-# Agent の開発サーバー起動
-cd packages/agent
-npm run dev
-
-# Docker での起動
-cd packages/agent
-docker-compose up --build
+# packages/agent/.env
+DEBUG_MCP=true
+LOG_LEVEL=debug
 ```
 
-### デバッグログの有効化
+## 📚 詳細ドキュメント
 
-```typescript
-// packages/agent/src/config/index.ts
-export const config = {
-  DEBUG_MCP: true, // MCP通信ログ
-  LOG_LEVEL: "debug",
-};
-```
+より詳細な技術情報については、[docs](./docs/) フォルダをご覧ください：
 
-## 📊 監視・運用
-
-### CloudWatch メトリクス
-
-- AgentCore Runtime 呼び出し数
-- JWT 認証成功/失敗数
-- ツール実行時間
-- エラー率
-
-### アラート設定
-
-- JWT 認証失敗率 > 5%
-- Runtime エラー率 > 1%
-- レスポンス時間 > 30 秒
-
-## 🔒 セキュリティ
-
-### 実装されたセキュリティ機能
-
-1. **JWT 署名検証**: Cognito による自動検証
-2. **トークン有効期限**: 1 時間の短期間トークン
-3. **スコープ分離**: ツール一覧は認証不要、実行は認証必須
-4. **リクエストスコープ**: AsyncLocalStorage による安全な認証情報管理
-
-### セキュリティベストプラクティス
-
-- JWT トークンのログ出力禁止
-- HTTPS 通信の強制
-- 最小権限の原則に基づく IAM ロール設定
-- 定期的なトークンローテーション
+- **[AWS クラウドアーキテクチャ](./docs/aws-architecture.md)** - AWS デプロイ構成図、リソース詳細、監視・運用
+- **[JWT 認証システム](./docs/jwt-authentication.md)** - JWT 認証フロー、実装詳細、セキュリティ
+- **[ドキュメント一覧](./docs/README.md)** - 全ドキュメントのインデックス
 
 ## 📖 参考資料
 
@@ -327,16 +290,11 @@ MIT License - 詳細は [LICENSE](LICENSE) ファイルをご覧ください。
 
 ---
 
-## 🎯 実装ハイライト
+## ✨ ローカル開発のポイント
 
-この実装では、AWS Bedrock AgentCore の公式仕様に完全準拠した JWT 認証ヘッダー転送機能を実現しています。
+- **Agent**: `npm run agent:docker` で簡単起動
+- **Frontend**: `npm run frontend:dev` でホットリロード開発
+- **CLI**: `npm run client:dev -- invoke "質問"` で即座にテスト
+- **統合**: 3つのコンポーネントが localhost で連携
 
-**主な技術的成果:**
-
-- ✅ CDK L2 Construct での `requestHeaderConfiguration` 活用
-- ✅ 遅延初期化パターンによる JWT コンテキスト内 Agent 起動
-- ✅ AsyncLocalStorage による Node.js リクエストスコープ管理
-- ✅ 認証レベル分離によるセキュリティとパフォーマンスの両立
-- ✅ エンドツーエンドでの完全な JWT 認証チェーン確立
-
-これにより、セキュアで拡張可能なマルチエージェント AI システムが完成しました。
+デプロイ不要で、ローカル環境ですべての機能を体験できます！
