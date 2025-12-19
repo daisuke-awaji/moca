@@ -13,37 +13,38 @@ import { requestContextMiddleware } from './middleware/request-context.js';
  * Strands Agents ストリーミングイベントを安全にシリアライズ
  * 循環参照を含むオブジェクトから必要なプロパティのみを抽出
  */
-function serializeStreamEvent(event: any): object {
-  const baseEvent = { type: event.type };
+function serializeStreamEvent(event: unknown): object {
+  const eventObj = event as { type?: string; [key: string]: unknown };
+  const baseEvent = { type: eventObj.type };
 
-  switch (event.type) {
+  switch (eventObj.type) {
     // テキスト生成イベント
     case 'modelContentBlockDeltaEvent':
       return {
         ...baseEvent,
-        delta: event.delta,
+        delta: eventObj.delta,
       };
 
     case 'modelContentBlockStartEvent':
       return {
         ...baseEvent,
-        start: event.start,
+        start: eventObj.start,
       };
 
     case 'modelContentBlockStopEvent':
       return {
         ...baseEvent,
-        stop: event.stop,
+        stop: eventObj.stop,
       };
 
     // メッセージライフサイクルイベント
     case 'modelMessageStartEvent':
       return {
         ...baseEvent,
-        message: event.message
+        message: eventObj.message
           ? {
-              role: event.message.role,
-              content: event.message.content,
+              role: (eventObj.message as { role: unknown }).role,
+              content: (eventObj.message as { content: unknown }).content,
             }
           : undefined,
       };
@@ -51,10 +52,10 @@ function serializeStreamEvent(event: any): object {
     case 'modelMessageStopEvent':
       return {
         ...baseEvent,
-        message: event.message
+        message: eventObj.message
           ? {
-              role: event.message.role,
-              content: event.message.content,
+              role: (eventObj.message as { role: unknown }).role,
+              content: (eventObj.message as { content: unknown }).content,
             }
           : undefined,
       };
@@ -62,10 +63,10 @@ function serializeStreamEvent(event: any): object {
     case 'messageAddedEvent':
       return {
         ...baseEvent,
-        message: event.message
+        message: eventObj.message
           ? {
-              role: event.message.role,
-              content: event.message.content,
+              role: (eventObj.message as { role: unknown }).role,
+              content: (eventObj.message as { content: unknown }).content,
             }
           : undefined,
       };
@@ -74,20 +75,20 @@ function serializeStreamEvent(event: any): object {
     case 'modelMetadataEvent':
       return {
         ...baseEvent,
-        metadata: event.metadata,
+        metadata: eventObj.metadata,
       };
 
     case 'agentResult':
       return {
         ...baseEvent,
-        result: event.result,
+        result: eventObj.result,
       };
 
     // テキストブロックイベント
     case 'textBlock':
       return {
         ...baseEvent,
-        text: event.text,
+        text: eventObj.text,
       };
 
     // ストリームフックイベント（頻繁に発生するため軽量化）
@@ -108,17 +109,17 @@ function serializeStreamEvent(event: any): object {
     case 'afterModelCallEvent':
       return {
         ...baseEvent,
-        stopReason: event.stopReason,
-        stopData: event.stopData
+        stopReason: eventObj.stopReason,
+        stopData: eventObj.stopData
           ? {
-              message: event.stopData.message,
+              message: (eventObj.stopData as { message: unknown }).message,
             }
           : undefined,
       };
 
     default:
       // 真に未知のイベントタイプの場合のみ警告を表示
-      console.warn(`新しい未知のストリーミングイベント: ${event.type}`);
+      console.warn(`新しい未知のストリーミングイベント: ${eventObj.type}`);
       return baseEvent;
   }
 }

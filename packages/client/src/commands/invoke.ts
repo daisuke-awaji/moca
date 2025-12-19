@@ -7,19 +7,12 @@ import chalk from 'chalk';
 import ora from 'ora';
 import {
   createClient,
-  type AgentStreamEvent,
   type ModelContentBlockDeltaEvent,
   type ModelContentBlockStartEvent,
+  type ServerCompletionEvent,
+  type ServerErrorEvent,
 } from '../api/client.js';
 import type { ClientConfig } from '../config/index.js';
-
-/**
- * Agent レスポンスの内容型
- */
-interface MessageContent {
-  text?: string;
-  type?: string;
-}
 
 export async function invokeCommand(
   prompt: string,
@@ -72,7 +65,7 @@ export async function invokeCommand(
 
   let spinner = ora('Agent が初期化中...').start();
   let currentToolName = '';
-  let metadata: any = {};
+  let metadata: Record<string, unknown> = {};
 
   try {
     console.log('');
@@ -125,7 +118,8 @@ export async function invokeCommand(
 
       // サーバー完了イベント
       if (event.type === 'serverCompletionEvent') {
-        metadata = event.metadata;
+        const completionEvent = event as unknown as ServerCompletionEvent;
+        metadata = completionEvent.metadata;
         if (spinner.isSpinning) {
           spinner.succeed(chalk.green('Agent が応答しました'));
         }
@@ -136,7 +130,8 @@ export async function invokeCommand(
         if (spinner.isSpinning) {
           spinner.fail(chalk.red('Agent でエラーが発生しました'));
         }
-        throw new Error(event.error.message);
+        const errorEvent = event as ServerErrorEvent;
+        throw new Error(errorEvent.error.message);
       }
     }
 
@@ -274,7 +269,8 @@ export async function interactiveMode(config: ClientConfig): Promise<void> {
           if (spinner.isSpinning) {
             spinner.fail(chalk.red('Agent でエラーが発生しました'));
           }
-          throw new Error(event.error.message);
+          const errorEvent = event as ServerErrorEvent;
+          throw new Error(errorEvent.error.message);
         }
       }
       console.log('');

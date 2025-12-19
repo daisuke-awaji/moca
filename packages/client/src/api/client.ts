@@ -11,7 +11,7 @@ import { getCachedJwtToken } from '../auth/cognito.js';
 // Strands Agents SDK ストリーミングイベント型定義
 export interface AgentStreamEvent {
   type: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 // テキストデルタイベント
@@ -43,7 +43,7 @@ export interface AfterModelCallEvent extends AgentStreamEvent {
       content: Array<{
         type: string;
         text?: string;
-        toolUse?: any;
+        toolUse?: Record<string, unknown>;
       }>;
     };
   };
@@ -296,26 +296,41 @@ export class AgentCoreClient {
    */
   async invoke(prompt: string, sessionId?: string): Promise<InvokeResponse> {
     try {
-      let lastMessage: any = undefined;
+      let lastMessage: InvokeResponse['response']['lastMessage'] | undefined;
       let stopReason = '';
-      let metadata: any = {};
+      let metadata: ServerCompletionEvent['metadata'] | Record<string, unknown> = {};
 
       // ストリーミングで処理し、最終結果を組み立て
       for await (const event of this.invokeStream(prompt, sessionId)) {
         // 最終メッセージを記録
-        if (event.type === 'afterModelCallEvent' && event.stopData?.message) {
-          lastMessage = event.stopData.message;
-          stopReason = event.stopReason || 'completed';
+        if (event.type === 'afterModelCallEvent') {
+          const afterEvent = event as AfterModelCallEvent;
+          if (afterEvent.stopData?.message) {
+            // 型変換：toolUse プロパティを除去し、text を必須に変換
+            lastMessage = {
+              type: afterEvent.stopData.message.type,
+              role: afterEvent.stopData.message.role,
+              content: afterEvent.stopData.message.content
+                .filter((item) => item.text !== undefined)
+                .map((item) => ({
+                  type: item.type,
+                  text: item.text!,
+                })),
+            };
+            stopReason = (event as { stopReason?: string }).stopReason || 'completed';
+          }
         }
 
         // サーバー完了イベントからメタデータを取得
         if (event.type === 'serverCompletionEvent') {
-          metadata = event.metadata;
+          const completionEvent = event as ServerCompletionEvent;
+          metadata = completionEvent.metadata;
         }
 
         // エラーイベントの場合は例外を投げる
         if (event.type === 'serverErrorEvent') {
-          throw new Error(event.error.message);
+          const errorEvent = event as ServerErrorEvent;
+          throw new Error(errorEvent.error.message);
         }
       }
 
