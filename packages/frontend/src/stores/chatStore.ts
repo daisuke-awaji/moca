@@ -1,10 +1,17 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
-import { nanoid } from 'nanoid';
+import { nanoid, customAlphabet } from 'nanoid';
 import type { ChatState, Message, MessageContent, ToolUse, ToolResult } from '../types/index';
 import { streamAgentResponse } from '../api/agent';
 import type { ConversationMessage } from '../api/sessions';
 import { useAgentStore } from './agentStore';
+
+// AWS AgentCore sessionId制約: [a-zA-Z0-9][a-zA-Z0-9-_]*
+// 英数字のみのカスタムnanoid（ハイフンとアンダースコアを除外）
+const generateSessionId = customAlphabet(
+  'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789',
+  33
+);
 
 // React Router のナビゲート関数を格納する変数
 let navigateFunction: ((to: string, options?: { replace?: boolean }) => void) | null = null;
@@ -122,7 +129,7 @@ export const useChatStore = create<ChatStore>()(
 
         // セッションIDがない場合は新しく生成（初回メッセージ送信時）
         if (!sessionId) {
-          sessionId = nanoid(33);
+          sessionId = generateSessionId();
           set({ sessionId });
 
           // URL を更新して sessionId を反映
