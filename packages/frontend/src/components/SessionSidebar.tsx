@@ -5,7 +5,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Donut, SquarePen, Search, PanelRight, Wrench, User, LogOut } from 'lucide-react';
+import { Donut, SquarePen, Search, PanelRight, Wrench, User, LogOut, X } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import { useSessionStore } from '../stores/sessionStore';
 import { useUIStore } from '../stores/uiStore';
@@ -70,7 +70,7 @@ export function SessionSidebar() {
     selectSession,
     clearActiveSession,
   } = useSessionStore();
-  const { isSidebarOpen, toggleSidebar } = useUIStore();
+  const { isSidebarOpen, isMobileView, toggleSidebar } = useUIStore();
 
   // ユーザードロップダウンの状態管理
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
@@ -163,16 +163,19 @@ export function SessionSidebar() {
     return null;
   }
 
+  // モバイル時は常に展開状態、デスクトップ時は現在の状態に従う
+  const shouldShowExpanded = isMobileView || isSidebarOpen;
+
   return (
     <div
-      className={`h-full bg-white border-r border-gray-200 flex flex-col ${isSidebarOpen ? 'w-80' : 'w-16'}`}
+      className={`h-full bg-white border-r border-gray-200 flex flex-col ${shouldShowExpanded ? 'w-80' : 'w-16'}`}
     >
       {/* ヘッダー */}
-      <div className={`p-4 ${isSidebarOpen ? 'border-b border-gray-200' : ''} bg-white`}>
+      <div className={`p-4 ${shouldShowExpanded ? 'border-b border-gray-200' : ''} bg-white`}>
         <div
-          className={`flex items-center mb-3 ${isSidebarOpen ? 'justify-between' : 'justify-center'}`}
+          className={`flex items-center mb-3 ${shouldShowExpanded ? 'justify-between' : 'justify-center'}`}
         >
-          {isSidebarOpen ? (
+          {shouldShowExpanded ? (
             <>
               <button
                 onClick={handleHomeNavigate}
@@ -184,12 +187,14 @@ export function SessionSidebar() {
                   Donuts
                 </span>
               </button>
+
+              {/* モバイル時は×ボタン、デスクトップ時はPanelRightボタン */}
               <button
                 onClick={handleToggleSidebar}
                 className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
-                title="サイドバーを閉じる"
+                title={isMobileView ? 'サイドバーを閉じる' : 'サイドバーを閉じる'}
               >
-                <PanelRight className="w-5 h-5" />
+                {isMobileView ? <X className="w-5 h-5" /> : <PanelRight className="w-5 h-5" />}
               </button>
             </>
           ) : (
@@ -203,44 +208,44 @@ export function SessionSidebar() {
           )}
         </div>
 
-        <div className={`space-y-2 ${!isSidebarOpen ? 'flex flex-col items-center' : ''}`}>
+        <div className={`space-y-2 ${!shouldShowExpanded ? 'flex flex-col items-center' : ''}`}>
           <button
             onClick={handleNewChat}
             className={`p-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors flex items-center gap-2 ${
-              isSidebarOpen ? 'w-full text-left' : 'w-auto'
+              shouldShowExpanded ? 'w-full text-left' : 'w-auto'
             }`}
-            title={!isSidebarOpen ? '新しいチャット' : undefined}
+            title={!shouldShowExpanded ? '新しいチャット' : undefined}
           >
             <SquarePen className="w-5 h-5 flex-shrink-0" />
-            {isSidebarOpen && <span className="text-sm">新しいチャット</span>}
+            {shouldShowExpanded && <span className="text-sm">新しいチャット</span>}
           </button>
 
           <button
             onClick={handleSearch}
             className={`p-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors flex items-center gap-2 ${
-              isSidebarOpen ? 'w-full text-left' : 'w-auto'
+              shouldShowExpanded ? 'w-full text-left' : 'w-auto'
             }`}
-            title={!isSidebarOpen ? 'チャットを検索' : undefined}
+            title={!shouldShowExpanded ? 'チャットを検索' : undefined}
           >
             <Search className="w-5 h-5 flex-shrink-0" />
-            {isSidebarOpen && <span className="text-sm">チャットを検索</span>}
+            {shouldShowExpanded && <span className="text-sm">チャットを検索</span>}
           </button>
 
           <button
             onClick={handleToolsSearch}
             className={`p-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors flex items-center gap-2 ${
-              isSidebarOpen ? 'w-full text-left' : 'w-auto'
+              shouldShowExpanded ? 'w-full text-left' : 'w-auto'
             }`}
-            title={!isSidebarOpen ? 'ツールを検索' : undefined}
+            title={!shouldShowExpanded ? 'ツールを検索' : undefined}
           >
             <Wrench className="w-5 h-5 flex-shrink-0" />
-            {isSidebarOpen && <span className="text-sm">ツールを検索</span>}
+            {shouldShowExpanded && <span className="text-sm">ツールを検索</span>}
           </button>
         </div>
       </div>
 
       {/* セッション一覧 - 展開時のみ表示 */}
-      {isSidebarOpen && (
+      {shouldShowExpanded && (
         <div className="flex-1 overflow-y-auto">
           {sessionsError && (
             <div className="p-4">
@@ -302,20 +307,20 @@ export function SessionSidebar() {
 
       {/* ユーザー情報 - サイドバーの一番下 */}
       <div
-        className={`mt-auto p-4 border-t border-gray-200 ${!isSidebarOpen ? 'flex justify-center' : ''}`}
+        className={`mt-auto p-4 border-t border-gray-200 ${!shouldShowExpanded ? 'flex justify-center' : ''}`}
       >
         <div className="relative" ref={userDropdownRef}>
           <button
             onClick={toggleUserDropdown}
             className={`flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100 transition-colors ${
-              isSidebarOpen ? 'w-full text-left' : 'w-auto'
+              shouldShowExpanded ? 'w-full text-left' : 'w-auto'
             }`}
-            title={!isSidebarOpen ? 'ユーザーメニュー' : undefined}
+            title={!shouldShowExpanded ? 'ユーザーメニュー' : undefined}
           >
             <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
               <User className="w-4 h-4 text-gray-600" />
             </div>
-            {isSidebarOpen && (
+            {shouldShowExpanded && (
               <span className="text-sm font-medium text-gray-900 truncate">{user.username}</span>
             )}
           </button>
@@ -324,11 +329,13 @@ export function SessionSidebar() {
           {isUserDropdownOpen && (
             <div
               className={`absolute bg-white rounded-2xl shadow-lg border border-gray-200 py-2 z-10 ${
-                isSidebarOpen ? 'bottom-full left-0 right-0 mb-2' : 'bottom-full left-0 mb-2 w-48'
+                shouldShowExpanded
+                  ? 'bottom-full left-0 right-0 mb-2'
+                  : 'bottom-full left-0 mb-2 w-48'
               }`}
             >
               {/* ユーザー情報 - 展開時のみ表示 */}
-              {isSidebarOpen && (
+              {shouldShowExpanded && (
                 <div className="px-4 py-2 border-b border-gray-100">
                   <p className="text-sm font-medium text-gray-900">{user.username}</p>
                   <p className="text-xs text-gray-500">認証済み</p>
@@ -336,7 +343,7 @@ export function SessionSidebar() {
               )}
 
               {/* 折りたたみ時はユーザー名も表示 */}
-              {!isSidebarOpen && (
+              {!shouldShowExpanded && (
                 <div className="px-4 py-2 border-b border-gray-100">
                   <p className="text-sm font-medium text-gray-900">{user.username}</p>
                   <p className="text-xs text-gray-500">認証済み</p>

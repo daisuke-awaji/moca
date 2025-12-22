@@ -3,6 +3,7 @@ import { Plus, Bot, MoreHorizontal, Edit2, Trash2 } from 'lucide-react';
 import { AgentForm } from './AgentForm';
 import { Modal, ConfirmModal } from './ui/Modal';
 import { useAgentStore } from '../stores/agentStore';
+import { useUIStore } from '../stores/uiStore';
 import type { Agent, CreateAgentInput } from '../types/agent';
 
 interface AgentSelectorModalProps {
@@ -26,6 +27,7 @@ export const AgentSelectorModal: React.FC<AgentSelectorModalProps> = ({
     isLoading,
     error,
   } = useAgentStore();
+  const { isMobileView } = useUIStore();
 
   const [mode, setMode] = useState<'list' | 'create' | 'edit'>('list');
   const [editingAgent, setEditingAgent] = useState<Agent | null>(null);
@@ -119,7 +121,6 @@ export const AgentSelectorModal: React.FC<AgentSelectorModalProps> = ({
           <div className="flex items-center space-x-3">
             <Modal.Icon icon={Bot} />
             <Modal.Title>{getModalTitle()}</Modal.Title>
-            <span>エージェントのカスタマイズ機能は現在実装中です...</span>
           </div>
           <Modal.CloseButton />
         </Modal.Header>
@@ -150,16 +151,18 @@ export const AgentSelectorModal: React.FC<AgentSelectorModalProps> = ({
           {/* Agent一覧表示モード */}
           {mode === 'list' && (
             <>
-              {/* 新規作成ボタン */}
-              <div className="mb-8">
-                <button
-                  onClick={() => setMode('create')}
-                  className="inline-flex items-center space-x-3 px-6 py-3 text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition-colors shadow-sm"
-                >
-                  <Plus className="w-5 h-5" />
-                  <span className="font-medium">新規エージェント作成</span>
-                </button>
-              </div>
+              {/* 新規作成ボタン - デスクトップのみ */}
+              {!isMobileView && (
+                <div className="mb-8">
+                  <button
+                    onClick={() => setMode('create')}
+                    className="inline-flex items-center space-x-3 px-6 py-3 text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition-colors shadow-sm"
+                  >
+                    <Plus className="w-5 h-5" />
+                    <span className="font-medium">新規エージェント作成</span>
+                  </button>
+                </div>
+              )}
 
               {/* Agent一覧 */}
               {agents.length === 0 ? (
@@ -175,7 +178,9 @@ export const AgentSelectorModal: React.FC<AgentSelectorModalProps> = ({
                   </button>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div
+                  className={`grid gap-6 ${isMobileView ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'}`}
+                >
                   {agents.map((agent) => {
                     const isSelected = selectedAgent?.id === agent.id;
 
@@ -213,50 +218,52 @@ export const AgentSelectorModal: React.FC<AgentSelectorModalProps> = ({
                               </div>
                             </div>
 
-                            {/* 3点メニュー */}
-                            <div className="relative ml-2">
-                              <button
-                                onClick={(e) => toggleMenu(agent.id, e)}
-                                className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
-                              >
-                                <MoreHorizontal className="w-4 h-4" />
-                              </button>
+                            {/* 3点メニュー - デスクトップのみ */}
+                            {!isMobileView && (
+                              <div className="relative ml-2">
+                                <button
+                                  onClick={(e) => toggleMenu(agent.id, e)}
+                                  className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
+                                >
+                                  <MoreHorizontal className="w-4 h-4" />
+                                </button>
 
-                              {/* ドロップダウンメニュー */}
-                              {openMenuId === agent.id && (
-                                <div className="absolute right-0 top-full mt-1 w-40 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10">
-                                  <button
-                                    onMouseDown={(e) => {
-                                      e.stopPropagation();
-                                    }}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setEditingAgent(agent);
-                                      setMode('edit');
-                                      setOpenMenuId(null);
-                                    }}
-                                    className="w-full px-3 py-1.5 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-2"
-                                  >
-                                    <Edit2 className="w-3 h-3" />
-                                    <span>編集</span>
-                                  </button>
-                                  <button
-                                    onMouseDown={(e) => {
-                                      e.stopPropagation();
-                                    }}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setDeleteConfirmAgent(agent);
-                                      setOpenMenuId(null);
-                                    }}
-                                    className="w-full px-3 py-1.5 text-left text-sm text-red-600 hover:bg-red-50 flex items-center space-x-2"
-                                  >
-                                    <Trash2 className="w-3 h-3" />
-                                    <span>削除</span>
-                                  </button>
-                                </div>
-                              )}
-                            </div>
+                                {/* ドロップダウンメニュー */}
+                                {openMenuId === agent.id && (
+                                  <div className="absolute right-0 top-full mt-1 w-40 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10">
+                                    <button
+                                      onMouseDown={(e) => {
+                                        e.stopPropagation();
+                                      }}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setEditingAgent(agent);
+                                        setMode('edit');
+                                        setOpenMenuId(null);
+                                      }}
+                                      className="w-full px-3 py-1.5 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-2"
+                                    >
+                                      <Edit2 className="w-3 h-3" />
+                                      <span>編集</span>
+                                    </button>
+                                    <button
+                                      onMouseDown={(e) => {
+                                        e.stopPropagation();
+                                      }}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setDeleteConfirmAgent(agent);
+                                        setOpenMenuId(null);
+                                      }}
+                                      className="w-full px-3 py-1.5 text-left text-sm text-red-600 hover:bg-red-50 flex items-center space-x-2"
+                                    >
+                                      <Trash2 className="w-3 h-3" />
+                                      <span>削除</span>
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>

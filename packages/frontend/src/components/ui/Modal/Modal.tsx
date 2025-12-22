@@ -64,7 +64,7 @@ export const Modal: React.FC<ModalProps> = ({
                 : size === 'lg'
                   ? 'max-w-lg'
                   : size === 'xl'
-                    ? 'max-w-7xl min-h-[70vh] w-[80vw]'
+                    ? 'max-w-7xl min-h-[70vh] w-[80vw] md:max-w-7xl md:min-h-[70vh] md:w-[80vw] max-md:w-[95vw] max-md:max-h-[90vh] max-md:min-h-[80vh]'
                     : size === 'full'
                       ? 'max-w-none w-full h-full'
                       : 'max-w-lg',

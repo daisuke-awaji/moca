@@ -23,9 +23,9 @@ export function HomePage() {
           <div className="space-y-4">
             <h1 className="text-6xl font-extrabold text-amber-900 tracking-tight">Donuts</h1>
             <p className="text-xl text-amber-700 font-medium leading-relaxed">
-              あなただけの AI チャットアシスタント
+              あなただけの AI エージェント
             </p>
-            <p className="text-lg text-amber-600 leading-relaxed max-w-lg mx-auto">
+            <p className="text-md text-amber-600 leading-relaxed max-w-lg mx-auto">
               質問、相談、アイデアの整理まで。
               <br />
               甘いドーナツのように、いつでもあなたの傍にいます。

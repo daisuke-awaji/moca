@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Bot } from 'lucide-react';
+import { Bot, Menu } from 'lucide-react';
 import { useSelectedAgent } from '../stores/agentStore';
+import { useUIStore } from '../stores/uiStore';
 import { MessageList } from './MessageList';
 import { MessageInput } from './MessageInput';
 import { AgentSelectorModal } from './AgentSelectorModal';
@@ -8,6 +9,7 @@ import type { Agent } from '../types/agent';
 
 export const ChatContainer: React.FC = () => {
   const selectedAgent = useSelectedAgent();
+  const { isMobileView, toggleSidebar } = useUIStore();
   const [isAgentModalOpen, setIsAgentModalOpen] = useState(false);
   const [selectedScenarioPrompt, setSelectedScenarioPrompt] = useState<string | null>(null);
 
@@ -36,6 +38,17 @@ export const ChatContainer: React.FC = () => {
       {/* ヘッダー */}
       <header className="flex items-center justify-between p-4 bg-white">
         <div className="flex items-center">
+          {/* モバイル時のハンバーガーメニュー */}
+          {isMobileView && (
+            <button
+              onClick={toggleSidebar}
+              className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors mr-2"
+              title="サイドバーを開く"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+          )}
+
           <div>
             <button
               onClick={() => setIsAgentModalOpen(true)}
