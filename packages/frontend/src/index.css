@@ -2,9 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* KaTeX CSS for math rendering */
-@import url('katex/dist/katex.min.css');
-
 @layer base {
   body {
     @apply bg-white text-gray-900 font-sans antialiased;
@@ -110,6 +107,87 @@
   /* コードブロックのスタイル調整 */
   .markdown-content pre {
     @apply my-4 rounded-lg overflow-x-auto;
+  }
+
+  /* KaTeX数式のスタイル調整 */
+  .markdown-content .katex-display {
+    overflow-x: auto;
+    overflow-y: hidden;
+    max-width: 100%;
+    padding: 0.5rem 0;
+    margin: 1rem 0;
+  }
+
+  .markdown-content .katex-display > .katex {
+    white-space: nowrap;
+    display: inline-block;
+  }
+
+  /* インライン数式のサイズ調整 */
+  .markdown-content .katex {
+    font-size: 1em;
+    max-width: 100%;
+  }
+
+  /* KaTeX HTMLレンダリングの調整 */
+  .markdown-content .katex-html {
+    max-width: 100%;
+    overflow: visible;
+  }
+
+  /* KaTeX SVGの調整 */
+  .markdown-content .katex svg {
+    max-width: 100%;
+    height: auto;
+  }
+
+  /* 長い数式の行列などに対する調整 */
+  .markdown-content .katex .mord {
+    white-space: nowrap;
+  }
+
+  /* KaTeX重複表示の防止 - MathMLとスクリーンリーダー用テキストのみ非表示 */
+  .markdown-content .katex-mathml {
+    display: none !important;
+  }
+
+  .markdown-content .katex .sr-only {
+    display: none !important;
+  }
+
+  /* HTMLレンダリングは表示する */
+  .markdown-content .katex-html {
+    display: inline !important;
+  }
+
+  /* 行列とテーブルの表示修正 */
+  .markdown-content .katex .arraycolsep {
+    width: 0.5em;
+  }
+
+  .markdown-content .katex .mtable {
+    display: inline-table;
+    vertical-align: middle;
+  }
+
+  .markdown-content .katex .mtd {
+    text-align: center;
+    padding: 0.2em 0.4em;
+  }
+
+  .markdown-content .katex .mtr {
+    display: table-row;
+  }
+
+  /* 括弧の位置調整 */
+  .markdown-content .katex .left-right {
+    display: inline-block;
+    vertical-align: middle;
+  }
+
+  /* フォールバック表示の隠蔽 */
+  .markdown-content .katex + .katex-fallback {
+    display: none;
   }
 
   /* ツールコンポーネントのシンプルアニメーション */

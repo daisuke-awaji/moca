@@ -83,7 +83,7 @@ export const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ chart, className
     };
 
     // Debounce処理: 300ms待ってからレンダリングを実行
-    debounceTimerRef.current = setTimeout(renderChart, 300);
+    debounceTimerRef.current = setTimeout(renderChart, 100);
 
     return () => {
       if (debounceTimerRef.current) {
