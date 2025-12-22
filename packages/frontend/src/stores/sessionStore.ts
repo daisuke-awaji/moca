@@ -126,6 +126,7 @@ export const useSessionStore = create<SessionStore>()(
           activeSessionId: null,
           sessionEvents: [],
           eventsError: null,
+          isLoadingEvents: false, // 新しいチャット時はローディング状態を明示的にクリア
         });
         console.log('🗑️ アクティブセッションをクリアしました');
       },

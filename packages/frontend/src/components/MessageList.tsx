@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { useParams } from 'react-router-dom';
 import { useChatStore } from '../stores/chatStore';
 import { useSelectedAgent } from '../stores/agentStore';
 import { useSessionStore } from '../stores/sessionStore';
@@ -10,6 +11,7 @@ interface MessageListProps {
 }
 
 export const MessageList: React.FC<MessageListProps> = ({ onScenarioClick }) => {
+  const { sessionId } = useParams<{ sessionId?: string }>();
   const { messages, error } = useChatStore();
   const { isLoadingEvents } = useSessionStore();
   const selectedAgent = useSelectedAgent();
@@ -44,8 +46,8 @@ export const MessageList: React.FC<MessageListProps> = ({ onScenarioClick }) => 
           </div>
         )}
 
-        {/* セッション読み込み中はスケルトンを表示（メッセージがない場合のみ） */}
-        {isLoadingEvents && messages.length === 0 && <MessageSkeleton />}
+        {/* セッション読み込み中はスケルトンを表示（sessionIdがある場合かつメッセージがない場合のみ） */}
+        {isLoadingEvents && messages.length === 0 && sessionId && <MessageSkeleton />}
 
         {/* ウェルカムメッセージ（メッセージがない場合かつ読み込み中でない） */}
         {messages.length === 0 && !error && !isLoadingEvents && selectedAgent && (
