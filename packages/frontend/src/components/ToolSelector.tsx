@@ -138,8 +138,9 @@ export const ToolSelector: React.FC<ToolSelectorProps> = ({
             filteredTools.map((tool) => {
               const isSelected = selectedTools.includes(tool.name);
               return (
-                <label
+                <div
                   key={tool.name}
+                  onClick={() => toggleTool(tool.name)}
                   className={`flex items-start space-x-3 p-3 cursor-pointer hover:bg-gray-50 transition-colors ${
                     disabled ? 'cursor-not-allowed opacity-50' : ''
                   }`}
@@ -155,13 +156,13 @@ export const ToolSelector: React.FC<ToolSelectorProps> = ({
                       {isSelected && <Check className="w-3 h-3" />}
                     </div>
                   </div>
-                  <div className="flex-1 min-w-0" onClick={() => toggleTool(tool.name)}>
+                  <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium text-gray-900">{tool.name}</div>
                     {tool.description && (
                       <div className="text-xs text-gray-500 mt-1">{tool.description}</div>
                     )}
                   </div>
-                </label>
+                </div>
               );
             })
           )}

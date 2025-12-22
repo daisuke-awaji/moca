@@ -383,13 +383,13 @@ export const AgentForm: React.FC<AgentFormProps> = ({
               <div key={index} className="flex items-center space-x-3">
                 {/* タイトル（左側・小さめ） */}
                 <div className="flex-shrink-0 w-48">
-                  <input
-                    type="text"
+                  <textarea
                     value={scenario.title}
                     onChange={(e) => updateScenario(index, 'title', e.target.value)}
                     disabled={isLoading || isGenerating}
                     placeholder="例: Python基礎レッスン"
-                    className={`w-full px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed ${
+                    rows={2}
+                    className={`w-full px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed resize-y ${
                       errors[`scenario_title_${index}`] ? 'border-red-500' : 'border-gray-300'
                     }`}
                   />
@@ -405,13 +405,13 @@ export const AgentForm: React.FC<AgentFormProps> = ({
 
                 {/* プロンプト（右側・大きめ） */}
                 <div className="flex-1">
-                  <input
-                    type="text"
+                  <textarea
                     value={scenario.prompt}
                     onChange={(e) => updateScenario(index, 'prompt', e.target.value)}
                     disabled={isLoading || isGenerating}
                     placeholder="例: Pythonの基本文法について説明してください"
-                    className={`w-full px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed ${
+                    rows={2}
+                    className={`w-full px-3 py-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed resize-y ${
                       errors[`scenario_prompt_${index}`] ? 'border-red-500' : 'border-gray-300'
                     }`}
                   />
