@@ -32,6 +32,7 @@ export interface ToolStoreState {
   // アクション
   loadTools: () => Promise<void>;
   loadMoreTools: () => Promise<void>; // 追加ページ読み込み
+  loadAllTools: () => Promise<void>; // 全ツール読み込み（ツール選択用）
   searchToolsWithQuery: (query: string) => Promise<void>;
   clearSearch: () => void;
   setSearchQuery: (query: string) => void;
@@ -160,6 +161,72 @@ export const useToolStore = create<ToolStoreState>()(
           set({
             isLoading: false,
             error: errorMessage,
+            gatewayHealthy: false,
+            gatewayStatus: 'unhealthy',
+          });
+        }
+      },
+
+      /**
+       * 全ツール読み込み（ツール選択用）
+       * nextCursorがある限り自動的に全ページを読み込む
+       */
+      loadAllTools: async () => {
+        const currentState = get();
+
+        // 既に読み込み中の場合は重複実行を避ける
+        if (currentState.isLoading) {
+          console.log('🔧 全ツール読み込み中のため、重複実行をスキップ');
+          return;
+        }
+
+        set({
+          isLoading: true,
+          error: null,
+          gatewayStatus: 'unknown',
+        });
+
+        try {
+          console.log('🔧 全ツール読み込み開始');
+
+          let allTools: MCPTool[] = [];
+          let cursor: string | undefined = undefined;
+
+          // nextCursorがある限り繰り返し読み込み
+          do {
+            const result = await fetchTools(cursor);
+            allTools = [...allTools, ...result.tools];
+            cursor = result.nextCursor;
+
+            console.log(
+              `📄 ページ読み込み: +${result.tools.length}件 (合計: ${allTools.length}件)`,
+              cursor ? { nextCursor: 'あり' } : { nextCursor: 'なし' }
+            );
+          } while (cursor);
+
+          set({
+            tools: allTools,
+            nextCursor: null, // 全て読み込み済みなのでnull
+            isLoading: false,
+            error: null,
+            lastFetchTime: new Date().toISOString(),
+            gatewayHealthy: true,
+            gatewayStatus: 'healthy',
+          });
+
+          console.log(`✅ 全ツール読み込み完了: ${allTools.length}件`);
+        } catch (error) {
+          const errorMessage =
+            error instanceof Error ? error.message : '全ツールの読み込みに失敗しました';
+
+          console.error('💥 全ツール読み込みエラー:', error);
+
+          set({
+            tools: [],
+            nextCursor: null,
+            isLoading: false,
+            error: errorMessage,
+            lastFetchTime: null,
             gatewayHealthy: false,
             gatewayStatus: 'unhealthy',
           });

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Check, X, AlertCircle } from 'lucide-react';
-import { fetchTools, type MCPTool } from '../api/tools';
+import { useToolStore } from '../stores/toolStore';
 import { LoadingIndicator } from './ui/LoadingIndicator';
 
 interface ToolSelectorProps {
@@ -14,48 +14,28 @@ export const ToolSelector: React.FC<ToolSelectorProps> = ({
   onSelectionChange,
   disabled = false,
 }) => {
-  const [tools, setTools] = useState<MCPTool[]>([]);
-  const [filteredTools, setFilteredTools] = useState<MCPTool[]>([]);
+  const { tools, isLoading, error, loadAllTools } = useToolStore();
   const [searchQuery, setSearchQuery] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  // ツール一覧を取得
+  // ツール一覧を取得（全ページ読み込み）
   useEffect(() => {
-    const loadTools = async () => {
-      setLoading(true);
-      setError(null);
+    if (tools.length === 0 && !isLoading && !error) {
+      loadAllTools();
+    }
+  }, [tools.length, isLoading, error, loadAllTools]);
 
-      try {
-        const result = await fetchTools();
-        setTools(result.tools);
-        setFilteredTools(result.tools);
-      } catch (err) {
-        console.error('ツール取得エラー:', err);
-        setError(err instanceof Error ? err.message : 'ツール一覧の取得に失敗しました');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadTools();
-  }, []);
-
-  // 検索フィルタリング
-  useEffect(() => {
+  // 検索フィルタリング（useMemoを使用してパフォーマンス向上）
+  const filteredTools = React.useMemo(() => {
     if (!searchQuery.trim()) {
-      setFilteredTools(tools);
-      return;
+      return tools;
     }
 
     const query = searchQuery.toLowerCase();
-    const filtered = tools.filter(
+    return tools.filter(
       (tool) =>
         tool.name.toLowerCase().includes(query) ||
         (tool.description && tool.description.toLowerCase().includes(query))
     );
-
-    setFilteredTools(filtered);
   }, [tools, searchQuery]);
 
   // ツール選択の切り替え
@@ -112,7 +92,7 @@ export const ToolSelector: React.FC<ToolSelectorProps> = ({
           placeholder="ツールを検索..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          disabled={disabled || loading}
+          disabled={disabled || isLoading}
           className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
         />
         {searchQuery && (
@@ -129,7 +109,7 @@ export const ToolSelector: React.FC<ToolSelectorProps> = ({
       {filteredTools.length > 0 && (
         <button
           onClick={toggleAllTools}
-          disabled={disabled || loading}
+          disabled={disabled || isLoading}
           className="text-sm text-blue-600 hover:text-blue-800 disabled:text-gray-400 disabled:cursor-not-allowed"
         >
           {allFilteredSelected ? '表示中をすべて解除' : '表示中をすべて選択'}
@@ -137,7 +117,7 @@ export const ToolSelector: React.FC<ToolSelectorProps> = ({
       )}
 
       {/* ローディング状態 */}
-      {loading && <LoadingIndicator message="ツール一覧を読み込み中..." spacing="lg" />}
+      {isLoading && <LoadingIndicator message="ツール一覧を読み込み中..." spacing="lg" />}
 
       {/* エラー状態 */}
       {error && (
@@ -148,7 +128,7 @@ export const ToolSelector: React.FC<ToolSelectorProps> = ({
       )}
 
       {/* ツール一覧 */}
-      {!loading && !error && (
+      {!isLoading && !error && (
         <div className="space-y-2 max-h-64 overflow-y-auto border border-gray-200 rounded-lg">
           {filteredTools.length === 0 ? (
             <div className="p-4 text-center text-gray-500">
