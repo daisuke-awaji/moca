@@ -2,22 +2,17 @@ import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './stores/authStore';
 import { LoginForm } from './features/auth/LoginForm';
+import { MainLayout } from './layouts/MainLayout';
 import { HomePage } from './pages/HomePage';
 import { ChatPage } from './pages/ChatPage';
 import { ToolsPage } from './pages/ToolsPage';
-import { getCurrentUserSession, validateCognitoConfig } from './lib/cognito';
+import { getCurrentUserSession } from './lib/cognito';
 import { initializeAgentStore } from './stores/agentStore';
 
 function App() {
   const { isAuthenticated, setUser, setLoading, setError } = useAuthStore();
 
   useEffect(() => {
-    // 初期化時にCognito設定を検証
-    if (!validateCognitoConfig()) {
-      setError('Cognito設定が不完全です。環境変数を確認してください。');
-      return;
-    }
-
     // AgentStoreを初期化
     initializeAgentStore();
 
@@ -47,10 +42,12 @@ function App() {
       <BrowserRouter>
         <div className="h-screen flex">
           <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/chat" element={<ChatPage />} />
-            <Route path="/chat/:sessionId" element={<ChatPage />} />
-            <Route path="/tools" element={<ToolsPage />} />
+            <Route element={<MainLayout />}>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/chat" element={<ChatPage />} />
+              <Route path="/chat/:sessionId" element={<ChatPage />} />
+              <Route path="/tools" element={<ToolsPage />} />
+            </Route>
             <Route path="*" element={<Navigate to="/chat" replace />} />
           </Routes>
         </div>

@@ -17,8 +17,7 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import { useToolStore } from '../stores/toolStore';
-import { SessionSidebar } from '../components/SessionSidebar';
-import { useUIStore } from '../stores/uiStore';
+import { LoadingIndicator } from '../components/ui/LoadingIndicator';
 import type { MCPTool } from '../api/tools';
 
 /**
@@ -127,7 +126,6 @@ function ToolItem({ tool }: ToolItemProps) {
  */
 export function ToolsPage() {
   const { user } = useAuthStore();
-  const { isSidebarOpen } = useUIStore();
   const {
     tools,
     isLoading,
@@ -203,209 +201,189 @@ export function ToolsPage() {
   }
 
   return (
-    <div className="flex h-full w-full">
-      {/* サイドバー - 常に表示、幅のみ切り替え */}
-      <div
-        className={`
-          transition-all duration-300 ease-in-out flex-shrink-0
-          ${isSidebarOpen ? 'w-80' : 'w-16'}
-        `}
-      >
-        <SessionSidebar />
+    <>
+      {/* ヘッダー */}
+      <div className="border-b border-gray-200 bg-white px-6 py-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Wrench className="w-6 h-6 text-gray-700" />
+            <h1 className="text-xl font-semibold text-gray-900">利用可能なツール</h1>
+          </div>
+          <button
+            onClick={handleRefresh}
+            disabled={currentLoading}
+            className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
+            aria-label="再読み込み"
+          >
+            <RefreshCw className={`w-4 h-4 ${currentLoading ? 'animate-spin' : ''}`} />
+          </button>
+        </div>
       </div>
 
-      {/* メインコンテンツエリア */}
-      <div className="flex-1 flex flex-col min-w-0 bg-white">
-        {/* ヘッダー */}
-        <div className="border-b border-gray-200 bg-white px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Wrench className="w-6 h-6 text-gray-700" />
-              <h1 className="text-xl font-semibold text-gray-900">利用可能なツール</h1>
-            </div>
-            <button
-              onClick={handleRefresh}
-              disabled={currentLoading}
-              className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
-              aria-label="再読み込み"
-            >
-              <RefreshCw className={`w-4 h-4 ${currentLoading ? 'animate-spin' : ''}`} />
-            </button>
+      {/* メインコンテンツ */}
+      <div className="flex-1 overflow-y-auto p-6">
+        {/* 検索セクション */}
+        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
+          <div className="flex items-center gap-2 mb-3">
+            <Search className="w-4 h-4 text-gray-600" />
+            <h2 className="text-sm font-medium text-gray-900">ツールを検索</h2>
           </div>
-        </div>
 
-        {/* メインコンテンツ */}
-        <div className="flex-1 overflow-y-auto p-6">
-          {/* 検索セクション */}
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
-            <div className="flex items-center gap-2 mb-3">
-              <Search className="w-4 h-4 text-gray-600" />
-              <h2 className="text-sm font-medium text-gray-900">ツールを検索</h2>
-            </div>
-
-            <div className="flex gap-3">
-              <div className="flex-1 relative">
-                <input
-                  type="text"
-                  value={localSearchQuery}
-                  onChange={(e) => setLocalSearchQuery(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  placeholder="自然言語でツールを検索... (例: 'テキストをエコーする')"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                />
-                {localSearchQuery && (
-                  <button
-                    onClick={handleClearSearch}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  >
-                    <XCircle className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
-              <button
-                onClick={handleSearch}
-                disabled={isSearching || !localSearchQuery.trim()}
-                className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                {isSearching ? <Loader2 className="w-4 h-4 animate-spin" /> : '検索'}
-              </button>
-            </div>
-
-            {searchQuery && (
-              <div className="mt-3 flex items-center gap-2 text-xs text-gray-600">
-                <span>検索中: "{searchQuery}"</span>
+          <div className="flex gap-3">
+            <div className="flex-1 relative">
+              <input
+                type="text"
+                value={localSearchQuery}
+                onChange={(e) => setLocalSearchQuery(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder="自然言語でツールを検索... (例: 'テキストをエコーする')"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+              />
+              {localSearchQuery && (
                 <button
                   onClick={handleClearSearch}
-                  className="text-blue-600 hover:text-blue-700 font-medium"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                 >
-                  クリア
+                  <XCircle className="w-4 h-4" />
                 </button>
-              </div>
-            )}
+              )}
+            </div>
+            <button
+              onClick={handleSearch}
+              disabled={isSearching || !localSearchQuery.trim()}
+              className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {isSearching ? <Loader2 className="w-4 h-4 animate-spin" /> : '検索'}
+            </button>
           </div>
 
-          {/* エラー表示 */}
-          {currentError && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-              <div className="flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 text-red-600" />
-                <div>
-                  <h3 className="text-sm font-medium text-red-900">エラーが発生しました</h3>
-                  <p className="text-red-700 text-sm mt-1">{currentError}</p>
-                  <button
-                    onClick={() => clearError()}
-                    className="mt-2 text-red-600 hover:text-red-700 font-medium text-xs"
-                  >
-                    エラーを閉じる
-                  </button>
-                </div>
+          {searchQuery && (
+            <div className="mt-3 flex items-center gap-2 text-xs text-gray-600">
+              <span>検索中: "{searchQuery}"</span>
+              <button
+                onClick={handleClearSearch}
+                className="text-blue-600 hover:text-blue-700 font-medium"
+              >
+                クリア
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* エラー表示 */}
+        {currentError && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-red-600" />
+              <div>
+                <h3 className="text-sm font-medium text-red-900">エラーが発生しました</h3>
+                <p className="text-red-700 text-sm mt-1">{currentError}</p>
+                <button
+                  onClick={() => clearError()}
+                  className="mt-2 text-red-600 hover:text-red-700 font-medium text-xs"
+                >
+                  エラーを閉じる
+                </button>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* ツール一覧 */}
+        <div>
+          {/* ヘッダー情報 */}
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-lg font-medium text-gray-900">
+              {searchQuery ? '検索結果' : '利用可能なツール'}
+              <span className="ml-2 text-gray-500 font-normal text-sm">
+                ({currentLoading ? '読み込み中...' : `${displayTools.length}件`})
+              </span>
+            </h2>
+          </div>
+
+          {/* 説明文 */}
+          {!searchQuery && (
+            <p className="text-xs text-gray-500 mb-4">
+              AgentCore Gateway
+              から提供されるツール一覧です。各ツールは自然言語での検索や、パラメータの詳細確認が可能です。
+            </p>
+          )}
+
+          {/* ローディング */}
+          {currentLoading && displayTools.length === 0 && (
+            <LoadingIndicator
+              message={
+                searchQuery ? 'ツールを検索しています...' : 'ツール一覧を読み込んでいます...'
+              }
+              spacing="lg"
+            />
+          )}
+
+          {/* ツールがない場合 */}
+          {!currentLoading && displayTools.length === 0 && !currentError && (
+            <div className="text-center py-12">
+              <Wrench className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+              <h3 className="text-sm font-medium text-gray-600 mb-2">
+                {searchQuery ? '検索結果が見つかりません' : 'ツールが見つかりません'}
+              </h3>
+              <p className="text-gray-500 text-sm">
+                {searchQuery
+                  ? '別のキーワードで検索してみてください'
+                  : 'Gateway に登録されているツールがありません'}
+              </p>
             </div>
           )}
 
-          {/* ツール一覧 */}
-          <div>
-            {/* ヘッダー情報 */}
-            <div className="flex items-center justify-between mb-2">
-              <h2 className="text-lg font-medium text-gray-900">
-                {searchQuery ? '検索結果' : '利用可能なツール'}
-                <span className="ml-2 text-gray-500 font-normal text-sm">
-                  ({currentLoading ? '読み込み中...' : `${displayTools.length}件`})
-                </span>
-              </h2>
+          {/* ツールリスト */}
+          {displayTools.length > 0 && (
+            <div className="space-y-4">
+              {displayTools.map((tool, index) => (
+                <ToolItem key={`${tool.name}-${index}`} tool={tool} />
+              ))}
             </div>
+          )}
 
-            {/* 説明文 */}
-            {!searchQuery && (
-              <p className="text-xs text-gray-500 mb-4">
-                AgentCore Gateway
-                から提供されるツール一覧です。各ツールは自然言語での検索や、パラメータの詳細確認が可能です。
+          {/* ページネーション（検索時は非表示） */}
+          {!searchQuery && nextCursor && displayTools.length > 0 && (
+            <div className="flex justify-center mt-8 pt-6 border-t border-gray-100">
+              <button
+                onClick={handleLoadMore}
+                disabled={isLoading}
+                className="flex items-center gap-2 px-6 py-3 bg-gray-500 text-white text-sm font-medium rounded-lg hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    読み込み中...
+                  </>
+                ) : (
+                  <>
+                    次のページを読み込む
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 9l-7 7-7-7"
+                      />
+                    </svg>
+                  </>
+                )}
+              </button>
+            </div>
+          )}
+
+          {/* ページネーション情報 */}
+          {!searchQuery && displayTools.length > 0 && (
+            <div className="mt-4 text-center">
+              <p className="text-xs text-gray-500">
+                {displayTools.length}件表示
+                {nextCursor ? ' / 続きあり' : ' / 全件表示完了'}
               </p>
-            )}
-
-            {/* ローディング */}
-            {currentLoading && displayTools.length === 0 && (
-              <div className="flex items-center justify-center py-12">
-                <div className="text-center">
-                  <Loader2 className="w-6 h-6 animate-spin text-blue-500 mx-auto mb-3" />
-                  <p className="text-gray-600 text-sm">
-                    {searchQuery ? 'ツールを検索しています...' : 'ツール一覧を読み込んでいます...'}
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* ツールがない場合 */}
-            {!currentLoading && displayTools.length === 0 && !currentError && (
-              <div className="text-center py-12">
-                <Wrench className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-sm font-medium text-gray-600 mb-2">
-                  {searchQuery ? '検索結果が見つかりません' : 'ツールが見つかりません'}
-                </h3>
-                <p className="text-gray-500 text-sm">
-                  {searchQuery
-                    ? '別のキーワードで検索してみてください'
-                    : 'Gateway に登録されているツールがありません'}
-                </p>
-              </div>
-            )}
-
-            {/* ツールリスト */}
-            {displayTools.length > 0 && (
-              <div className="space-y-4">
-                {displayTools.map((tool, index) => (
-                  <ToolItem key={`${tool.name}-${index}`} tool={tool} />
-                ))}
-              </div>
-            )}
-
-            {/* ページネーション（検索時は非表示） */}
-            {!searchQuery && nextCursor && displayTools.length > 0 && (
-              <div className="flex justify-center mt-8 pt-6 border-t border-gray-100">
-                <button
-                  onClick={handleLoadMore}
-                  disabled={isLoading}
-                  className="flex items-center gap-2 px-6 py-3 bg-gray-500 text-white text-sm font-medium rounded-lg hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      読み込み中...
-                    </>
-                  ) : (
-                    <>
-                      次のページを読み込む
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M19 9l-7 7-7-7"
-                        />
-                      </svg>
-                    </>
-                  )}
-                </button>
-              </div>
-            )}
-
-            {/* ページネーション情報 */}
-            {!searchQuery && displayTools.length > 0 && (
-              <div className="mt-4 text-center">
-                <p className="text-xs text-gray-500">
-                  {displayTools.length}件表示
-                  {nextCursor ? ' / 続きあり' : ' / 全件表示完了'}
-                </p>
-              </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </div>
-    </div>
+    </>
   );
 }

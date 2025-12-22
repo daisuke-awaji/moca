@@ -137,8 +137,8 @@ export const AgentForm: React.FC<AgentFormProps> = ({
   };
 
   return (
-    <div className="space-y-6">
-      <form onSubmit={handleSubmit} className="space-y-6">
+    <div>
+      <form id="agent-form" onSubmit={handleSubmit} className="space-y-6">
         {/* Agent名 */}
         <div>
           <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
@@ -318,7 +318,7 @@ export const AgentForm: React.FC<AgentFormProps> = ({
         </div>
 
         {/* ボタン */}
-        <div className="flex items-center justify-end space-x-3 pt-6 border-t border-gray-200">
+        <div className="flex items-center justify-end space-x-3 pt-6">
           <button
             type="button"
             onClick={onCancel}

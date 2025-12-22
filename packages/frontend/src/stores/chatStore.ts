@@ -102,7 +102,7 @@ export const useChatStore = create<ChatStore>()(
                 isStreaming: true,
               });
             },
-            onComplete: (_metadata: Record<string, unknown>) => {
+            onComplete: () => {
               updateMessage(assistantMessageId, {
                 isStreaming: false,
               });

@@ -9,6 +9,7 @@ import { Donut, SquarePen, Search, PanelRight, Wrench } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import { useSessionStore } from '../stores/sessionStore';
 import { useUIStore } from '../stores/uiStore';
+import { LoadingIndicator } from './ui/LoadingIndicator';
 import type { SessionSummary } from '../api/sessions';
 
 /**
@@ -143,7 +144,7 @@ export function SessionSidebar() {
             <>
               <button
                 onClick={handleHomeNavigate}
-                className="flex items-center ml-2 gap-2 hover:bg-gray-100 rounded-lg p-1 transition-colors group"
+                className="flex items-center gap-2  rounded-lg p-2 pb-1 pt-1 transition-colors group"
                 title="ホームページに戻る"
               >
                 <Donut className="w-5 h-5 text-gray-700 group-hover:text-amber-600 transition-colors" />
@@ -227,23 +228,8 @@ export function SessionSidebar() {
           )}
 
           {isLoadingSessions && sessions.length === 0 && (
-            <div className="p-4 text-center">
-              <div className="inline-flex items-center gap-2 text-gray-500">
-                <svg
-                  className="w-4 h-4 animate-spin"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                  />
-                </svg>
-                読み込み中...
-              </div>
+            <div className="p-4">
+              <LoadingIndicator message="セッション一覧を読み込み中..." spacing="none" />
             </div>
           )}
 

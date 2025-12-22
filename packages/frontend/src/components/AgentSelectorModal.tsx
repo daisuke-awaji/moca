@@ -133,7 +133,7 @@ export const AgentSelectorModal: React.FC<AgentSelectorModalProps> = ({
 
           {/* フォーム表示モード */}
           {(mode === 'create' || mode === 'edit') && (
-            <div className="bg-white rounded-2xl shadow-sm p-8">
+            <div>
               <AgentForm
                 agent={editingAgent || undefined}
                 onSubmit={mode === 'create' ? handleCreateAgent : handleUpdateAgent}

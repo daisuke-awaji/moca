@@ -54,11 +54,14 @@ export const MessageInput: React.FC<MessageInputProps> = ({ getScenarioPrompt })
     }
 
     try {
-      // メッセージ送信
-      await sendPrompt(input.trim());
+      // 送信するメッセージを保存
+      const messageToSend = input.trim();
 
-      // 入力フィールドをクリア
+      // 入力フィールドを即座にクリア
       setInput('');
+
+      // メッセージ送信（非同期で継続）
+      await sendPrompt(messageToSend);
     } catch (err) {
       console.error('メッセージ送信エラー:', err);
     }

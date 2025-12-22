@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Search, Check, X, AlertCircle } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import { fetchTools, type MCPTool } from '../api/tools';
+import { LoadingIndicator } from './ui/LoadingIndicator';
 
 interface ToolSelectorProps {
   selectedTools: string[];
@@ -140,12 +141,7 @@ export const ToolSelector: React.FC<ToolSelectorProps> = ({
       )}
 
       {/* ローディング状態 */}
-      {loading && (
-        <div className="flex items-center justify-center py-8">
-          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-          <span className="ml-2 text-sm text-gray-500">ツール一覧を読み込み中...</span>
-        </div>
-      )}
+      {loading && <LoadingIndicator message="ツール一覧を読み込み中..." spacing="lg" />}
 
       {/* エラー状態 */}
       {error && (

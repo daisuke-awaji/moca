@@ -159,20 +159,6 @@ export const refreshTokens = async (): Promise<User | null> => {
 };
 
 /**
- * Cognito設定を検証する
- */
-export const validateCognitoConfig = (): boolean => {
-  if (!USER_POOL_ID || !CLIENT_ID || !AWS_REGION) {
-    console.error('Cognito configuration is missing. Please check environment variables:');
-    console.error('- VITE_COGNITO_USER_POOL_ID');
-    console.error('- VITE_COGNITO_CLIENT_ID');
-    console.error('- VITE_AWS_REGION');
-    return false;
-  }
-  return true;
-};
-
-/**
  * Cognito設定を取得する
  */
 export const getCognitoConfig = () => ({

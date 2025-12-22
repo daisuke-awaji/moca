@@ -3,6 +3,8 @@ import tseslint from 'typescript-eslint';
 import prettier from 'eslint-config-prettier';
 import globals from 'globals';
 import importPlugin from 'eslint-plugin-import';
+import reactHooks from 'eslint-plugin-react-hooks';
+import reactRefresh from 'eslint-plugin-react-refresh';
 
 export default tseslint.config(
   eslint.configs.recommended,
@@ -38,6 +40,23 @@ export default tseslint.config(
           js: 'always', // ローカルインポートで .js 必須
         },
       ],
+    },
+  },
+  // Frontend パッケージ専用設定: React関連のルールを適用
+  {
+    files: ['packages/frontend/**/*.{ts,tsx}'],
+    plugins: {
+      'react-hooks': reactHooks,
+      'react-refresh': reactRefresh,
+    },
+    languageOptions: {
+      globals: {
+        ...globals.browser,
+      },
+    },
+    rules: {
+      ...reactHooks.configs.recommended.rules,
+      'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
     },
   },
   {

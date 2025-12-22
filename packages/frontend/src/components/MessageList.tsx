@@ -1,7 +1,9 @@
 import React, { useEffect, useRef } from 'react';
 import { useChatStore } from '../stores/chatStore';
 import { useSelectedAgent } from '../stores/agentStore';
+import { useSessionStore } from '../stores/sessionStore';
 import { Message } from './Message';
+import { MessageSkeleton } from './MessageSkeleton';
 
 interface MessageListProps {
   onScenarioClick?: (prompt: string) => void;
@@ -9,6 +11,7 @@ interface MessageListProps {
 
 export const MessageList: React.FC<MessageListProps> = ({ onScenarioClick }) => {
   const { messages, error } = useChatStore();
+  const { isLoadingEvents } = useSessionStore();
   const selectedAgent = useSelectedAgent();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -41,8 +44,11 @@ export const MessageList: React.FC<MessageListProps> = ({ onScenarioClick }) => 
           </div>
         )}
 
-        {/* ウェルカムメッセージ（メッセージがない場合） */}
-        {messages.length === 0 && !error && selectedAgent && (
+        {/* セッション読み込み中はスケルトンを表示 */}
+        {isLoadingEvents && <MessageSkeleton />}
+
+        {/* ウェルカムメッセージ（メッセージがない場合かつ読み込み中でない） */}
+        {messages.length === 0 && !error && !isLoadingEvents && selectedAgent && (
           <div className="text-center py-12">
             <h3 className="text-2xl font-semibold text-gray-900 mb-2">{selectedAgent.name}</h3>
             <p className="text-gray-600 max-w-md mx-auto mb-8">{selectedAgent.description}</p>
@@ -64,8 +70,8 @@ export const MessageList: React.FC<MessageListProps> = ({ onScenarioClick }) => 
           </div>
         )}
 
-        {/* デフォルトウェルカムメッセージ（エージェントが選択されていない場合） */}
-        {messages.length === 0 && !error && !selectedAgent && (
+        {/* デフォルトウェルカムメッセージ（エージェントが選択されていない場合かつ読み込み中でない） */}
+        {messages.length === 0 && !error && !isLoadingEvents && !selectedAgent && (
           <div className="text-center py-12">
             <div className="mx-auto w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mb-4">
               <svg className="w-8 h-8 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
@@ -89,10 +95,9 @@ export const MessageList: React.FC<MessageListProps> = ({ onScenarioClick }) => 
           </div>
         )}
 
-        {/* メッセージ一覧 */}
-        {messages.map((message) => (
-          <Message key={message.id} message={message} />
-        ))}
+        {/* メッセージ一覧 - ローディング中は非表示 */}
+        {!isLoadingEvents &&
+          messages.map((message) => <Message key={message.id} message={message} />)}
 
         {/* 自動スクロール用の参照要素 */}
         <div ref={messagesEndRef} />
