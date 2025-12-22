@@ -3,12 +3,12 @@
   "version": "0.1.0",
   "description": "AgentCore Gateway Lambda Tools Collection",
   "scripts": {
-    "build": "npm run build:echo-tool",
-    "build:echo-tool": "cd tools/echo-tool && npm install && npm run build",
-    "clean": "npm run clean:echo-tool",
-    "clean:echo-tool": "cd tools/echo-tool && npm run clean",
-    "test": "npm run test:echo-tool",
-    "test:echo-tool": "cd tools/echo-tool && npm install && npm run test"
+    "build": "npm run build:utility-tools",
+    "build:utility-tools": "cd tools/utility-tools && npm install && npm run build",
+    "clean": "npm run clean:utility-tools",
+    "clean:utility-tools": "cd tools/utility-tools && npm run clean",
+    "test": "npm run test:utility-tools",
+    "test:utility-tools": "cd tools/utility-tools && npm install && npm run test"
   },
   "keywords": [
     "lambda",

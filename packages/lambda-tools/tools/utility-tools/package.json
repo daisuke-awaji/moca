@@ -1,7 +1,7 @@
 {
-  "name": "agentcore-echo-tool",
+  "name": "agentcore-utility-tools",
   "version": "1.0.0",
-  "description": "AgentCore Gateway Echo/Ping Tool Lambda Function",
+  "description": "AgentCore Gateway Utility Tools (Echo/Ping etc.) Lambda Function",
   "main": "dist/handler.js",
   "scripts": {
     "build": "tsc",

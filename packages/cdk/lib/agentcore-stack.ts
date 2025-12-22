@@ -77,7 +77,7 @@ export class AgentCoreStack extends cdk.Stack {
   public readonly gateway: AgentCoreGateway;
 
   /**
-   * 作成された Echo Tool Lambda Target
+   * 作成された Utility Tools Lambda Target
    */
   public readonly echoToolTarget: AgentCoreLambdaTarget;
 
@@ -123,16 +123,16 @@ export class AgentCoreStack extends cdk.Stack {
       jwtConfig: props?.jwtConfig,
       mcpConfig: {
         instructions:
-          'このGatewayを使用してAgentCoreツールと外部サービス間の統合を行います。Echo/Ping ツールが利用可能です。',
+          'このGatewayを使用してAgentCoreツールと外部サービス間の統合を行います。Utility ツール（Echo/Ping等）が利用可能です。',
       },
     });
 
-    // Echo Tool Lambda Target の作成
+    // Utility Tools Lambda Target の作成
     this.echoToolTarget = new AgentCoreLambdaTarget(this, 'EchoToolTarget', {
-      targetName: 'echo-tool',
-      description: 'Echo/Ping ツールを提供するLambda関数',
-      lambdaCodePath: 'packages/lambda-tools/tools/echo-tool',
-      toolSchemaPath: 'packages/lambda-tools/tools/echo-tool/tool-schema.json',
+      targetName: 'utility-tools',
+      description: 'Utility ツール（Echo/Ping等）を提供するLambda関数',
+      lambdaCodePath: 'packages/lambda-tools/tools/utility-tools',
+      toolSchemaPath: 'packages/lambda-tools/tools/utility-tools/tool-schema.json',
       timeout: 30,
       memorySize: 256,
       environment: {
@@ -156,16 +156,16 @@ export class AgentCoreStack extends cdk.Stack {
       exportName: `${id}-GatewayId`,
     });
 
-    new cdk.CfnOutput(this, 'EchoToolLambdaArn', {
+    new cdk.CfnOutput(this, 'UtilityToolsLambdaArn', {
       value: this.echoToolTarget.lambdaFunction.functionArn,
-      description: 'Echo Tool Lambda Function ARN',
-      exportName: `${id}-EchoToolLambdaArn`,
+      description: 'Utility Tools Lambda Function ARN',
+      exportName: `${id}-UtilityToolsLambdaArn`,
     });
 
-    new cdk.CfnOutput(this, 'EchoToolLambdaName', {
+    new cdk.CfnOutput(this, 'UtilityToolsLambdaName', {
       value: this.echoToolTarget.lambdaFunction.functionName,
-      description: 'Echo Tool Lambda Function Name',
-      exportName: `${id}-EchoToolLambdaName`,
+      description: 'Utility Tools Lambda Function Name',
+      exportName: `${id}-UtilityToolsLambdaName`,
     });
 
     // 3. AgentCore Memory の作成
