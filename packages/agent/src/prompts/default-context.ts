@@ -1,48 +1,75 @@
 import { MCPToolDefinition } from '../schemas/types.js';
 
+const WORKSPACE_DIR = '/tmp/ws';
 /**
  * デフォルトコンテキストを生成
  * @param tools 有効なツール一覧
- * @param mcpTools MCP ツール定義一覧
+ * @param _mcpTools MCP ツール定義一覧
  */
 export function generateDefaultContext(
   tools: Array<{ name: string; description?: string }>,
-  mcpTools: MCPToolDefinition[]
+  _mcpTools: MCPToolDefinition[]
 ): string {
-  // 現在時刻をISO 8601形式（UTC）で取得
+  // 現在時刻を年月日時まで取得（プロンプトキャッシュ最適化のため分秒を除外）
   const now = new Date();
-  const currentTime = now.toISOString();
-
-  // ツール一覧をフォーマット（英語）
-  const toolDescriptions: string[] = [];
-
-  tools.forEach((tool) => {
-    if (tool.name === 'get_weather') {
-      // ローカルツール
-      toolDescriptions.push(`    - ${tool.name}: Get weather information for a specified city`);
-    } else {
-      // MCP ツール
-      const mcpTool = mcpTools.find((mcp) => mcp.name === tool.name);
-      const description = mcpTool?.description || 'No description available';
-      toolDescriptions.push(`    - ${tool.name}: ${description}`);
-    }
-  });
-
-  const availableTools = toolDescriptions.length > 0 ? toolDescriptions.join('\n') : '    - None';
+  const year = now.getUTCFullYear();
+  const month = String(now.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(now.getUTCDate()).padStart(2, '0');
+  const hour = String(now.getUTCHours()).padStart(2, '0');
+  const currentTime = `${year}-${month}-${day}T${hour}:00:00Z`;
 
   // Markdown 描画ルールを英語で定義
   const markdownRules = `    This system supports the following Markdown formats:
     - Mermaid diagram notation (\`\`\`mermaid ... \`\`\`)
-    - LaTeX math notation (inline: $...$, block: $$...$$)`;
+    - LaTeX math notation (inline: $...$, block: $$...$$)
+    - Image: ![alt](https://xxx.s3.us-east-1.amazonaws.com/<presignedUrl>)`;
+
+  // S3関連ツールが有効かどうかをチェック
+  const s3ToolNames = [
+    's3_list_files',
+    's3_download_file',
+    's3_upload_file',
+    's3_get_presigned_urls',
+  ];
+  const enabledS3Tools = tools.filter((tool) => s3ToolNames.includes(tool.name));
+  const hasS3Tools = enabledS3Tools.length > 0;
+
+  // S3ストレージツールが有効な場合のみセクションを追加
+  let userStorageSection = '';
+  if (hasS3Tools) {
+    const enabledToolsList = enabledS3Tools.map((t) => `    - ${t.name}`).join('\n');
+    userStorageSection = `
+
+  ## About File Output
+  - You are running on AWS Bedrock AgentCore. Therefore, when writing files, always write them under ${WORKSPACE_DIR}.
+  - Similarly, if you need a workspace, please use the ${WORKSPACE_DIR} directory. Do not ask the user about their current workspace. It's always ${WORKSPACE_DIR}.
+  - Also, users cannot directly access files written under ${WORKSPACE_DIR}. So when submitting these files to users, *always upload them to S3 using the s3_upload_file tool and provide the S3 URL*. The S3 URL must be included in the final output.
+  - If the output file is an image file, the S3 URL output must be in Markdown format.
+
+  <user_storage>
+    <description>
+      You have access to a dedicated personal S3 storage space for this user.
+      This storage is isolated per user and persists across conversations.
+    </description>
+    <enabled_tools>
+${enabledToolsList}
+    </enabled_tools>
+    <usage_guidelines>
+      - All paths are relative to user's root (e.g., "/code/app.py", "/docs/report.md")
+      - When asked to save, store, or keep something, use s3_upload_file
+      - Organize files logically using directories (e.g., /code/, /notes/, /data/)
+      - Presigned URLs are valid for 1 hour by default and can be shared externally
+      - For large files or binary content, prefer presigned URLs over inline content
+      - Always upload artifacts to S3 and provide users with presigned URLs, as users cannot directly access the file storage of the runtime where the agent is running.
+    </usage_guidelines>
+  </user_storage>`;
+  }
 
   return `
 <context>
   <current_time>${currentTime}</current_time>
-  <available_tools>
-${availableTools}
-  </available_tools>
   <markdown_rules>
 ${markdownRules}
-  </markdown_rules>
+  </markdown_rules>${userStorageSection}
 </context>`;
 }

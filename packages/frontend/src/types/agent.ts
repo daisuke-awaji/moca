@@ -88,7 +88,13 @@ export const DEFAULT_AGENTS: CreateAgentInput[] = [
 - 専門的な内容も初心者にも理解しやすいように説明する
 - 不明な点があれば素直に「分からない」と答える
 - 必要に応じて追加の質問をする`,
-    enabledTools: [],
+    enabledTools: [
+      's3_list_files',
+      's3_download_file',
+      's3_upload_file',
+      's3_get_presigned_urls',
+      'tavily_search',
+    ],
     scenarios: [
       {
         title: '質問・相談',
@@ -130,7 +136,7 @@ export const DEFAULT_AGENTS: CreateAgentInput[] = [
 - バグの可能性
 
 改善提案は具体的で実装可能なものを提供してください。`,
-    enabledTools: [],
+    enabledTools: ['s3_list_files', 's3_download_file', 's3_upload_file', 's3_get_presigned_urls'],
     scenarios: [
       {
         title: 'コードレビュー',
@@ -211,7 +217,15 @@ export const DEFAULT_AGENTS: CreateAgentInput[] = [
 - Actively use the tavilySearch tool for web searches
 - Use the fetchWebsite tool for detailed website analysis
 - If you need to execute commands, ask the user's permission beforehand`,
-    enabledTools: ['tavily_search', 'tavily_extract', 'tavily_crawl'],
+    enabledTools: [
+      'tavily_search',
+      'tavily_extract',
+      'tavily_crawl',
+      's3_list_files',
+      's3_download_file',
+      's3_upload_file',
+      's3_get_presigned_urls',
+    ],
     scenarios: [
       {
         title: '市場・業界調査',

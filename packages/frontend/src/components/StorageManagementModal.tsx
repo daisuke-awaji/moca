@@ -16,6 +16,8 @@ import {
   ChevronRight,
   Home,
   Download,
+  Copy,
+  Check,
 } from 'lucide-react';
 import { useStorageStore } from '../stores/storageStore';
 import type { StorageItem } from '../api/storage';
@@ -35,6 +37,7 @@ interface StorageItemComponentProps {
   onDelete: (item: StorageItem) => void;
   onNavigate: (path: string) => void;
   onDownload: (item: StorageItem) => void;
+  onContextMenu: (e: React.MouseEvent, item: StorageItem) => void;
   isDeleting: boolean;
 }
 
@@ -43,9 +46,11 @@ function StorageItemComponent({
   onDelete,
   onNavigate,
   onDownload,
+  onContextMenu,
   isDeleting,
 }: StorageItemComponentProps) {
-  const handleDelete = () => {
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation(); // カードのクリックイベントを止める
     if (
       window.confirm(
         `${item.type === 'directory' ? 'ディレクトリ' : 'ファイル'} "${item.name}" を削除しますか？`
@@ -55,21 +60,29 @@ function StorageItemComponent({
     }
   };
 
-  const handleClick = () => {
+  const handleDownloadClick = (e: React.MouseEvent) => {
+    e.stopPropagation(); // カードのクリックイベントを止める
+    onDownload(item);
+  };
+
+  const handleCardClick = () => {
     if (item.type === 'directory') {
       onNavigate(item.path);
+    } else {
+      // ファイルの場合はダウンロード
+      onDownload(item);
     }
   };
 
   const formatSize = (bytes?: number) => {
-    if (!bytes) return '-';
+    if (!bytes) return '—';
     if (bytes < 1024) return `${bytes} B`;
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
   const formatDate = (dateString?: string) => {
-    if (!dateString) return '-';
+    if (!dateString) return '—';
     return new Date(dateString).toLocaleDateString('ja-JP', {
       year: 'numeric',
       month: '2-digit',
@@ -79,8 +92,26 @@ function StorageItemComponent({
     });
   };
 
+  const handleContextMenuClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onContextMenu(e, item);
+  };
+
   return (
-    <div className="border border-gray-200 rounded-lg p-3 hover:bg-gray-50 transition-colors">
+    <div
+      onClick={handleCardClick}
+      onContextMenu={handleContextMenuClick}
+      className="border border-gray-200 rounded-lg p-3 hover:bg-gray-50 transition-colors cursor-pointer"
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          handleCardClick();
+        }
+      }}
+    >
       <div className="flex items-center gap-3">
         {/* アイコン */}
         <div className="flex-shrink-0">
@@ -93,14 +124,7 @@ function StorageItemComponent({
 
         {/* 情報 */}
         <div className="flex-1 min-w-0">
-          <button
-            onClick={handleClick}
-            className={`text-sm font-medium text-gray-900 truncate block ${
-              item.type === 'directory' ? 'hover:text-blue-600 cursor-pointer' : 'cursor-default'
-            }`}
-          >
-            {item.name}
-          </button>
+          <div className="text-sm font-medium text-gray-900 truncate">{item.name}</div>
           <div className="flex items-center gap-4 text-xs text-gray-500 mt-1">
             {item.type === 'file' && <span>{formatSize(item.size)}</span>}
             <span>{formatDate(item.lastModified)}</span>
@@ -111,7 +135,7 @@ function StorageItemComponent({
         <div className="flex items-center gap-2">
           {item.type === 'file' && (
             <button
-              onClick={() => onDownload(item)}
+              onClick={handleDownloadClick}
               className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
               title="ダウンロード"
             >
@@ -158,7 +182,14 @@ export function StorageManagementModal({ isOpen, onClose }: StorageManagementMod
   const [showNewDirectoryInput, setShowNewDirectoryInput] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const [deletingItemPath, setDeletingItemPath] = useState<string | null>(null);
+  const [contextMenu, setContextMenu] = useState<{
+    x: number;
+    y: number;
+    path: string;
+  } | null>(null);
+  const [copiedPath, setCopiedPath] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const contextMenuRef = useRef<HTMLDivElement>(null);
 
   // モーダル表示時にデータを読み込み
   useEffect(() => {
@@ -166,6 +197,22 @@ export function StorageManagementModal({ isOpen, onClose }: StorageManagementMod
       loadItems();
     }
   }, [isOpen, loadItems]);
+
+  // コンテキストメニューの外部クリックを検知
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (contextMenuRef.current && !contextMenuRef.current.contains(event.target as Node)) {
+        setContextMenu(null);
+      }
+    };
+
+    if (contextMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
+  }, [contextMenu]);
 
   // パスナビゲーション
   const handleNavigate = (path: string) => {
@@ -239,6 +286,34 @@ export function StorageManagementModal({ isOpen, onClose }: StorageManagementMod
       window.open(downloadUrl, '_blank');
     } catch (error) {
       console.error('Download error:', error);
+    }
+  };
+
+  // コンテキストメニュー表示
+  const handleContextMenu = (e: React.MouseEvent, item: StorageItem) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setContextMenu({
+      x: e.clientX,
+      y: e.clientY,
+      path: item.path,
+    });
+  };
+
+  // パスをコピー
+  const handleCopyPath = async () => {
+    if (!contextMenu) return;
+
+    try {
+      await navigator.clipboard.writeText(contextMenu.path);
+      setCopiedPath(contextMenu.path);
+      setTimeout(() => {
+        setCopiedPath(null);
+        setContextMenu(null);
+      }, 1500);
+    } catch (error) {
+      console.error('Copy error:', error);
+      setContextMenu(null);
     }
   };
 
@@ -416,6 +491,7 @@ export function StorageManagementModal({ isOpen, onClose }: StorageManagementMod
                     onDelete={handleDelete}
                     onNavigate={handleNavigate}
                     onDownload={handleDownload}
+                    onContextMenu={handleContextMenu}
                     isDeleting={deletingItemPath === item.path}
                   />
                 ))}
@@ -431,6 +507,35 @@ export function StorageManagementModal({ isOpen, onClose }: StorageManagementMod
               <Upload className="w-12 h-12 text-blue-500 mx-auto mb-2" />
               <p className="text-lg font-medium text-blue-900">ファイルをドロップ</p>
             </div>
+          </div>
+        )}
+
+        {/* コンテキストメニュー */}
+        {contextMenu && (
+          <div
+            ref={contextMenuRef}
+            className="fixed bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50"
+            style={{
+              left: `${contextMenu.x}px`,
+              top: `${contextMenu.y}px`,
+            }}
+          >
+            <button
+              onClick={handleCopyPath}
+              className="w-full px-4 py-2 text-sm text-left hover:bg-gray-100 flex items-center gap-2 transition-colors"
+            >
+              {copiedPath === contextMenu.path ? (
+                <>
+                  <Check className="w-4 h-4 text-green-600" />
+                  <span className="text-green-600">コピーしました</span>
+                </>
+              ) : (
+                <>
+                  <Copy className="w-4 h-4 text-gray-600" />
+                  <span className="text-gray-900">パスをコピー</span>
+                </>
+              )}
+            </button>
           </div>
         )}
       </div>

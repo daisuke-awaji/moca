@@ -201,6 +201,68 @@ OPERATION TYPES:
 
 9. listLocalSessions - View all active sessions
 
+FILE SYSTEM STRUCTURE:
+
+• Default Working Directory: /tmp/ws/
+  - All file operations should use this directory
+  - Directory must be created before use: mkdir -p /tmp/ws
+  - This directory is isolated within the sandbox session
+
+• File Path Examples:
+  ✓ GOOD: "/tmp/ws/output.png"
+  ✓ GOOD: "/tmp/ws/data/results.csv"
+  ✗ BAD: "output.png" (may fail without explicit directory creation)
+  ✗ BAD: "./output.png" (relative paths can be unreliable)
+
+• Important: Always create /tmp/ws/ directory first in new sessions:
+  executeCommand: "mkdir -p /tmp/ws"
+
+SESSION MANAGEMENT - DETAILED BEHAVIOR:
+
+⚠️ CRITICAL: Context Preservation Issues
+• Variables may not persist between executeCode calls even within the same session
+• For reliable multi-step workflows, combine operations in single executeCode block
+• Always verify variable existence before use
+
+RECOMMENDED PATTERNS:
+
+✓ BEST: Single executeCode block for related operations
+{
+  "action": "executeCode",
+  "sessionName": "analysis",
+  "code": "import pandas as pd\ndf = pd.read_csv('data.csv')\nresult = df.describe()\nprint(result)"
+}
+
+⚠️ RISKY: Multiple executeCode calls expecting variable persistence
+Step 1: df = pd.read_csv('data.csv')
+Step 2: print(df.describe())  # df may not exist!
+
+✓ WORKAROUND: Save intermediate results to files
+Step 1: df.to_csv('/tmp/ws/temp.csv')
+Step 2: df = pd.read_csv('/tmp/ws/temp.csv')  
+
+BINARY FILE HANDLING:
+
+⚠️ LIMITATION: writeFiles only supports text content
+• Cannot directly upload binary files (images, PDFs, etc.) via writeFiles
+• Binary files must be created within the sandbox using code
+
+WORKFLOW FOR IMAGES/BINARY FILES:
+
+Step 1: Generate file in sandbox
+{
+  "action": "executeCode",
+  "language": "python",
+  "code": "import matplotlib.pyplot as plt\nplt.plot([1,2,3])\nplt.savefig('/tmp/ws/chart.png')"
+}
+
+Step 2: Files remain in sandbox
+• Image is saved in /tmp/ws/chart.png
+• Cannot be directly uploaded to S3 via writeFiles
+• Use downloadFiles or external S3 upload tools
+
+Note: The sandbox filesystem is ephemeral - files are lost when session ends
+
 COMMON USAGE SCENARIOS:
 
 ✓ Data Analysis: Execute Python for data processing and visualization

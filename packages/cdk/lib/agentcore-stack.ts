@@ -204,7 +204,14 @@ export class AgentCoreStack extends cdk.Stack {
       },
     });
 
-    // 4. AgentCore Runtime の作成（開発用に一時的にワイルドカード設定）
+    // 4. User Storage の作成
+    this.userStorage = new UserStorage(this, 'UserStorage', {
+      bucketNamePrefix: gatewayName,
+      retentionDays: 365,
+      corsAllowedOrigins: ['*'], // 開発用、本番では具体的なオリジンを設定
+    });
+
+    // 5. AgentCore Runtime の作成（開発用に一時的にワイルドカード設定）
     this.agentRuntime = new AgentCoreRuntime(this, 'AgentCoreRuntime', {
       runtimeName: 'StrandsAgentsTS',
       description: 'TypeScript版Strands Agent Runtime',
@@ -218,19 +225,16 @@ export class AgentCoreStack extends cdk.Stack {
         enabled: true,
       },
       tavilyApiKey: props?.tavilyApiKey, // Tavily Search API Key を渡す
+      userStorageBucketName: this.userStorage.bucketName, // User Storage バケット名を渡す
     });
 
     // Runtime に Memory アクセス権限を付与
     this.memory.grantAgentCoreAccess(this.agentRuntime.runtime);
 
-    // 4. User Storage の作成
-    this.userStorage = new UserStorage(this, 'UserStorage', {
-      bucketNamePrefix: gatewayName,
-      retentionDays: 365,
-      corsAllowedOrigins: ['*'], // 開発用、本番では具体的なオリジンを設定
-    });
+    // Runtime に User Storage アクセス権限を付与
+    this.userStorage.grantFullAccess(this.agentRuntime.runtime);
 
-    // 5. Backend API の作成（Lambda Web Adapter）
+    // 6. Backend API の作成（Lambda Web Adapter）
     this.backendApi = new BackendApi(this, 'BackendApi', {
       apiName: `${gatewayName}-backend-api`,
       cognitoAuth: this.cognitoAuth,
@@ -245,7 +249,7 @@ export class AgentCoreStack extends cdk.Stack {
     // Backend API に User Storage アクセス権限を付与
     this.userStorage.grantFullAccess(this.backendApi.lambdaFunction);
 
-    // 6. Frontend の作成
+    // 7. Frontend の作成
     this.frontend = new Frontend(this, 'Frontend', {
       userPoolId: this.cognitoAuth.userPoolId,
       userPoolClientId: this.cognitoAuth.clientId,
@@ -254,7 +258,7 @@ export class AgentCoreStack extends cdk.Stack {
       backendApiUrl: this.backendApi.apiUrl, // Backend API URL を追加
     });
 
-    // 5. CloudFormation 追加出力（認証関連）
+    // 8. CloudFormation 追加出力（認証関連）
     new cdk.CfnOutput(this, 'GatewayMcpEndpoint', {
       value: `https://${this.gateway.gatewayId}.gateway.bedrock-agentcore.${this.region}.amazonaws.com/mcp`,
       description: 'AgentCore Gateway MCP Endpoint',
