@@ -1,10 +1,11 @@
-import { Construct } from "constructs";
-import * as cdk from "aws-cdk-lib";
-import * as lambda from "aws-cdk-lib/aws-lambda";
-import * as nodejs from "aws-cdk-lib/aws-lambda-nodejs";
-import * as agentcore from "@aws-cdk/aws-bedrock-agentcore-alpha";
-import * as path from "path";
-import * as fs from "fs";
+import { Construct } from 'constructs';
+import * as cdk from 'aws-cdk-lib';
+import * as lambda from 'aws-cdk-lib/aws-lambda';
+import * as nodejs from 'aws-cdk-lib/aws-lambda-nodejs';
+import * as iam from 'aws-cdk-lib/aws-iam';
+import * as agentcore from '@aws-cdk/aws-bedrock-agentcore-alpha';
+import * as path from 'path';
+import * as fs from 'fs';
 
 export interface AgentCoreLambdaTargetProps {
   /**
@@ -51,6 +52,12 @@ export interface AgentCoreLambdaTargetProps {
    * 環境変数 (オプション)
    */
   readonly environment?: { [key: string]: string };
+
+  /**
+   * Knowledge Base への Retrieve 権限を付与するかどうか (オプション)
+   * @default false
+   */
+  readonly enableKnowledgeBaseAccess?: boolean;
 }
 
 /**
@@ -84,31 +91,40 @@ export class AgentCoreLambdaTarget extends Construct {
     this.toolSchema = agentcore.ToolSchema.fromInline(toolSchemaContent.tools);
 
     // Lambda 関数を作成
-    this.lambdaFunction = new nodejs.NodejsFunction(this, "Function", {
+    this.lambdaFunction = new nodejs.NodejsFunction(this, 'Function', {
       functionName: `agentcore-${props.targetName}-function`,
       runtime: props.runtime || lambda.Runtime.NODEJS_20_X,
-      entry: path.join(props.lambdaCodePath, "src", "handler.ts"),
-      handler: "handler",
-      timeout: props.timeout
-        ? cdk.Duration.seconds(props.timeout)
-        : cdk.Duration.seconds(30),
+      entry: path.join(props.lambdaCodePath, 'src', 'handler.ts'),
+      handler: 'handler',
+      timeout: props.timeout ? cdk.Duration.seconds(props.timeout) : cdk.Duration.seconds(30),
       memorySize: props.memorySize || 256,
-      description:
-        props.description || `AgentCore Gateway Target: ${props.targetName}`,
+      description: props.description || `AgentCore Gateway Target: ${props.targetName}`,
       environment: {
-        NODE_ENV: "production",
+        NODE_ENV: 'production',
         ...props.environment,
       },
       bundling: {
         minify: true,
         sourceMap: true,
-        target: "es2022",
-        externalModules: ["aws-sdk"],
+        target: 'es2022',
+        externalModules: ['aws-sdk'],
       },
     });
 
     // Lambda のログ出力設定
-    this.lambdaFunction.addEnvironment("AWS_LAMBDA_LOG_LEVEL", "INFO");
+    this.lambdaFunction.addEnvironment('AWS_LAMBDA_LOG_LEVEL', 'INFO');
+
+    // Knowledge Base への Retrieve 権限を付与
+    if (props.enableKnowledgeBaseAccess) {
+      this.lambdaFunction.addToRolePolicy(
+        new iam.PolicyStatement({
+          actions: ['bedrock:Retrieve'],
+          resources: [
+            `arn:aws:bedrock:${cdk.Stack.of(this).region}:${cdk.Stack.of(this).account}:knowledge-base/*`,
+          ],
+        })
+      );
+    }
   }
 
   /**
@@ -117,7 +133,7 @@ export class AgentCoreLambdaTarget extends Construct {
   private loadToolSchema(schemaPath: string): any {
     try {
       const fullPath = path.resolve(schemaPath);
-      const schemaContent = fs.readFileSync(fullPath, "utf8");
+      const schemaContent = fs.readFileSync(fullPath, 'utf8');
       const schema = JSON.parse(schemaContent);
 
       // Tool Schema の構造を検証
@@ -127,19 +143,14 @@ export class AgentCoreLambdaTarget extends Construct {
 
       return schema;
     } catch (error) {
-      throw new Error(
-        `Failed to load tool schema from ${schemaPath}: ${error}`
-      );
+      throw new Error(`Failed to load tool schema from ${schemaPath}: ${error}`);
     }
   }
 
   /**
    * Gateway にこの Lambda Target を追加
    */
-  public addToGateway(
-    gateway: agentcore.Gateway,
-    targetId: string
-  ): agentcore.GatewayTarget {
+  public addToGateway(gateway: agentcore.Gateway, targetId: string): agentcore.GatewayTarget {
     return gateway.addLambdaTarget(targetId, {
       gatewayTargetName: this.targetName,
       lambdaFunction: this.lambdaFunction,

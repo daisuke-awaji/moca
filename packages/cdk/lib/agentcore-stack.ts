@@ -141,6 +141,7 @@ export class AgentCoreStack extends cdk.Stack {
       toolSchemaPath: 'packages/lambda-tools/tools/utility-tools/tool-schema.json',
       timeout: 30,
       memorySize: 256,
+      enableKnowledgeBaseAccess: true, // Knowledge Base への Retrieve 権限を有効化
       environment: {
         LOG_LEVEL: 'INFO',
       },

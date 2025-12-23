@@ -38,6 +38,32 @@
         "properties": {},
         "additionalProperties": false
       }
+    },
+    {
+      "name": "kb-retrieve",
+      "description": "Amazon Bedrock Knowledge Base から関連するチャンクをセマンティック検索で取得するツール。指定されたクエリに最も関連性の高いドキュメントチャンクを返します。",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "knowledgeBaseId": {
+            "type": "string",
+            "description": "検索対象のKnowledge BaseのID"
+          },
+          "query": {
+            "type": "string",
+            "description": "検索クエリ文字列"
+          },
+          "numberOfResults": {
+            "type": "integer",
+            "description": "取得する結果の最大件数（デフォルト: 5）",
+            "default": 5,
+            "minimum": 1,
+            "maximum": 100
+          }
+        },
+        "required": ["knowledgeBaseId", "query"],
+        "additionalProperties": false
+      }
     }
   ]
 }
