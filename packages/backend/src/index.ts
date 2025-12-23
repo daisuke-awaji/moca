@@ -10,6 +10,7 @@ import { jwtAuthMiddleware, AuthenticatedRequest, getCurrentAuth } from './middl
 import sessionsRouter from './routes/sessions.js';
 import toolsRouter from './routes/tools.js';
 import memoryRouter from './routes/memory.js';
+import storageRouter from './routes/storage.js';
 
 const app = express();
 
@@ -49,6 +50,7 @@ app.use(express.json());
 app.use('/sessions', sessionsRouter);
 app.use('/tools', toolsRouter);
 app.use('/memory', jwtAuthMiddleware, memoryRouter);
+app.use('/storage', storageRouter);
 
 /**
  * ヘルスチェックエンドポイント（認証不要）

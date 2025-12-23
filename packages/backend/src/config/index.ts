@@ -35,6 +35,9 @@ const envSchema = z.object({
 
   // AgentCore Gateway 設定
   AGENTCORE_GATEWAY_ENDPOINT: z.string().url().optional(),
+
+  // User Storage 設定
+  USER_STORAGE_BUCKET_NAME: z.string().optional(),
 });
 
 /**
@@ -97,6 +100,9 @@ export const config = {
   gateway: {
     endpoint: env.AGENTCORE_GATEWAY_ENDPOINT,
   },
+
+  // User Storage 設定
+  userStorageBucketName: env.USER_STORAGE_BUCKET_NAME,
 } as const;
 
 /**

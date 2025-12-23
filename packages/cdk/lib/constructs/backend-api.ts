@@ -30,6 +30,11 @@ export interface BackendApiProps {
   readonly agentcoreMemoryId?: string;
 
   /**
+   * User Storage バケット名
+   */
+  readonly userStorageBucketName?: string;
+
+  /**
    * CORS許可オリジン
    */
   readonly corsAllowedOrigins?: string[];
@@ -187,6 +192,7 @@ export class BackendApi extends Construct {
         // AWS_REGION は Lambda ランタイムが自動提供するため削除
         AGENTCORE_GATEWAY_ENDPOINT: props.agentcoreGatewayEndpoint,
         AGENTCORE_MEMORY_ID: props.agentcoreMemoryId || '',
+        USER_STORAGE_BUCKET_NAME: props.userStorageBucketName || '',
 
         // Lambda Web Adapter 設定（既にDockerfileで設定されているが念のため）
         AWS_LWA_PORT: '8080',

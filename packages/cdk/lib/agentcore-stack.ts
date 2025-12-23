@@ -7,6 +7,7 @@ import { AgentCoreRuntime } from './constructs/agentcore-runtime';
 import { BackendApi } from './constructs/backend-api';
 import { CognitoAuth } from './constructs/cognito-auth';
 import { Frontend } from './constructs/frontend';
+import { UserStorage } from './constructs/user-storage';
 
 export interface AgentCoreStackProps extends cdk.StackProps {
   /**
@@ -106,6 +107,11 @@ export class AgentCoreStack extends cdk.Stack {
    * 作成された AgentCore Memory
    */
   public readonly memory: AgentCoreMemory;
+
+  /**
+   * 作成された User Storage
+   */
+  public readonly userStorage: UserStorage;
 
   constructor(scope: Construct, id: string, props?: AgentCoreStackProps) {
     super(scope, id, props);
@@ -217,6 +223,13 @@ export class AgentCoreStack extends cdk.Stack {
     // Runtime に Memory アクセス権限を付与
     this.memory.grantAgentCoreAccess(this.agentRuntime.runtime);
 
+    // 4. User Storage の作成
+    this.userStorage = new UserStorage(this, 'UserStorage', {
+      bucketNamePrefix: gatewayName,
+      retentionDays: 365,
+      corsAllowedOrigins: ['*'], // 開発用、本番では具体的なオリジンを設定
+    });
+
     // 5. Backend API の作成（Lambda Web Adapter）
     this.backendApi = new BackendApi(this, 'BackendApi', {
       apiName: `${gatewayName}-backend-api`,
@@ -226,7 +239,11 @@ export class AgentCoreStack extends cdk.Stack {
       corsAllowedOrigins: ['*'], // 開発用、本番では具体的なオリジンを設定
       timeout: 30, // API Gateway の制限
       memorySize: 1024, // Express アプリに十分なメモリ
+      userStorageBucketName: this.userStorage.bucketName, // User Storage バケット名を追加
     });
+
+    // Backend API に User Storage アクセス権限を付与
+    this.userStorage.grantFullAccess(this.backendApi.lambdaFunction);
 
     // 6. Frontend の作成
     this.frontend = new Frontend(this, 'Frontend', {
@@ -337,10 +354,29 @@ export class AgentCoreStack extends cdk.Stack {
       description: 'Backend API 設定サマリー',
     });
 
+    // User Storage 関連の出力
+    new cdk.CfnOutput(this, 'UserStorageBucketName', {
+      value: this.userStorage.bucketName,
+      description: 'User Storage S3 Bucket Name',
+      exportName: `${id}-UserStorageBucketName`,
+    });
+
+    new cdk.CfnOutput(this, 'UserStorageBucketArn', {
+      value: this.userStorage.bucketArn,
+      description: 'User Storage S3 Bucket ARN',
+      exportName: `${id}-UserStorageBucketArn`,
+    });
+
+    new cdk.CfnOutput(this, 'UserStorageConfiguration', {
+      value: `User Storage: ${this.userStorage.bucketName} - ユーザーファイルストレージ`,
+      description: 'User Storage 設定サマリー',
+    });
+
     // タグの追加
     cdk.Tags.of(this).add('Project', 'AgentCore');
     cdk.Tags.of(this).add('Component', 'Gateway');
     cdk.Tags.of(this).add('Memory', 'Enabled');
     cdk.Tags.of(this).add('BackendApi', 'Enabled');
+    cdk.Tags.of(this).add('UserStorage', 'Enabled');
   }
 }

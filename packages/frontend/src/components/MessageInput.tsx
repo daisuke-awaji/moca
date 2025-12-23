@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Loader2 } from 'lucide-react';
 import { useChatStore } from '../stores/chatStore';
+import { StoragePathDisplay } from './StoragePathDisplay';
+import { StorageManagementModal } from './StorageManagementModal';
 
 interface MessageInputProps {
   getScenarioPrompt?: () => string | null;
@@ -9,6 +11,7 @@ interface MessageInputProps {
 export const MessageInput: React.FC<MessageInputProps> = ({ getScenarioPrompt }) => {
   const { sendPrompt, isLoading } = useChatStore();
   const [input, setInput] = useState('');
+  const [isStorageModalOpen, setIsStorageModalOpen] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // テキストエリアの自動リサイズ
@@ -77,6 +80,11 @@ export const MessageInput: React.FC<MessageInputProps> = ({ getScenarioPrompt })
 
   return (
     <div className="bg-white p-4">
+      {/* ストレージパス表示 */}
+      <div className="max-w-4xl mx-auto mb-2">
+        <StoragePathDisplay onClick={() => setIsStorageModalOpen(true)} />
+      </div>
+
       <form onSubmit={handleSubmit} className="max-w-4xl mx-auto">
         <div className="relative">
           {/* テキスト入力エリア */}
@@ -113,6 +121,12 @@ export const MessageInput: React.FC<MessageInputProps> = ({ getScenarioPrompt })
         {/* ヘルプテキスト */}
         <p className="mt-2 text-xs text-gray-500">Shift + Enter で改行、Enter で送信</p>
       </form>
+
+      {/* ストレージ管理モーダル */}
+      <StorageManagementModal
+        isOpen={isStorageModalOpen}
+        onClose={() => setIsStorageModalOpen(false)}
+      />
     </div>
   );
 };
