@@ -28,7 +28,6 @@ const DANGEROUS_COMMANDS = [
   'rm -rf /',
   'mkfs',
   'dd if=',
-  'format',
   'fdisk',
 
   // システム操作系
