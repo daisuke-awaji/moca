@@ -37,10 +37,9 @@ function App() {
     checkExistingSession();
   }, [setUser, setLoading, setError]);
 
-  // 認証状態に応じてルーティングを設定
-  if (isAuthenticated) {
-    return (
-      <BrowserRouter>
+  return (
+    <BrowserRouter>
+      {isAuthenticated ? (
         <div className="h-screen flex">
           <Routes>
             <Route element={<MainLayout />}>
@@ -53,11 +52,11 @@ function App() {
             <Route path="*" element={<Navigate to="/chat" replace />} />
           </Routes>
         </div>
-      </BrowserRouter>
-    );
-  }
-
-  return <AuthContainer />;
+      ) : (
+        <AuthContainer />
+      )}
+    </BrowserRouter>
+  );
 }
 
 export default App;

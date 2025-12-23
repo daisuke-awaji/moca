@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ZodError } from 'zod';
+import { Donut } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import { loginSchema, type LoginFormData } from '../../schemas/auth';
 
@@ -71,8 +72,14 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToSignUp }) => {
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="max-w-md w-full space-y-8 p-8">
         <div className="text-center">
-          <h2 className="text-3xl font-bold text-gray-900 mb-2">AgentCore Chat</h2>
-          <p className="text-gray-600">アカウントにサインインしてください</p>
+          {/* メインアイコン */}
+          <div className="relative mb-6">
+            <div className="absolute inset-0 bg-amber-200 rounded-full blur-2xl opacity-30 scale-125"></div>
+            <Donut className="w-16 h-16 text-amber-600 mx-auto" />
+          </div>
+          <h2 className="text-3xl font-bold text-amber-900 mb-2">Donuts</h2>
+          <p className="text-gray-600 text-sm">これは Amazon Bedrock AgentCore を使った</p>
+          <p className="text-gray-600 text-sm">あなただけのAIエージェントのデモアプリです</p>
         </div>
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>

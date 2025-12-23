@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ZodError } from 'zod';
+import { Donut } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import { confirmSignUpSchema, type ConfirmSignUpFormData } from '../../schemas/auth';
 
@@ -106,6 +107,11 @@ export const ConfirmSignUpForm: React.FC<ConfirmSignUpFormProps> = ({
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-100 via-white to-emerald-100">
       <div className="max-w-md w-full space-y-8 p-8">
         <div className="text-center">
+          {/* メインアイコン */}
+          <div className="relative mb-4">
+            <div className="absolute inset-0 bg-amber-200 rounded-full blur-2xl opacity-30 scale-125"></div>
+            <Donut className="w-12 h-12 text-amber-600 mx-auto mb-2" />
+          </div>
           <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
             <svg
               className="h-6 w-6 text-green-600"
@@ -121,7 +127,7 @@ export const ConfirmSignUpForm: React.FC<ConfirmSignUpFormProps> = ({
               />
             </svg>
           </div>
-          <h2 className="text-3xl font-bold text-gray-900 mb-2">メール認証</h2>
+          <h2 className="text-3xl font-bold text-amber-900 mb-2">Donuts - メール認証</h2>
           <p className="text-gray-600">
             <strong>{username}</strong> に送信された確認コードを入力してください
           </p>

@@ -1,48 +1,52 @@
-import React, { useState } from 'react';
+import React, { useEffect } from 'react';
+import { Routes, Route, useNavigate, Navigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
 import { LoginForm } from './LoginForm';
 import { SignUpForm } from './SignUpForm';
 import { ConfirmSignUpForm } from './ConfirmSignUpForm';
 
-type AuthMode = 'login' | 'signup' | 'confirm';
-
 export const AuthContainer: React.FC = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
   const { needsConfirmation, pendingUsername, setNeedsConfirmation } = useAuthStore();
-  const [userMode, setUserMode] = useState<'login' | 'signup'>('login');
 
-  // モードを動的に決定（確認が必要な場合は優先）
-  const currentMode: AuthMode = needsConfirmation && pendingUsername ? 'confirm' : userMode;
+  // 確認が必要な場合は /confirm へリダイレクト
+  useEffect(() => {
+    if (needsConfirmation && pendingUsername && location.pathname !== '/confirm') {
+      navigate('/confirm', { replace: true });
+    }
+  }, [needsConfirmation, pendingUsername, location.pathname, navigate]);
 
   const handleSwitchToLogin = () => {
-    setUserMode('login');
     setNeedsConfirmation(false);
+    navigate('/login');
   };
 
   const handleSwitchToSignUp = () => {
-    setUserMode('signup');
     setNeedsConfirmation(false);
+    navigate('/signup');
   };
 
   const handleBackToSignUp = () => {
-    setUserMode('signup');
     setNeedsConfirmation(false);
+    navigate('/signup');
   };
 
-  switch (currentMode) {
-    case 'signup':
-      return <SignUpForm onSwitchToLogin={handleSwitchToLogin} />;
-
-    case 'confirm':
-      return (
-        <ConfirmSignUpForm
-          username={pendingUsername || ''}
-          onSwitchToLogin={handleSwitchToLogin}
-          onBack={handleBackToSignUp}
-        />
-      );
-
-    case 'login':
-    default:
-      return <LoginForm onSwitchToSignUp={handleSwitchToSignUp} />;
-  }
+  return (
+    <Routes>
+      <Route path="/login" element={<LoginForm onSwitchToSignUp={handleSwitchToSignUp} />} />
+      <Route path="/signup" element={<SignUpForm onSwitchToLogin={handleSwitchToLogin} />} />
+      <Route
+        path="/confirm"
+        element={
+          <ConfirmSignUpForm
+            username={pendingUsername || ''}
+            onSwitchToLogin={handleSwitchToLogin}
+            onBack={handleBackToSignUp}
+          />
+        }
+      />
+      <Route path="*" element={<Navigate to="/login" replace />} />
+    </Routes>
+  );
 };
