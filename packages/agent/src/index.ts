@@ -253,18 +253,16 @@ app.post('/invocations', async (req: Request, res: Response) => {
     // セッション設定
     const sessionConfig: SessionConfig = { actorId, sessionId };
 
-    // セッション履歴を復元
-    const savedMessages = await sessionStorage.loadMessages(sessionConfig);
-    console.log(`📖 セッション履歴を復元: ${savedMessages.length}件のメッセージ`);
-
     // セッション永続化フックを作成
     const sessionHook = new SessionPersistenceHook(sessionStorage, sessionConfig);
 
-    // Agent作成オプション
+    // Agent作成オプション（セッション情報を含む）
     const agentOptions = {
       modelId,
       enabledTools,
       systemPrompt,
+      sessionStorage,
+      sessionConfig,
     };
 
     // ログ出力（デバッグ用）
@@ -272,8 +270,8 @@ app.post('/invocations', async (req: Request, res: Response) => {
     if (enabledTools) console.log(`🔧 指定ツール: ${enabledTools.join(', ')}`);
     if (systemPrompt) console.log(`📝 カスタムシステムプロンプト使用`);
 
-    // セッション用の Agent を作成
-    const agent = await createAgent(savedMessages, [sessionHook], agentOptions);
+    // セッション用の Agent を作成（並列処理により高速化）
+    const agent = await createAgent([sessionHook], agentOptions);
 
     // ストリーミングレスポンス用のヘッダー設定
     res.setHeader('Content-Type', 'text/plain; charset=utf-8');

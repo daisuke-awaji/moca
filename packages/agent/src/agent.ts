@@ -3,13 +3,14 @@
  * AgentCore Runtime で動作し、AgentCore Gateway のツールを使用する AI Agent
  */
 
-import { Agent, Message, HookProvider } from '@strands-agents/sdk';
+import { Agent, HookProvider } from '@strands-agents/sdk';
 import { logger } from './config/index.js';
 import { executeCommandTool, convertMCPToolsToStrands } from './tools/index.js';
 import { buildSystemPrompt } from './prompts/index.js';
 import { createBedrockModel } from './models/index.js';
 import { MCPToolDefinition } from './schemas/types.js';
 import { mcpClient } from './mcp/client.js';
+import type { SessionStorage, SessionConfig } from './session/types.js';
 
 /**
  * AgentCore Runtime 用の Strands Agent 作成オプション
@@ -18,6 +19,9 @@ export interface CreateAgentOptions {
   modelId?: string; // 使用するモデルID（未指定時は環境変数）
   enabledTools?: string[]; // 有効化するツール名配列（undefined=全て、[]=なし）
   systemPrompt?: string; // カスタムシステムプロンプト（未指定時は自動生成）
+  // セッション復元用（並列処理のため）
+  sessionStorage?: SessionStorage;
+  sessionConfig?: SessionConfig;
 }
 
 /**
@@ -37,20 +41,27 @@ function filterTools<T extends { name: string }>(tools: T[], enabledTools?: stri
 
 /**
  * AgentCore Runtime 用の Strands Agent を作成
- * @param initialMessages 初期会話履歴（セッション復元用）
  * @param hooks HookProvider の配列（セッション永続化など）
- * @param options Agent作成オプション（モデルID、ツール、システムプロンプト）
+ * @param options Agent作成オプション（モデルID、ツール、システムプロンプト、セッション設定）
  */
 export async function createAgent(
-  initialMessages?: Message[],
   hooks?: HookProvider[],
   options?: CreateAgentOptions
 ): Promise<Agent> {
   logger.info('Strands Agent を初期化中...');
 
   try {
-    // 1. MCP ツールを取得・変換
-    const mcpTools = await mcpClient.listTools();
+    // 1. セッション履歴復元とMCPツール取得を並列実行
+    const [savedMessages, mcpTools] = await Promise.all([
+      options?.sessionStorage && options?.sessionConfig
+        ? options.sessionStorage.loadMessages(options.sessionConfig)
+        : Promise.resolve([]),
+      mcpClient.listTools(),
+    ]);
+
+    logger.info(`📖 セッション履歴を復元: ${savedMessages.length}件のメッセージ`);
+
+    // 2. MCP ツールを変換
     const mcpStrandsTools = convertMCPToolsToStrands(mcpTools as MCPToolDefinition[]);
 
     // 2. ローカルツールとMCPツールを結合
@@ -81,14 +92,11 @@ export async function createAgent(
       model,
       systemPrompt,
       tools: allTools,
-      messages: initialMessages,
+      messages: savedMessages,
       hooks,
     });
 
     // 6. ログ出力
-    if (initialMessages && initialMessages.length > 0) {
-      logger.info(`✅ セッション履歴を復元: ${initialMessages.length}件のメッセージ`);
-    }
     if (hooks && hooks.length > 0) {
       logger.info(`✅ ${hooks.length}個のフックを登録`);
     }

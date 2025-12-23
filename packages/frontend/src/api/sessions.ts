@@ -3,7 +3,6 @@
  * Backend のセッション API を呼び出すためのクライアント
  */
 
-import type { User } from '../types/index';
 import { getValidAccessToken } from '../lib/cognito';
 
 /**
@@ -111,10 +110,9 @@ async function createAuthHeaders(): Promise<Record<string, string>> {
 
 /**
  * セッション一覧を取得
- * @param _user Cognito ユーザー情報（未使用、後方互換性のため残存）
  * @returns セッション一覧
  */
-export async function fetchSessions(_user?: User): Promise<SessionSummary[]> {
+export async function fetchSessions(): Promise<SessionSummary[]> {
   try {
     const baseUrl = getBackendBaseUrl();
     const headers = await createAuthHeaders();
@@ -147,14 +145,10 @@ export async function fetchSessions(_user?: User): Promise<SessionSummary[]> {
 
 /**
  * セッションの会話履歴を取得
- * @param _user Cognito ユーザー情報（未使用、後方互換性のため残存）
  * @param sessionId セッションID
  * @returns 会話履歴
  */
-export async function fetchSessionEvents(
-  _user: User,
-  sessionId: string
-): Promise<ConversationMessage[]> {
+export async function fetchSessionEvents(sessionId: string): Promise<ConversationMessage[]> {
   try {
     const baseUrl = getBackendBaseUrl();
     const headers = await createAuthHeaders();

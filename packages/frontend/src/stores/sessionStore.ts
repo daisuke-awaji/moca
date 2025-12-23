@@ -5,7 +5,6 @@
 
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
-import type { User } from '../types/index';
 import {
   fetchSessions,
   fetchSessionEvents,
@@ -32,14 +31,14 @@ interface SessionState {
  * セッションストアのアクション型定義
  */
 interface SessionActions {
-  loadSessions: (user: User) => Promise<void>;
-  selectSession: (user: User, sessionId: string) => Promise<void>;
+  loadSessions: () => Promise<void>;
+  selectSession: (sessionId: string) => Promise<void>;
   setActiveSessionId: (sessionId: string) => void;
   clearActiveSession: () => void;
   setSessionsError: (error: string | null) => void;
   setEventsError: (error: string | null) => void;
   clearErrors: () => void;
-  refreshSessions: (user: User) => Promise<void>;
+  refreshSessions: () => Promise<void>;
 }
 
 /**
@@ -62,12 +61,12 @@ export const useSessionStore = create<SessionStore>()(
       eventsError: null,
 
       // Actions
-      loadSessions: async (user: User) => {
+      loadSessions: async () => {
         try {
           set({ isLoadingSessions: true, sessionsError: null });
 
           console.log('🔄 セッション一覧読み込み開始...');
-          const sessions = await fetchSessions(user);
+          const sessions = await fetchSessions();
 
           set({
             sessions,
@@ -91,7 +90,7 @@ export const useSessionStore = create<SessionStore>()(
         }
       },
 
-      selectSession: async (user: User, sessionId: string) => {
+      selectSession: async (sessionId: string) => {
         try {
           set({
             isLoadingEvents: true,
@@ -100,7 +99,7 @@ export const useSessionStore = create<SessionStore>()(
           });
 
           console.log(`🔄 セッション選択: ${sessionId}`);
-          const events = await fetchSessionEvents(user, sessionId);
+          const events = await fetchSessionEvents(sessionId);
 
           set({
             sessionEvents: events,
@@ -157,10 +156,10 @@ export const useSessionStore = create<SessionStore>()(
         });
       },
 
-      refreshSessions: async (user: User) => {
+      refreshSessions: async () => {
         const { loadSessions } = get();
         console.log('🔄 セッション一覧を更新中...');
-        await loadSessions(user);
+        await loadSessions();
       },
     }),
     {

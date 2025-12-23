@@ -14,7 +14,7 @@ export function ChatPage() {
   const navigate = useNavigate();
 
   const { setSessionId, clearMessages, loadSessionHistory } = useChatStore();
-  const { sessionEvents, activeSessionId, isLoadingEvents } = useSessionStore();
+  const { sessionEvents, activeSessionId, isLoadingEvents, selectSession } = useSessionStore();
 
   // navigate 関数を chatStore に設定
   useEffect(() => {
@@ -35,6 +35,14 @@ export function ChatPage() {
       clearMessages();
     }
   }, [sessionId, setSessionId, clearMessages]);
+
+  // sessionId が変更され、まだこのセッションの履歴が読み込まれていない場合は読み込み
+  useEffect(() => {
+    if (sessionId && activeSessionId !== sessionId) {
+      console.log(`📥 セッション履歴を取得開始: ${sessionId}`);
+      selectSession(sessionId);
+    }
+  }, [sessionId, activeSessionId, selectSession]);
 
   // セッション履歴を chatStore に復元
   useEffect(() => {
