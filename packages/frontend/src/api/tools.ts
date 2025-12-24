@@ -4,6 +4,7 @@
  */
 
 import { getValidAccessToken } from '../lib/cognito';
+import { LOCAL_TOOL_NAMES } from '@fullstack-agentcore/shared';
 
 /**
  * MCP ツールの型定義
@@ -24,7 +25,7 @@ export interface MCPTool {
  */
 export const LOCAL_TOOLS: MCPTool[] = [
   {
-    name: 'execute_command',
+    name: LOCAL_TOOL_NAMES.EXECUTE_COMMAND,
     description:
       'シェルコマンドを実行し、結果を返します。ファイル操作、情報収集、開発タスクの自動化に使用できます。',
     inputSchema: {
@@ -50,7 +51,7 @@ export const LOCAL_TOOLS: MCPTool[] = [
     },
   },
   {
-    name: 'tavily_search',
+    name: LOCAL_TOOL_NAMES.TAVILY_SEARCH,
     description:
       'Tavily APIを使用して高品質なWeb検索を実行します。最新の情報、ニュース、一般的な話題について包括的な検索結果を取得できます。',
     inputSchema: {
@@ -117,7 +118,7 @@ export const LOCAL_TOOLS: MCPTool[] = [
     },
   },
   {
-    name: 'tavily_extract',
+    name: LOCAL_TOOL_NAMES.TAVILY_EXTRACT,
     description:
       'Tavily APIを使用して指定されたURLからコンテンツを抽出します。Webページの内容を構造化されたテキストとして取得できます。',
     inputSchema: {
@@ -173,7 +174,7 @@ export const LOCAL_TOOLS: MCPTool[] = [
     },
   },
   {
-    name: 'tavily_crawl',
+    name: LOCAL_TOOL_NAMES.TAVILY_CRAWL,
     description:
       'Tavily APIを使用してWebサイトを包括的にクロールします。指定されたルートURLから始まり、関連するページを自動的に発見・抽出します。',
     inputSchema: {
@@ -267,7 +268,7 @@ export const LOCAL_TOOLS: MCPTool[] = [
     },
   },
   {
-    name: 'code_interpreter',
+    name: LOCAL_TOOL_NAMES.CODE_INTERPRETER,
     description:
       'Amazon Bedrock AgentCore CodeInterpreter ツール - セキュアなサンドボックス環境でコード実行やファイル操作を行います。Python、JavaScript、TypeScript のコード実行、シェルコマンド実行、ファイル操作（読み取り、書き込み、削除）、セッション管理などの機能を提供します。',
     inputSchema: {
@@ -349,7 +350,7 @@ export const LOCAL_TOOLS: MCPTool[] = [
     },
   },
   {
-    name: 's3_list_files',
+    name: LOCAL_TOOL_NAMES.S3_LIST_FILES,
     description:
       'ユーザーのS3ストレージ内のファイルとディレクトリの一覧を取得します。指定されたパス配下のコンテンツを探索できます。',
     inputSchema: {
@@ -377,7 +378,7 @@ export const LOCAL_TOOLS: MCPTool[] = [
     },
   },
   {
-    name: 's3_download_file',
+    name: LOCAL_TOOL_NAMES.S3_DOWNLOAD_FILE,
     description:
       'ユーザーのS3ストレージからファイルをダウンロードまたは読み取ります。テキストファイルの場合は内容を直接取得し、大きなファイルやバイナリファイルの場合は署名付きダウンロードURLを生成します。',
     inputSchema: {
@@ -405,7 +406,7 @@ export const LOCAL_TOOLS: MCPTool[] = [
     },
   },
   {
-    name: 's3_upload_file',
+    name: LOCAL_TOOL_NAMES.S3_UPLOAD_FILE,
     description:
       'ユーザーのS3ストレージにテキストコンテンツをファイルとしてアップロードします。コード、ドキュメント、設定ファイルなどを保存できます。注意: 日本語や非ASCII文字を含むファイルをアップロードする際は、contentTypeにcharsetを指定してください（例: "text/plain; charset=utf-8"）。',
     inputSchema: {
@@ -430,7 +431,7 @@ export const LOCAL_TOOLS: MCPTool[] = [
     },
   },
   {
-    name: 's3_get_presigned_urls',
+    name: LOCAL_TOOL_NAMES.S3_GET_PRESIGNED_URLS,
     description:
       'ユーザーのS3ストレージ内のファイルに対する署名付きURLを一括で生成します。ダウンロード用またはアップロード用のURLを取得できます。複数のファイルを一度に処理できます。',
     inputSchema: {
@@ -469,7 +470,7 @@ export const LOCAL_TOOLS: MCPTool[] = [
     },
   },
   {
-    name: 's3_sync_folder',
+    name: LOCAL_TOOL_NAMES.S3_SYNC_FOLDER,
     description:
       'S3ストレージからフォルダ全体をローカル環境（Agent実行コンテナ）にダウンロードします。aws s3 syncコマンド相当の機能を提供し、複数ファイルを一括で同期できます。',
     inputSchema: {

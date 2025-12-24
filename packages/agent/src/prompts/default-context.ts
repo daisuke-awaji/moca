@@ -1,4 +1,5 @@
 import { MCPToolDefinition } from '../schemas/types.js';
+import { S3_TOOL_NAMES } from '@fullstack-agentcore/shared';
 
 const WORKSPACE_DIR = '/tmp/ws';
 /**
@@ -25,14 +26,7 @@ export function generateDefaultContext(
     - Image: ![alt](https://xxx.s3.us-east-1.amazonaws.com/<presignedUrl>)`;
 
   // S3関連ツールが有効かどうかをチェック
-  const s3ToolNames = [
-    's3_list_files',
-    's3_download_file',
-    's3_upload_file',
-    's3_get_presigned_urls',
-    's3_sync_folder',
-  ];
-  const enabledS3Tools = tools.filter((tool) => s3ToolNames.includes(tool.name));
+  const enabledS3Tools = tools.filter((tool) => S3_TOOL_NAMES.includes(tool.name as any));
   const hasS3Tools = enabledS3Tools.length > 0;
 
   // S3ストレージツールが有効な場合のみセクションを追加
