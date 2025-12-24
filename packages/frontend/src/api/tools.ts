@@ -407,7 +407,7 @@ export const LOCAL_TOOLS: MCPTool[] = [
   {
     name: 's3_upload_file',
     description:
-      'ユーザーのS3ストレージにテキストコンテンツをファイルとしてアップロードします。コード、ドキュメント、設定ファイルなどを保存できます。',
+      'ユーザーのS3ストレージにテキストコンテンツをファイルとしてアップロードします。コード、ドキュメント、設定ファイルなどを保存できます。注意: 日本語や非ASCII文字を含むファイルをアップロードする際は、contentTypeにcharsetを指定してください（例: "text/plain; charset=utf-8"）。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -466,6 +466,53 @@ export const LOCAL_TOOLS: MCPTool[] = [
         },
       },
       required: ['paths'],
+    },
+  },
+  {
+    name: 's3_sync_folder',
+    description:
+      'S3ストレージからフォルダ全体をローカル環境（Agent実行コンテナ）にダウンロードします。aws s3 syncコマンド相当の機能を提供し、複数ファイルを一括で同期できます。',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        s3Path: {
+          type: 'string',
+          description: 'S3上のフォルダパス（例: "/project/data"）',
+        },
+        localPath: {
+          type: 'string',
+          description: 'ローカルの保存先パス（/tmp/ws配下のみ、例: "/tmp/ws/data"）',
+        },
+        recursive: {
+          type: 'boolean',
+          default: true,
+          description: 'サブディレクトリも含めて同期するか（デフォルト: true）',
+        },
+        overwrite: {
+          type: 'boolean',
+          default: false,
+          description: '既存ファイルを上書きするか（デフォルト: false）',
+        },
+        maxConcurrency: {
+          type: 'number',
+          minimum: 1,
+          maximum: 10,
+          default: 5,
+          description: '並列ダウンロード数（1-10、デフォルト: 5）',
+        },
+        maxFiles: {
+          type: 'number',
+          minimum: 1,
+          maximum: 1000,
+          default: 100,
+          description: '最大ダウンロードファイル数（1-1000、デフォルト: 100）',
+        },
+        filePattern: {
+          type: 'string',
+          description: 'ファイル名フィルタ（globパターン、例: "*.txt", "data_*.json"）',
+        },
+      },
+      required: ['s3Path', 'localPath'],
     },
   },
 ];

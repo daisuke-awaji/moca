@@ -115,7 +115,7 @@ function guessContentType(filename: string): string {
 export const s3UploadFileTool = tool({
   name: 's3_upload_file',
   description:
-    'Upload text content as a file to user S3 storage. Can save code, documents, configuration files, etc.',
+    'Upload text content as a file to user S3 storage. Can save code, documents, configuration files, etc. Note: When uploading files with Japanese or non-ASCII characters, specify contentType with charset (e.g., "text/plain; charset=utf-8") to ensure proper encoding.',
   inputSchema: z.object({
     path: z
       .string()
