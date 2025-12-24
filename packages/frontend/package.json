@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@tanstack/react-virtual": "^3.13.13",
     "@types/react-router-dom": "^5.3.3",
     "@types/uuid": "^10.0.0",
     "amazon-cognito-identity-js": "^6.3.16",

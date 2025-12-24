@@ -123,6 +123,7 @@ const createAgentFromInput = (input: CreateAgentInput): Agent => {
     id: uuidv4(),
     name: input.name,
     description: input.description,
+    icon: input.icon,
     systemPrompt: input.systemPrompt,
     enabledTools: [...input.enabledTools],
     scenarios: input.scenarios.map((scenario) => ({
@@ -176,6 +177,7 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
         ...currentAgent,
         name: input.name ?? currentAgent.name,
         description: input.description ?? currentAgent.description,
+        icon: input.icon ?? currentAgent.icon,
         systemPrompt: input.systemPrompt ?? currentAgent.systemPrompt,
         enabledTools: input.enabledTools ?? currentAgent.enabledTools,
         scenarios: input.scenarios

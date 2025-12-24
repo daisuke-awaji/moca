@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Plus, X, AlertCircle, Sparkles, Settings, Wrench } from 'lucide-react';
 import { ToolSelector } from './ToolSelector';
+import { IconPicker } from './ui/IconPicker';
 import { SidebarTabsLayout, type TabItem } from './ui/SidebarTabs';
 import type { CreateAgentInput, Agent, Scenario } from '../types/agent';
 import { streamAgentResponse, createAgentConfigGenerationPrompt } from '../api/agent';
@@ -22,6 +23,7 @@ export const AgentForm: React.FC<AgentFormProps> = ({ agent, onSubmit, isLoading
       return {
         name: agent.name,
         description: agent.description,
+        icon: agent.icon || 'Bot',
         systemPrompt: agent.systemPrompt,
         enabledTools: [...agent.enabledTools],
         scenarios: agent.scenarios.map((s) => ({
@@ -33,6 +35,7 @@ export const AgentForm: React.FC<AgentFormProps> = ({ agent, onSubmit, isLoading
     return {
       name: '',
       description: '',
+      icon: 'Bot',
       systemPrompt: '',
       enabledTools: [],
       scenarios: [],
@@ -247,12 +250,14 @@ export const AgentForm: React.FC<AgentFormProps> = ({ agent, onSubmit, isLoading
                   Name & Icon
                 </label>
                 <p className="text-sm text-gray-500 mb-3">
-                  エージェントの表示名を入力してください（例：プログラミング講師、技術ドキュメント作成者）
+                  エージェントの表示名とアイコンを設定してください。アイコンをクリックして変更できます。
                 </p>
                 <div className="flex items-center space-x-3">
-                  <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <span className="text-2xl">🤖</span>
-                  </div>
+                  <IconPicker
+                    value={formData.icon}
+                    onChange={(icon) => setFormData((prev) => ({ ...prev, icon }))}
+                    disabled={isLoading || isGenerating}
+                  />
                   <input
                     type="text"
                     id="name"
@@ -348,7 +353,7 @@ export const AgentForm: React.FC<AgentFormProps> = ({ agent, onSubmit, isLoading
                     }
                   }}
                   disabled={isLoading || isGenerating}
-                  placeholder="例: このプロジェクト ({{projectPath}}) について分析を行い、以下の方針でサポートを行います：&#10;- プロジェクトの構造を理解し、適切なアドバイスを提供&#10;..."
+                  placeholder="例: あなたは親切で知識豊富なAIアシスタントです。以下の方針でユーザーをサポートします：&#10;- 明確で理解しやすい説明を提供する&#10;- 必要に応じて具体例を示す&#10;- 不明な点は確認してから回答する"
                   rows={12}
                   className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed resize-none font-mono text-sm ${
                     errors.systemPrompt ? 'border-red-500' : 'border-gray-300'

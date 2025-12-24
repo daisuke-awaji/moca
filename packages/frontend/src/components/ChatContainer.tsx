@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { Bot, Menu } from 'lucide-react';
+import * as icons from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { useSelectedAgent } from '../stores/agentStore';
 import { useUIStore } from '../stores/uiStore';
 import { MessageList } from './MessageList';
@@ -54,7 +56,12 @@ export const ChatContainer: React.FC = () => {
               onClick={() => setIsAgentModalOpen(true)}
               className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-50 transition-colors group"
             >
-              <Bot className="w-6 h-6 text-gray-700" />
+              {(() => {
+                const AgentIcon = selectedAgent?.icon
+                  ? (icons[selectedAgent.icon as keyof typeof icons] as LucideIcon) || Bot
+                  : Bot;
+                return <AgentIcon className="w-6 h-6 text-gray-700" />;
+              })()}
               <h1 className="text-lg font-semibold text-gray-900">
                 {selectedAgent ? selectedAgent.name : '汎用アシスタント'}
               </h1>

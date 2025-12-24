@@ -130,7 +130,7 @@ export const ToolSelector: React.FC<ToolSelectorProps> = ({
 
       {/* ツール一覧 */}
       {!isLoading && !error && (
-        <div className="space-y-2 max-h-64 overflow-y-auto border border-gray-200 rounded-lg">
+        <div className="space-y-2 max-h-[30vh] overflow-y-auto border border-gray-200 rounded-lg">
           {filteredTools.length === 0 ? (
             <div className="p-4 text-center text-gray-500">
               {searchQuery ? '検索結果が見つかりません' : 'ツールがありません'}

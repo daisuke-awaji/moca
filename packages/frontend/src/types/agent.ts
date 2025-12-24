@@ -12,6 +12,7 @@ export interface Agent {
   id: string; // UUID
   name: string; // Agent名
   description: string; // 説明
+  icon?: string; // lucideアイコン名（例: "Bot", "Code", "Brain"）
   systemPrompt: string; // システムプロンプト
   enabledTools: string[]; // 有効化されたツール名の配列
   scenarios: Scenario[]; // よく使うプロンプト
@@ -25,6 +26,7 @@ export interface Agent {
 export interface CreateAgentInput {
   name: string;
   description: string;
+  icon?: string;
   systemPrompt: string;
   enabledTools: string[];
   scenarios: Omit<Scenario, 'id'>[];

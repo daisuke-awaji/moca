@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Bot, MoreHorizontal, Edit2, Trash2 } from 'lucide-react';
+import { Plus, Bot, MoreHorizontal, Edit2, Trash2, AlertTriangle, icons } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { AgentForm } from './AgentForm';
 import { Modal, ConfirmModal } from './ui/Modal';
 import { useAgentStore } from '../stores/agentStore';
@@ -24,6 +25,7 @@ export const AgentSelectorModal: React.FC<AgentSelectorModalProps> = ({
     createAgent,
     updateAgent,
     deleteAgent,
+    initializeStore,
     isLoading,
     error,
   } = useAgentStore();
@@ -103,6 +105,21 @@ export const AgentSelectorModal: React.FC<AgentSelectorModalProps> = ({
     setOpenMenuId(openMenuId === agentId ? null : agentId);
   };
 
+  // localStorage クリア処理
+  const handleClearLocalStorage = () => {
+    if (
+      confirm(
+        'localStorage のエージェントデータをクリアしますか？デフォルトのエージェントが再作成されます。'
+      )
+    ) {
+      localStorage.removeItem('agentcore-agents');
+      localStorage.removeItem('agentcore-selected-agent');
+      initializeStore();
+      setMode('list');
+      setEditingAgent(null);
+    }
+  };
+
   const getModalTitle = () => {
     switch (mode) {
       case 'create':
@@ -169,136 +186,160 @@ export const AgentSelectorModal: React.FC<AgentSelectorModalProps> = ({
 
         {/* Agent一覧表示モード */}
         {mode === 'list' && (
-          <Modal.Content>
-            <div className="h-[81vh] overflow-y-auto">
-              {error && (
-                <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-                  <p className="text-sm text-red-600">{error}</p>
-                </div>
-              )}
+          <>
+            <Modal.Content>
+              <div className="h-[81vh] overflow-y-auto">
+                {error && (
+                  <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="text-sm text-red-600">{error}</p>
+                  </div>
+                )}
 
-              {/* 新規作成ボタン - デスクトップのみ */}
-              {!isMobileView && (
-                <div className="mb-8">
-                  <button
-                    onClick={() => setMode('create')}
-                    className="inline-flex items-center space-x-3 px-6 py-3 text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition-colors shadow-sm"
+                {/* 新規作成ボタン - デスクトップのみ */}
+                {!isMobileView && (
+                  <div className="mb-8">
+                    <button
+                      onClick={() => setMode('create')}
+                      className="inline-flex items-center space-x-3 px-6 py-3 text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition-colors shadow-sm"
+                    >
+                      <Plus className="w-5 h-5" />
+                      <span className="font-medium">新規エージェント作成</span>
+                    </button>
+                  </div>
+                )}
+
+                {/* Agent一覧 */}
+                {agents.length === 0 ? (
+                  <div className="text-center py-20">
+                    <Bot className="w-16 h-16 text-gray-300 mx-auto mb-6" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">Agentがありません</h3>
+                    <p className="text-gray-500 mb-6">最初のAgentを作成してください</p>
+                    <button
+                      onClick={() => setMode('create')}
+                      className="text-blue-600 hover:text-blue-800 font-medium"
+                    >
+                      Agentを作成する
+                    </button>
+                  </div>
+                ) : (
+                  <div
+                    className={`grid gap-6 ${isMobileView ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'}`}
                   >
-                    <Plus className="w-5 h-5" />
-                    <span className="font-medium">新規エージェント作成</span>
-                  </button>
-                </div>
-              )}
+                    {agents.map((agent) => {
+                      const isSelected = selectedAgent?.id === agent.id;
+                      const AgentIcon =
+                        (icons[agent.icon as keyof typeof icons] as LucideIcon) || Bot;
 
-              {/* Agent一覧 */}
-              {agents.length === 0 ? (
-                <div className="text-center py-20">
-                  <Bot className="w-16 h-16 text-gray-300 mx-auto mb-6" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">Agentがありません</h3>
-                  <p className="text-gray-500 mb-6">最初のAgentを作成してください</p>
-                  <button
-                    onClick={() => setMode('create')}
-                    className="text-blue-600 hover:text-blue-800 font-medium"
-                  >
-                    Agentを作成する
-                  </button>
-                </div>
-              ) : (
-                <div
-                  className={`grid gap-6 ${isMobileView ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'}`}
-                >
-                  {agents.map((agent) => {
-                    const isSelected = selectedAgent?.id === agent.id;
-
-                    return (
-                      <div
-                        key={agent.id}
-                        className={`relative bg-white rounded-2xl transition-all cursor-pointer border ${
-                          isSelected
-                            ? 'border-blue-500 ring-2 ring-blue-100'
-                            : 'border-gray-100 hover:border-gray-300'
-                        }`}
-                        onClick={() => handleAgentSelect(agent)}
-                      >
-                        <div className="p-4">
-                          <div className="flex items-start justify-between">
-                            <div className="flex items-center space-x-3 flex-1">
-                              <div
-                                className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                                  isSelected ? 'bg-blue-100' : 'bg-gray-100'
-                                }`}
-                              >
-                                <Bot
-                                  className={`w-5 h-5 ${
-                                    isSelected ? 'text-blue-600' : 'text-gray-600'
+                      return (
+                        <div
+                          key={agent.id}
+                          className={`relative bg-white rounded-2xl transition-all cursor-pointer border ${
+                            isSelected
+                              ? 'border-blue-500 ring-2 ring-blue-100'
+                              : 'border-gray-100 hover:border-gray-300'
+                          }`}
+                          onClick={() => handleAgentSelect(agent)}
+                        >
+                          <div className="p-4">
+                            <div className="flex items-start justify-between">
+                              <div className="flex items-center space-x-3 flex-1">
+                                <div
+                                  className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                                    isSelected ? 'bg-blue-100' : 'bg-gray-100'
                                   }`}
-                                />
-                              </div>
-                              <div className="flex-1">
-                                <div className="flex items-center space-x-2">
-                                  <h3 className="font-medium text-gray-900">{agent.name}</h3>
-                                </div>
-                                <p className="text-sm text-gray-500 mt-1 line-clamp-2">
-                                  {agent.description}
-                                </p>
-                              </div>
-                            </div>
-
-                            {/* 3点メニュー - デスクトップのみ */}
-                            {!isMobileView && (
-                              <div className="relative ml-2">
-                                <button
-                                  onClick={(e) => toggleMenu(agent.id, e)}
-                                  className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
                                 >
-                                  <MoreHorizontal className="w-4 h-4" />
-                                </button>
-
-                                {/* ドロップダウンメニュー */}
-                                {openMenuId === agent.id && (
-                                  <div className="absolute right-0 top-full mt-1 w-40 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10">
-                                    <button
-                                      onMouseDown={(e) => {
-                                        e.stopPropagation();
-                                      }}
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setEditingAgent(agent);
-                                        setMode('edit');
-                                        setOpenMenuId(null);
-                                      }}
-                                      className="w-full px-3 py-1.5 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-2"
-                                    >
-                                      <Edit2 className="w-3 h-3" />
-                                      <span>編集</span>
-                                    </button>
-                                    <button
-                                      onMouseDown={(e) => {
-                                        e.stopPropagation();
-                                      }}
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setDeleteConfirmAgent(agent);
-                                        setOpenMenuId(null);
-                                      }}
-                                      className="w-full px-3 py-1.5 text-left text-sm text-red-600 hover:bg-red-50 flex items-center space-x-2"
-                                    >
-                                      <Trash2 className="w-3 h-3" />
-                                      <span>削除</span>
-                                    </button>
+                                  <AgentIcon
+                                    className={`w-5 h-5 ${
+                                      isSelected ? 'text-blue-600' : 'text-gray-600'
+                                    }`}
+                                  />
+                                </div>
+                                <div className="flex-1">
+                                  <div className="flex items-center space-x-2">
+                                    <h3 className="font-medium text-gray-900">{agent.name}</h3>
                                   </div>
-                                )}
+                                  <p className="text-sm text-gray-500 mt-1 line-clamp-2">
+                                    {agent.description}
+                                  </p>
+                                </div>
                               </div>
-                            )}
+
+                              {/* 3点メニュー - デスクトップのみ */}
+                              {!isMobileView && (
+                                <div className="relative ml-2">
+                                  <button
+                                    onClick={(e) => toggleMenu(agent.id, e)}
+                                    className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
+                                  >
+                                    <MoreHorizontal className="w-4 h-4" />
+                                  </button>
+
+                                  {/* ドロップダウンメニュー */}
+                                  {openMenuId === agent.id && (
+                                    <div className="absolute right-0 top-full mt-1 w-40 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10">
+                                      <button
+                                        onMouseDown={(e) => {
+                                          e.stopPropagation();
+                                        }}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setEditingAgent(agent);
+                                          setMode('edit');
+                                          setOpenMenuId(null);
+                                        }}
+                                        className="w-full px-3 py-1.5 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-2"
+                                      >
+                                        <Edit2 className="w-3 h-3" />
+                                        <span>編集</span>
+                                      </button>
+                                      <button
+                                        onMouseDown={(e) => {
+                                          e.stopPropagation();
+                                        }}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setDeleteConfirmAgent(agent);
+                                          setOpenMenuId(null);
+                                        }}
+                                        className="w-full px-3 py-1.5 text-left text-sm text-red-600 hover:bg-red-50 flex items-center space-x-2"
+                                      >
+                                        <Trash2 className="w-3 h-3" />
+                                        <span>削除</span>
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </Modal.Content>
+
+            {/* 開発中警告バナー - 下部固定 */}
+            <Modal.Footer>
+              <div className="flex items-start space-x-2 w-full">
+                <AlertTriangle className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="text-xs text-gray-500">
+                    エージェント管理機能は現在開発中で、localStorage
+                    に保存されています。アプリケーションのバージョンアップに伴い、不整合が生じる可能性があるため定期的に
+                    localStorage をクリアしてください。
+                  </p>
                 </div>
-              )}
-            </div>
-          </Modal.Content>
+                <button
+                  onClick={handleClearLocalStorage}
+                  className="px-2 py-1 text-xs text-gray-600 hover:text-gray-800 underline whitespace-nowrap"
+                >
+                  クリアする
+                </button>
+              </div>
+            </Modal.Footer>
+          </>
         )}
       </Modal>
 
