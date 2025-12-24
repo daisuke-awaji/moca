@@ -6,7 +6,7 @@
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import { createAgent } from './agent.js';
-import { getContextMetadata } from './context/request-context.js';
+import { getContextMetadata, getCurrentContext } from './context/request-context.js';
 import { requestContextMiddleware } from './middleware/request-context.js';
 import { createSessionStorage, SessionPersistenceHook } from './session/index.js';
 import type { SessionConfig } from './session/types.js';
@@ -215,6 +215,7 @@ interface InvocationRequest {
   modelId?: string; // 任意: 使用するモデルID（デフォルト: 環境変数）
   enabledTools?: string[]; // 任意: 有効化するツール名の配列（undefined=全て、[]=なし）
   systemPrompt?: string; // 任意: カスタムシステムプロンプト
+  storagePath?: string; // 任意: ユーザーが選択しているS3ディレクトリパス
 }
 
 /**
@@ -224,12 +225,19 @@ interface InvocationRequest {
 app.post('/invocations', async (req: Request, res: Response) => {
   try {
     // リクエストボディから各パラメータを取得
-    const { prompt, modelId, enabledTools, systemPrompt } = req.body as InvocationRequest;
+    const { prompt, modelId, enabledTools, systemPrompt, storagePath } =
+      req.body as InvocationRequest;
 
     if (!prompt?.trim()) {
       return res.status(400).json({
         error: 'Empty prompt provided',
       });
+    }
+
+    // storagePathをコンテキストに設定
+    const context = getCurrentContext();
+    if (context) {
+      context.storagePath = storagePath || '/';
     }
 
     // セッションID をヘッダーから取得（オプショナル）
@@ -270,6 +278,7 @@ app.post('/invocations', async (req: Request, res: Response) => {
     if (modelId) console.log(`🤖 カスタムモデル: ${modelId}`);
     if (enabledTools) console.log(`🔧 指定ツール: ${enabledTools.join(', ')}`);
     if (systemPrompt) console.log(`📝 カスタムシステムプロンプト使用`);
+    if (storagePath) console.log(`📁 ストレージパス制限: ${storagePath}`);
 
     // Agent を作成（セッションフックは条件付き）
     const hooks = sessionHook ? [sessionHook] : [];

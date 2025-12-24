@@ -14,6 +14,8 @@ export interface RequestContext {
   authorizationHeader?: string;
   /** ユーザーID（JWTから抽出可能） */
   userId?: string;
+  /** ユーザーが選択しているS3ディレクトリパス */
+  storagePath?: string;
   /** リクエスト固有ID（ログ追跡用） */
   requestId: string;
   /** リクエスト開始時刻 */
@@ -53,6 +55,14 @@ export function getCurrentContext(): RequestContext | undefined {
 export function getCurrentAuthHeader(): string | undefined {
   const context = getCurrentContext();
   return context?.authorizationHeader;
+}
+
+/**
+ * 現在のリクエストのストレージパスを取得
+ */
+export function getCurrentStoragePath(): string {
+  const context = getCurrentContext();
+  return context?.storagePath || '/';
 }
 
 /**

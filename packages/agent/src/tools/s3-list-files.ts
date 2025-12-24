@@ -1,31 +1,49 @@
 /**
- * S3 List Files ツール - ユーザーストレージのファイル一覧を取得
+ * S3 List Files Tool - Retrieve user storage file list
  */
 
 import { tool } from '@strands-agents/sdk';
 import { z } from 'zod';
 import { S3Client, ListObjectsV2Command } from '@aws-sdk/client-s3';
-import { getCurrentContext } from '../context/request-context.js';
+import { getCurrentContext, getCurrentStoragePath } from '../context/request-context.js';
 import { logger } from '../config/index.js';
 
 const s3Client = new S3Client({ region: process.env.AWS_REGION });
 
 /**
- * ユーザーのストレージパスプレフィックスを生成
+ * Generate user storage path prefix
  */
 function getUserStoragePrefix(userId: string): string {
   return `users/${userId}`;
 }
 
 /**
- * パスを正規化（先頭・末尾のスラッシュを削除）
+ * Normalize path (remove leading/trailing slashes)
  */
 function normalizePath(path: string): string {
   return path.replace(/^\/+|\/+$/g, '');
 }
 
 /**
- * ファイルサイズを人間が読みやすい形式に変換
+ * Verify if path is within allowed scope
+ * Prevents path traversal attacks (../)
+ */
+function isPathWithinAllowedScope(inputPath: string, allowedBasePath: string): boolean {
+  // Normalize paths
+  const normalizedInput = normalizePath(inputPath);
+  const normalizedBase = normalizePath(allowedBasePath);
+
+  // Allow all if base path is root (empty string)
+  if (!normalizedBase || normalizedBase === '/') {
+    return true;
+  }
+
+  // Check if input path starts with base path or is the same
+  return normalizedInput === normalizedBase || normalizedInput.startsWith(normalizedBase + '/');
+}
+
+/**
+ * Convert file size to human-readable format
  */
 function formatFileSize(bytes: number): string {
   if (bytes === 0) return '0 B';
@@ -36,7 +54,7 @@ function formatFileSize(bytes: number): string {
 }
 
 /**
- * 日付を相対的な表現に変換
+ * Convert date to relative time expression
  */
 function formatRelativeTime(date: Date): string {
   const now = new Date();
@@ -46,59 +64,81 @@ function formatRelativeTime(date: Date): string {
   const hours = Math.floor(minutes / 60);
   const days = Math.floor(hours / 24);
 
-  if (days > 0) return `${days}日前`;
-  if (hours > 0) return `${hours}時間前`;
-  if (minutes > 0) return `${minutes}分前`;
-  return `${seconds}秒前`;
+  if (days > 0) return `${days} days ago`;
+  if (hours > 0) return `${hours} hours ago`;
+  if (minutes > 0) return `${minutes} minutes ago`;
+  return `${seconds} seconds ago`;
 }
 
 /**
- * S3 List Files ツール
+ * S3 List Files Tool
  */
 export const s3ListFilesTool = tool({
   name: 's3_list_files',
   description:
-    'ユーザーのS3ストレージ内のファイルとディレクトリの一覧を取得します。指定されたパス配下のコンテンツを探索できます。',
+    'Retrieve a list of files and directories in user S3 storage. Can explore contents under the specified path.',
   inputSchema: z.object({
-    path: z
-      .string()
-      .default('/')
-      .describe('一覧を取得するディレクトリパス（デフォルト: ルート "/"）'),
+    path: z.string().default('/').describe('Directory path to list (default: root "/")'),
     recursive: z
       .boolean()
       .default(false)
-      .describe('再帰的にサブディレクトリも含めて取得するか（デフォルト: false）'),
+      .describe('Whether to retrieve subdirectories recursively (default: false)'),
     maxResults: z
       .number()
       .min(1)
       .max(1000)
       .default(100)
-      .describe('取得する最大結果数（1-1000、デフォルト: 100）'),
+      .describe('Maximum number of results to retrieve (1-1000, default: 100)'),
   }),
   callback: async (input) => {
     const { path, recursive, maxResults } = input;
 
-    // リクエストコンテキストからユーザーIDを取得
+    // Get user ID and storage path from request context
     const context = getCurrentContext();
     if (!context?.userId) {
-      logger.error('❌ S3リスト取得失敗: ユーザーIDが取得できません');
-      return '❌ エラー: ユーザー認証情報が見つかりません。再度ログインしてください。';
+      logger.error('[S3_LIST] Failed to get user ID');
+      return 'Error: User authentication information not found. Please log in again.';
     }
 
     const userId = context.userId;
+    const allowedStoragePath = getCurrentStoragePath();
     const bucketName = process.env.USER_STORAGE_BUCKET_NAME;
 
     if (!bucketName) {
-      logger.error('❌ S3リスト取得失敗: バケット名が設定されていません');
-      return '❌ エラー: ストレージ設定が不完全です（USER_STORAGE_BUCKET_NAME未設定）';
+      logger.error('[S3_LIST] Bucket name not configured');
+      return 'Error: Storage configuration incomplete (USER_STORAGE_BUCKET_NAME not set)';
     }
 
-    const normalizedPath = normalizePath(path);
-    const prefix = normalizedPath
-      ? `${getUserStoragePrefix(userId)}/${normalizedPath}/`
-      : `${getUserStoragePrefix(userId)}/`;
+    // Path processing: use allowedStoragePath if empty or root
+    let normalizedPath = normalizePath(path);
+    const normalizedAllowedPath = normalizePath(allowedStoragePath);
 
-    logger.info(`📁 S3ファイル一覧取得: user=${userId}, path=${path}, recursive=${recursive}`);
+    // Redirect to allowed path if input path is empty or root
+    if (!normalizedPath || normalizedPath === '/' || normalizedPath === '') {
+      normalizedPath = normalizedAllowedPath;
+    }
+
+    // Verify path access permissions
+    if (!isPathWithinAllowedScope(normalizedPath, allowedStoragePath)) {
+      logger.warn(
+        `[S3_LIST] Access denied: user=${userId}, requestPath=${path}, allowedPath=${allowedStoragePath}`
+      );
+      return `Access denied: The specified path "${path}" is outside the permitted directory ("${allowedStoragePath}").\n\nPlease specify a path under the allowed directory.`;
+    }
+
+    // Build prefix (considering allowed storage path)
+    const basePrefix = normalizedAllowedPath
+      ? `${getUserStoragePrefix(userId)}/${normalizedAllowedPath}`
+      : getUserStoragePrefix(userId);
+
+    const prefix =
+      normalizedPath && normalizedPath !== normalizedAllowedPath
+        ? `${basePrefix}/${normalizedPath.replace(normalizedAllowedPath + '/', '')}/`
+        : `${basePrefix}${basePrefix.endsWith('/') ? '' : '/'}`;
+
+    logger.info(
+      `[S3_LIST] File list retrieval: user=${userId}, path=${path}, allowedPath=${allowedStoragePath}, recursive=${recursive}`
+    );
 
     try {
       const items: Array<{
@@ -110,7 +150,7 @@ export const s3ListFilesTool = tool({
       }> = [];
 
       if (recursive) {
-        // 再帰的取得
+        // Recursive retrieval
         let continuationToken: string | undefined;
         let totalFetched = 0;
 
@@ -147,7 +187,7 @@ export const s3ListFilesTool = tool({
           if (totalFetched >= maxResults) break;
         } while (continuationToken);
       } else {
-        // 非再帰的取得（現在のディレクトリのみ）
+        // Non-recursive retrieval (current directory only)
         const command = new ListObjectsV2Command({
           Bucket: bucketName,
           Prefix: prefix,
@@ -157,7 +197,7 @@ export const s3ListFilesTool = tool({
 
         const response = await s3Client.send(command);
 
-        // ディレクトリを追加
+        // Add directories
         if (response.CommonPrefixes) {
           for (const commonPrefix of response.CommonPrefixes) {
             if (commonPrefix.Prefix) {
@@ -171,7 +211,7 @@ export const s3ListFilesTool = tool({
           }
         }
 
-        // ファイルを追加
+        // Add files
         if (response.Contents) {
           for (const content of response.Contents) {
             if (content.Key && content.Key !== prefix) {
@@ -188,63 +228,63 @@ export const s3ListFilesTool = tool({
         }
       }
 
-      // 結果のフォーマット
+      // Format results
       if (items.length === 0) {
-        return `📁 ディレクトリは空です\nパス: ${path}\n\nファイルやディレクトリが見つかりませんでした。`;
+        return `Directory is empty\nPath: ${path}\n\nNo files or directories found.`;
       }
 
-      let output = `📁 S3ストレージ - ファイル一覧\n`;
-      output += `パス: ${path}\n`;
-      output += `モード: ${recursive ? '再帰的' : '現在のディレクトリのみ'}\n`;
-      output += `合計: ${items.length}件\n\n`;
+      let output = `S3 Storage - File List\n`;
+      output += `Path: ${path}\n`;
+      output += `Mode: ${recursive ? 'Recursive' : 'Current directory only'}\n`;
+      output += `Total: ${items.length} items\n\n`;
 
-      // ディレクトリとファイルを分けてソート
+      // Separate and sort directories and files
       const directories = items.filter((item) => item.type === 'directory');
       const files = items.filter((item) => item.type === 'file');
 
-      // ディレクトリ一覧
+      // Directory list
       if (directories.length > 0) {
-        output += `📂 ディレクトリ (${directories.length}件):\n`;
+        output += `Directories (${directories.length}):\n`;
         directories.forEach((dir) => {
-          output += `  └─ 📁 ${dir.name}/\n`;
-          output += `     パス: ${dir.path}\n`;
+          output += `  - ${dir.name}/\n`;
+          output += `    Path: ${dir.path}\n`;
         });
         output += `\n`;
       }
 
-      // ファイル一覧
+      // File list
       if (files.length > 0) {
-        output += `📄 ファイル (${files.length}件):\n`;
+        output += `Files (${files.length}):\n`;
         files.forEach((file) => {
-          output += `  └─ 📄 ${file.name}\n`;
-          output += `     パス: ${file.path}\n`;
+          output += `  - ${file.name}\n`;
+          output += `    Path: ${file.path}\n`;
           if (file.size !== undefined) {
-            output += `     サイズ: ${formatFileSize(file.size)}\n`;
+            output += `    Size: ${formatFileSize(file.size)}\n`;
           }
           if (file.lastModified) {
-            output += `     更新: ${formatRelativeTime(file.lastModified)} (${file.lastModified.toLocaleString('ja-JP')})\n`;
+            output += `    Modified: ${formatRelativeTime(file.lastModified)} (${file.lastModified.toISOString()})\n`;
           }
         });
       }
 
       logger.info(
-        `✅ S3ファイル一覧取得完了: ${items.length}件 (ディレクトリ: ${directories.length}, ファイル: ${files.length})`
+        `[S3_LIST] File list retrieval complete: ${items.length} items (directories: ${directories.length}, files: ${files.length})`
       );
 
       return output.trim();
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      logger.error(`❌ S3ファイル一覧取得エラー: ${errorMessage}`);
+      logger.error(`[S3_LIST] File list retrieval error: ${errorMessage}`);
 
-      return `❌ ファイル一覧の取得中にエラーが発生しました
-パス: ${path}
-エラー: ${errorMessage}
+      return `Error occurred while retrieving file list
+Path: ${path}
+Error: ${errorMessage}
 
-考えられる原因:
-1. 指定されたパスが存在しない
-2. S3バケットへのアクセス権限がない
-3. ネットワーク接続の問題
-4. AWS認証情報の問題`;
+Possible causes:
+1. The specified path does not exist
+2. No access permission to S3 bucket
+3. Network connection problem
+4. AWS credentials issue`;
     }
   },
 });

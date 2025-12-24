@@ -5,6 +5,7 @@ import type { ChatState, Message, MessageContent, ToolUse, ToolResult } from '..
 import { streamAgentResponse } from '../api/agent';
 import type { ConversationMessage } from '../api/sessions';
 import { useAgentStore } from './agentStore';
+import { useStorageStore } from './storageStore';
 
 // AWS AgentCore sessionId制約: [a-zA-Z0-9][a-zA-Z0-9-_]*
 // 英数字のみのカスタムnanoid（ハイフンとアンダースコアを除外）
@@ -160,12 +161,19 @@ export const useChatStore = create<ChatStore>()(
 
           // 選択中のエージェント設定を取得
           const selectedAgent = useAgentStore.getState().selectedAgent;
+
+          // ストレージパスを取得
+          const currentPath = useStorageStore.getState().currentPath;
+
           const agentConfig = selectedAgent
             ? {
                 systemPrompt: selectedAgent.systemPrompt,
                 enabledTools: selectedAgent.enabledTools,
+                storagePath: currentPath,
               }
-            : undefined;
+            : {
+                storagePath: currentPath,
+              };
 
           // デバッグログ
           if (selectedAgent) {
@@ -174,6 +182,7 @@ export const useChatStore = create<ChatStore>()(
           } else {
             console.log(`🤖 デフォルトエージェント使用`);
           }
+          console.log(`📁 ストレージパス制限: ${currentPath}`);
 
           // ストリーミングレスポンスを処理
           await streamAgentResponse(

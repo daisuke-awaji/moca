@@ -1,35 +1,49 @@
 /**
- * S3 Upload File ツール - ファイルのアップロード
+ * S3 Upload File Tool - File upload
  */
 
 import { tool } from '@strands-agents/sdk';
 import { z } from 'zod';
 import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { getCurrentContext } from '../context/request-context.js';
+import { getCurrentContext, getCurrentStoragePath } from '../context/request-context.js';
 import { logger } from '../config/index.js';
 
 const s3Client = new S3Client({ region: process.env.AWS_REGION });
 
-// Bedrock Converse API の制限を考慮したファイルサイズ上限
+// Maximum file size considering Bedrock Converse API limits
 const MAX_UPLOAD_SIZE = 5 * 1024 * 1024; // 5MB
 
 /**
- * ユーザーのストレージパスプレフィックスを生成
+ * Generate user storage path prefix
  */
 function getUserStoragePrefix(userId: string): string {
   return `users/${userId}`;
 }
 
 /**
- * パスを正規化（先頭・末尾のスラッシュを削除）
+ * Normalize path (remove leading/trailing slashes)
  */
 function normalizePath(path: string): string {
   return path.replace(/^\/+|\/+$/g, '');
 }
 
 /**
- * ファイルサイズを人間が読みやすい形式に変換
+ * Verify if path is within allowed scope
+ */
+function isPathWithinAllowedScope(inputPath: string, allowedBasePath: string): boolean {
+  const normalizedInput = normalizePath(inputPath);
+  const normalizedBase = normalizePath(allowedBasePath);
+
+  if (!normalizedBase || normalizedBase === '/') {
+    return true;
+  }
+
+  return normalizedInput === normalizedBase || normalizedInput.startsWith(normalizedBase + '/');
+}
+
+/**
+ * Convert file size to human-readable format
  */
 function formatFileSize(bytes: number): string {
   if (bytes === 0) return '0 B';
@@ -40,12 +54,12 @@ function formatFileSize(bytes: number): string {
 }
 
 /**
- * 拡張子からContent-Typeを推測
+ * Guess Content-Type from file extension
  */
 function guessContentType(filename: string): string {
   const ext = filename.split('.').pop()?.toLowerCase();
   const contentTypeMap: Record<string, string> = {
-    // テキストファイル
+    // Text files
     txt: 'text/plain',
     md: 'text/markdown',
     csv: 'text/csv',
@@ -53,7 +67,7 @@ function guessContentType(filename: string): string {
     css: 'text/css',
     xml: 'application/xml',
 
-    // プログラミング言語
+    // Programming languages
     js: 'application/javascript',
     ts: 'application/typescript',
     json: 'application/json',
@@ -64,21 +78,21 @@ function guessContentType(filename: string): string {
     go: 'text/x-go',
     rs: 'text/x-rust',
 
-    // 設定ファイル
+    // Configuration files
     yaml: 'application/x-yaml',
     yml: 'application/x-yaml',
     toml: 'application/toml',
     ini: 'text/plain',
     conf: 'text/plain',
 
-    // ドキュメント
+    // Documents
     pdf: 'application/pdf',
     doc: 'application/msword',
     docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     xls: 'application/vnd.ms-excel',
     xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
 
-    // 画像
+    // Images
     jpg: 'image/jpeg',
     jpeg: 'image/jpeg',
     png: 'image/png',
@@ -86,7 +100,7 @@ function guessContentType(filename: string): string {
     svg: 'image/svg+xml',
     webp: 'image/webp',
 
-    // その他
+    // Others
     zip: 'application/zip',
     tar: 'application/x-tar',
     gz: 'application/gzip',
@@ -96,74 +110,84 @@ function guessContentType(filename: string): string {
 }
 
 /**
- * S3 Upload File ツール
+ * S3 Upload File Tool
  */
 export const s3UploadFileTool = tool({
   name: 's3_upload_file',
   description:
-    'ユーザーのS3ストレージにテキストコンテンツをファイルとしてアップロードします。コード、ドキュメント、設定ファイルなどを保存できます。',
+    'Upload text content as a file to user S3 storage. Can save code, documents, configuration files, etc.',
   inputSchema: z.object({
     path: z
       .string()
-      .describe('アップロード先のファイルパス（必須）。例: "/notes/memo.txt", "/code/sample.py"'),
-    content: z.string().describe('ファイルの内容（必須）。テキストベースのコンテンツ'),
+      .describe('Destination file path (required). Example: "/notes/memo.txt", "/code/sample.py"'),
+    content: z.string().describe('File content (required). Text-based content'),
     contentType: z
       .string()
       .optional()
       .describe(
-        'MIMEタイプ（オプション）。指定しない場合はファイル名から自動推測。例: "text/plain", "application/json"'
+        'MIME type (optional). Auto-detected from filename if not specified. Example: "text/plain", "application/json"'
       ),
   }),
   callback: async (input) => {
     const { path, content, contentType } = input;
 
-    // リクエストコンテキストからユーザーIDを取得
+    // Get user ID and storage path from request context
     const context = getCurrentContext();
     if (!context?.userId) {
-      logger.error('❌ S3アップロード失敗: ユーザーIDが取得できません');
-      return '❌ エラー: ユーザー認証情報が見つかりません。再度ログインしてください。';
+      logger.error('[S3_UPLOAD] Failed to get user ID');
+      return 'Error: User authentication information not found. Please log in again.';
     }
 
     const userId = context.userId;
+    const allowedStoragePath = getCurrentStoragePath();
     const bucketName = process.env.USER_STORAGE_BUCKET_NAME;
 
     if (!bucketName) {
-      logger.error('❌ S3アップロード失敗: バケット名が設定されていません');
-      return '❌ エラー: ストレージ設定が不完全です（USER_STORAGE_BUCKET_NAME未設定）';
+      logger.error('[S3_UPLOAD] Bucket name not configured');
+      return 'Error: Storage configuration incomplete (USER_STORAGE_BUCKET_NAME not set)';
     }
 
-    // ファイルサイズチェック
+    // Path processing and validation (NFD normalization to match S3 keys)
+    // macOS and S3 often store in NFD format
+    const normalizedPath = normalizePath(path).normalize('NFD');
+    if (!isPathWithinAllowedScope(normalizedPath, allowedStoragePath)) {
+      logger.warn(
+        `[S3_UPLOAD] Access denied: user=${userId}, requestPath=${path}, allowedPath=${allowedStoragePath}`
+      );
+      return `Access denied: The specified path "${path}" is outside the permitted directory ("${allowedStoragePath}").`;
+    }
+
+    // Check file size
     const contentSize = Buffer.byteLength(content, 'utf-8');
     if (contentSize > MAX_UPLOAD_SIZE) {
       logger.warn(
-        `⚠️ ファイルサイズが大きすぎます: ${formatFileSize(contentSize)} > ${formatFileSize(MAX_UPLOAD_SIZE)}`
+        `[S3_UPLOAD] File size too large: ${formatFileSize(contentSize)} > ${formatFileSize(MAX_UPLOAD_SIZE)}`
       );
-      return `❌ ファイルサイズが大きすぎます
-アップロードしようとしたサイズ: ${formatFileSize(contentSize)}
-最大許容サイズ: ${formatFileSize(MAX_UPLOAD_SIZE)}
+      return `File size too large
+Attempted upload size: ${formatFileSize(contentSize)}
+Maximum allowed size: ${formatFileSize(MAX_UPLOAD_SIZE)}
 
-より小さなファイルに分割するか、内容を削減してください。`;
+Please split into smaller files or reduce content.`;
     }
 
-    const normalizedPath = normalizePath(path);
     const key = `${getUserStoragePrefix(userId)}/${normalizedPath}`;
     const filename = normalizedPath.split('/').pop() || 'unknown';
 
-    // Content-Typeの決定
+    // Determine Content-Type
     const finalContentType = contentType || guessContentType(filename);
 
     logger.info(
-      `📤 S3ファイルアップロード: user=${userId}, path=${path}, size=${formatFileSize(contentSize)}, type=${finalContentType}`
+      `[S3_UPLOAD] File upload: user=${userId}, path=${path}, allowedPath=${allowedStoragePath}, size=${formatFileSize(contentSize)}, type=${finalContentType}`
     );
 
     try {
-      // ファイルをS3にアップロード
+      // Upload file to S3
       const command = new PutObjectCommand({
         Bucket: bucketName,
         Key: key,
         Body: content,
         ContentType: finalContentType,
-        // メタデータ
+        // Metadata
         Metadata: {
           'uploaded-by': 'ai-agent',
           'upload-timestamp': new Date().toISOString(),
@@ -172,48 +196,48 @@ export const s3UploadFileTool = tool({
 
       await s3Client.send(command);
 
-      logger.info(`✅ S3アップロード完了: ${key}`);
+      logger.info(`[S3_UPLOAD] Upload complete: ${key}`);
 
-      // ダウンロード用の署名付きURLを生成
+      // Generate presigned URL for download
       const getCommand = new GetObjectCommand({
         Bucket: bucketName,
         Key: key,
       });
 
-      const expiresIn = 3600; // 1時間
+      const expiresIn = 3600; // 1 hour
       const downloadUrl = await getSignedUrl(s3Client, getCommand, { expiresIn });
       const expiresAt = new Date(Date.now() + expiresIn * 1000);
 
-      logger.info(`✅ Presigned URL生成完了: expires=${expiresIn}s`);
+      logger.info(`[S3_UPLOAD] Presigned URL generated: expires=${expiresIn}s`);
 
-      return `✅ ファイルをS3にアップロードしました
+      return `File uploaded to S3 successfully
 
-ファイル: ${path}
-サイズ: ${formatFileSize(contentSize)}
-形式: ${finalContentType}
-アップロード日時: ${new Date().toLocaleString('ja-JP')}
+File: ${path}
+Size: ${formatFileSize(contentSize)}
+Type: ${finalContentType}
+Upload Time: ${new Date().toISOString()}
 
-🔗 ダウンロードURL:
+Download URL:
 ${downloadUrl}
 
-⏰ 有効期限: ${expiresIn / 60}分（${expiresAt.toLocaleString('ja-JP')}まで）
+Expires: ${expiresIn / 60} minutes (${expiresAt.toISOString()})
 
-ファイルは正常に保存されました。
-上記のURLを使用してファイルをダウンロードできます。`;
+File has been saved successfully.
+You can download the file using the above URL.`;
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      logger.error(`❌ S3アップロードエラー: ${errorMessage}`);
+      logger.error(`[S3_UPLOAD] Upload error: ${errorMessage}`);
 
-      return `❌ ファイルのアップロード中にエラーが発生しました
-パス: ${path}
-サイズ: ${formatFileSize(contentSize)}
-エラー: ${errorMessage}
+      return `Error occurred during file upload
+Path: ${path}
+Size: ${formatFileSize(contentSize)}
+Error: ${errorMessage}
 
-考えられる原因:
-1. S3バケットへの書き込み権限がない
-2. ファイルパスが不正（使用できない文字が含まれている）
-3. ネットワーク接続の問題
-4. AWS認証情報の問題`;
+Possible causes:
+1. No write permission to S3 bucket
+2. Invalid file path (contains unusable characters)
+3. Network connection problem
+4. AWS credentials issue`;
     }
   },
 });

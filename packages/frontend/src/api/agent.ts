@@ -37,6 +37,7 @@ interface AgentConfig {
   modelId?: string; // 使用するモデルID
   enabledTools?: string[]; // 有効化するツール名の配列
   systemPrompt?: string; // カスタムシステムプロンプト
+  storagePath?: string; // ユーザーが選択しているS3ディレクトリパス
 }
 
 /**
@@ -90,6 +91,10 @@ export const streamAgentResponse = async (
 
   if (agentConfig?.systemPrompt) {
     requestBody.systemPrompt = agentConfig.systemPrompt;
+  }
+
+  if (agentConfig?.storagePath) {
+    requestBody.storagePath = agentConfig.storagePath;
   }
 
   const body = JSON.stringify(requestBody);

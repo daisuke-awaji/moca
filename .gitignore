@@ -82,3 +82,5 @@ temp/
 # Local authentication files
 .env.local
 *.local.sh
+
+!jest.config.js

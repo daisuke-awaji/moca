@@ -1,36 +1,50 @@
 /**
- * S3 Download File ツール - ファイルのダウンロード・読み取り
+ * S3 Download File Tool - Download and read files
  */
 
 import { tool } from '@strands-agents/sdk';
 import { z } from 'zod';
 import { S3Client, GetObjectCommand, HeadObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { getCurrentContext } from '../context/request-context.js';
+import { getCurrentContext, getCurrentStoragePath } from '../context/request-context.js';
 import { logger } from '../config/index.js';
 
 const s3Client = new S3Client({ region: process.env.AWS_REGION });
 
-// Bedrock Converse API の制限を考慮したファイルサイズ上限
-// Note: MAX_INLINE_SIZE (5MB) は参考値。実際のテキスト取得制限はMAX_TEXT_SIZEを使用
-const MAX_TEXT_SIZE = 1 * 1024 * 1024; // 1MB (テキストファイルの実際の取得制限)
+// Maximum file size considering Bedrock Converse API limits
+// Note: MAX_INLINE_SIZE (5MB) is a reference value. MAX_TEXT_SIZE is used for actual text retrieval limit
+const MAX_TEXT_SIZE = 1 * 1024 * 1024; // 1MB (actual text file retrieval limit)
 
 /**
- * ユーザーのストレージパスプレフィックスを生成
+ * Generate user storage path prefix
  */
 function getUserStoragePrefix(userId: string): string {
   return `users/${userId}`;
 }
 
 /**
- * パスを正規化（先頭・末尾のスラッシュを削除）
+ * Normalize path (remove leading/trailing slashes)
  */
 function normalizePath(path: string): string {
   return path.replace(/^\/+|\/+$/g, '');
 }
 
 /**
- * Content-Typeからテキストファイルかを判定
+ * Verify if path is within allowed scope
+ */
+function isPathWithinAllowedScope(inputPath: string, allowedBasePath: string): boolean {
+  const normalizedInput = normalizePath(inputPath);
+  const normalizedBase = normalizePath(allowedBasePath);
+
+  if (!normalizedBase || normalizedBase === '/') {
+    return true;
+  }
+
+  return normalizedInput === normalizedBase || normalizedInput.startsWith(normalizedBase + '/');
+}
+
+/**
+ * Determine if file is text based on Content-Type
  */
 function isTextFile(contentType: string): boolean {
   const textTypes = [
@@ -45,7 +59,7 @@ function isTextFile(contentType: string): boolean {
 }
 
 /**
- * ファイルサイズを人間が読みやすい形式に変換
+ * Convert file size to human-readable format
  */
 function formatFileSize(bytes: number): string {
   if (bytes === 0) return '0 B';
@@ -56,52 +70,67 @@ function formatFileSize(bytes: number): string {
 }
 
 /**
- * S3 Download File ツール
+ * S3 Download File Tool
  */
 export const s3DownloadFileTool = tool({
   name: 's3_download_file',
   description:
-    'ユーザーのS3ストレージからファイルをダウンロードまたは読み取ります。テキストファイルの場合は内容を直接取得し、大きなファイルやバイナリファイルの場合は署名付きダウンロードURLを生成します。',
+    'Download or read a file from user S3 storage. For text files, retrieves content directly. For large or binary files, generates a presigned download URL.',
   inputSchema: z.object({
-    path: z.string().describe('ダウンロード・読み取りするファイルのパス（必須）'),
+    path: z.string().describe('Path of the file to download/read (required)'),
     returnContent: z
       .boolean()
       .default(true)
       .describe(
-        'テキストファイルの内容を直接返すか（デフォルト: true）。falseの場合は常に署名付きURLを返す'
+        'Whether to return text file content directly (default: true). If false, always returns a presigned URL'
       ),
     maxContentLength: z
       .number()
       .min(1024)
       .max(MAX_TEXT_SIZE)
       .default(500 * 1024)
-      .describe('内容を取得する場合の最大サイズ（バイト）。デフォルト: 500KB、最大: 1MB'),
+      .describe('Maximum size in bytes for content retrieval. Default: 500KB, Max: 1MB'),
   }),
   callback: async (input) => {
     const { path, returnContent, maxContentLength } = input;
 
-    // リクエストコンテキストからユーザーIDを取得
+    // Get user ID and storage path from request context
     const context = getCurrentContext();
     if (!context?.userId) {
-      logger.error('❌ S3ファイル取得失敗: ユーザーIDが取得できません');
-      return '❌ エラー: ユーザー認証情報が見つかりません。再度ログインしてください。';
+      logger.error('[S3_DOWNLOAD] Failed to get user ID');
+      return 'Error: User authentication information not found. Please log in again.';
     }
 
     const userId = context.userId;
+    const allowedStoragePath = getCurrentStoragePath();
     const bucketName = process.env.USER_STORAGE_BUCKET_NAME;
 
     if (!bucketName) {
-      logger.error('❌ S3ファイル取得失敗: バケット名が設定されていません');
-      return '❌ エラー: ストレージ設定が不完全です（USER_STORAGE_BUCKET_NAME未設定）';
+      logger.error('[S3_DOWNLOAD] Bucket name not configured');
+      return 'Error: Storage configuration incomplete (USER_STORAGE_BUCKET_NAME not set)';
     }
 
-    const normalizedPath = normalizePath(path);
+    // Path processing and validation (NFD normalization to match S3 keys)
+    // macOS and S3 often store in NFD format
+    const normalizedPath = normalizePath(path).normalize('NFD');
+
+    // Verify path access permissions
+    if (!isPathWithinAllowedScope(normalizedPath, allowedStoragePath)) {
+      logger.warn(
+        `[S3_DOWNLOAD] Access denied: user=${userId}, requestPath=${path}, allowedPath=${allowedStoragePath}`
+      );
+      return `Access denied: The specified path "${path}" is outside the permitted directory ("${allowedStoragePath}").`;
+    }
+
     const key = `${getUserStoragePrefix(userId)}/${normalizedPath}`;
 
-    logger.info(`📥 S3ファイル取得: user=${userId}, path=${path}, returnContent=${returnContent}`);
+    logger.info(
+      `[S3_DOWNLOAD] Starting file retrieval: user=${userId}, path=${path}, allowedPath=${allowedStoragePath}, returnContent=${returnContent}`
+    );
+    logger.info(`[S3_DOWNLOAD] S3 key: bucket=${bucketName}, key=${key}`);
 
     try {
-      // まずファイルのメタデータを取得
+      // First, retrieve file metadata
       const headCommand = new HeadObjectCommand({
         Bucket: bucketName,
         Key: key,
@@ -112,52 +141,52 @@ export const s3DownloadFileTool = tool({
       const contentType = metadata.ContentType || 'application/octet-stream';
 
       logger.info(
-        `📄 ファイル情報: size=${formatFileSize(fileSize)}, type=${contentType}, lastModified=${metadata.LastModified}`
+        `[S3_DOWNLOAD] File info: size=${formatFileSize(fileSize)}, type=${contentType}, lastModified=${metadata.LastModified}`
       );
 
-      // ファイルが大きすぎる、またはバイナリファイルの場合は署名付きURL
+      // For oversized or binary files, return presigned URL
       const isText = isTextFile(contentType);
       const shouldReturnContent = returnContent && isText && fileSize <= maxContentLength;
 
       if (!shouldReturnContent) {
-        // 署名付きURLを生成
+        // Generate presigned URL
         const getCommand = new GetObjectCommand({
           Bucket: bucketName,
           Key: key,
         });
 
-        const expiresIn = 3600; // 1時間
+        const expiresIn = 3600; // 1 hour
         const downloadUrl = await getSignedUrl(s3Client, getCommand, { expiresIn });
 
-        logger.info(`✅ 署名付きURL生成完了: expires=${expiresIn}s`);
+        logger.info(`[S3_DOWNLOAD] Presigned URL generated: expires=${expiresIn}s`);
 
         let reason = '';
         if (!returnContent) {
-          reason = '（署名付きURLでのダウンロードが要求されました）';
+          reason = '(Presigned URL download was requested)';
         } else if (!isText) {
-          reason = '（バイナリファイルのため、直接内容を返せません）';
+          reason = '(Binary file cannot return content directly)';
         } else if (fileSize > maxContentLength) {
-          reason = `（ファイルサイズが制限を超えています: ${formatFileSize(fileSize)} > ${formatFileSize(maxContentLength)}）`;
+          reason = `(File size exceeds limit: ${formatFileSize(fileSize)} > ${formatFileSize(maxContentLength)})`;
         }
 
-        return `📥 S3ファイル - ダウンロードURL生成
+        return `S3 File - Download URL Generated
 
-ファイル: ${path}
-サイズ: ${formatFileSize(fileSize)}
-形式: ${contentType}
-更新日時: ${metadata.LastModified?.toLocaleString('ja-JP')}
+File: ${path}
+Size: ${formatFileSize(fileSize)}
+Type: ${contentType}
+Last Modified: ${metadata.LastModified?.toISOString()}
 
 ${reason}
 
-🔗 ダウンロードURL:
+Download URL:
 ${downloadUrl}
 
-⏰ 有効期限: ${expiresIn / 60}分（${new Date(Date.now() + expiresIn * 1000).toLocaleString('ja-JP')}まで）
+Expires: ${expiresIn / 60} minutes (${new Date(Date.now() + expiresIn * 1000).toISOString()})
 
-このURLを使用してファイルをダウンロードできます。`;
+You can download the file using this URL.`;
       }
 
-      // テキストファイルの内容を直接取得
+      // Retrieve text file content directly
       const getCommand = new GetObjectCommand({
         Bucket: bucketName,
         Key: key,
@@ -166,27 +195,27 @@ ${downloadUrl}
       const response = await s3Client.send(getCommand);
 
       if (!response.Body) {
-        throw new Error('ファイルの内容を取得できませんでした');
+        throw new Error('Failed to retrieve file content');
       }
 
-      // ストリームをテキストに変換
+      // Convert stream to text
       const bodyString = await response.Body.transformToString('utf-8');
 
-      logger.info(`✅ ファイル内容取得完了: ${bodyString.length}文字`);
+      logger.info(`[S3_DOWNLOAD] File content retrieved: ${bodyString.length} characters`);
 
-      // 内容が長すぎる場合は切り詰める
+      // Truncate if content is too long
       const truncated = bodyString.length > maxContentLength;
       const content = truncated ? bodyString.substring(0, maxContentLength) : bodyString;
 
-      let output = `📄 S3ファイル - 内容\n\n`;
-      output += `ファイル: ${path}\n`;
-      output += `サイズ: ${formatFileSize(fileSize)}\n`;
-      output += `形式: ${contentType}\n`;
-      output += `更新日時: ${metadata.LastModified?.toLocaleString('ja-JP')}\n`;
+      let output = `S3 File - Content\n\n`;
+      output += `File: ${path}\n`;
+      output += `Size: ${formatFileSize(fileSize)}\n`;
+      output += `Type: ${contentType}\n`;
+      output += `Last Modified: ${metadata.LastModified?.toISOString()}\n`;
 
       if (truncated) {
-        output += `\n⚠️ 注意: ファイルが長すぎるため、最初の ${formatFileSize(maxContentLength)} のみ表示しています。\n`;
-        output += `完全な内容を取得するには、returnContent=false を指定してダウンロードURLを取得してください。\n`;
+        output += `\nNote: File is too long, showing only the first ${formatFileSize(maxContentLength)}.\n`;
+        output += `To retrieve the complete content, specify returnContent=false to get a download URL.\n`;
       }
 
       output += `\n${'─'.repeat(60)}\n`;
@@ -194,32 +223,51 @@ ${downloadUrl}
       output += `\n${'─'.repeat(60)}\n`;
 
       if (truncated) {
-        output += `\n（... 残り ${formatFileSize(bodyString.length - maxContentLength)} 省略）`;
+        output += `\n(... remaining ${formatFileSize(bodyString.length - maxContentLength)} omitted)`;
       }
 
       return output;
     } catch (error: unknown) {
+      // Get AWS SDK error details
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      logger.error(`❌ S3ファイル取得エラー: ${errorMessage}`);
+      const errorName = error instanceof Error ? error.name : 'UnknownError';
 
-      // NotFound エラーの場合
-      if (errorMessage.includes('NotFound') || errorMessage.includes('NoSuchKey')) {
-        return `❌ ファイルが見つかりません
-パス: ${path}
+      // Detailed error logging
+      logger.error(`[S3_DOWNLOAD] Error: ${errorName} - ${errorMessage}`, {
+        path,
+        key,
+        bucket: bucketName,
+        userId,
+      });
 
-指定されたファイルは存在しません。
-s3_list_files ツールを使用して、利用可能なファイルを確認してください。`;
+      if (error instanceof Error && error.stack) {
+        logger.error(`Stack trace: ${error.stack}`);
       }
 
-      return `❌ ファイルの取得中にエラーが発生しました
-パス: ${path}
-エラー: ${errorMessage}
+      // NotFound error case
+      if (errorMessage.includes('NotFound') || errorMessage.includes('NoSuchKey')) {
+        return `File not found
+Path: ${path}
+S3 Key: ${key}
 
-考えられる原因:
-1. 指定されたファイルが存在しない
-2. ファイルへのアクセス権限がない
-3. S3バケットへの接続に問題がある
-4. AWS認証情報の問題`;
+The specified file does not exist.
+Use the s3_list_files tool to check available files.`;
+      }
+
+      return `Error occurred while retrieving file
+Path: ${path}
+S3 Key: ${key}
+Error Type: ${errorName}
+Error: ${errorMessage}
+
+Possible causes:
+1. The specified file does not exist
+2. File name encoding issue (especially Japanese filenames)
+3. No access permission to the file
+4. Connection problem to S3 bucket
+5. AWS credentials issue
+
+Debug info: Check logs for details`;
     }
   },
 });

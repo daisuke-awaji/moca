@@ -8,6 +8,10 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "dev": "tsx watch src/index.ts",
+    "test": "NODE_OPTIONS='--experimental-vm-modules --no-warnings' jest --passWithNoTests",
+    "test:watch": "NODE_OPTIONS='--experimental-vm-modules --no-warnings' jest --watch",
+    "test:coverage": "NODE_OPTIONS='--experimental-vm-modules --no-warnings' jest --coverage",
+    "test:integration": "NODE_OPTIONS='--experimental-vm-modules --no-warnings' jest --testMatch='**/*.integration.test.ts' --testPathIgnorePatterns='/node_modules/'",
     "test:local": "tsx src/test.ts",
     "clean": "rimraf dist",
     "docker:build": "docker build -t agentcore-agent .",
@@ -42,8 +46,11 @@
   "devDependencies": {
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",
+    "@types/jest": "^29.5.0",
     "@types/node": "^20.10.0",
+    "jest": "^29.7.0",
     "rimraf": "^5.0.5",
+    "ts-jest": "^29.2.0",
     "tsx": "^4.6.0",
     "typescript": "^5.3.0"
   },

@@ -10,6 +10,7 @@ import { buildSystemPrompt } from './prompts/index.js';
 import { createBedrockModel } from './models/index.js';
 import { MCPToolDefinition } from './schemas/types.js';
 import { mcpClient } from './mcp/client.js';
+import { getCurrentStoragePath } from './context/request-context.js';
 import type { SessionStorage, SessionConfig } from './session/types.js';
 
 /**
@@ -73,11 +74,13 @@ export async function createAgent(
     const model = createBedrockModel({ modelId: options?.modelId });
     logger.info(`🤖 使用モデル: ${options?.modelId || 'デフォルト'}`);
 
-    // 4. システムプロンプトを生成
+    // 4. システムプロンプトを生成（ストレージパス情報を含む）
+    const storagePath = getCurrentStoragePath();
     const systemPrompt = buildSystemPrompt({
       customPrompt: options?.systemPrompt,
       tools: allTools,
       mcpTools: mcpTools as MCPToolDefinition[],
+      storagePath,
     });
 
     if (options?.systemPrompt) {

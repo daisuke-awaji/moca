@@ -25,8 +25,6 @@ router.get('/list', async (req: AuthenticatedRequest, res: Response) => {
 
     const path = (req.query.path as string) || '/';
 
-    console.log(`📁 GET /storage/list - User: ${userId}, Path: ${path}`);
-
     const result = await storageService.listStorageItems(userId, path);
 
     res.status(200).json(result);
@@ -55,8 +53,6 @@ router.post('/upload', async (req: AuthenticatedRequest, res: Response) => {
     if (!fileName) {
       return res.status(400).json({ error: 'Bad Request', message: 'fileName is required' });
     }
-
-    console.log(`📤 POST /storage/upload - User: ${userId}, File: ${fileName}, Path: ${path}`);
 
     const result = await storageService.generateUploadUrl(userId, fileName, path, contentType);
 
@@ -87,10 +83,6 @@ router.post('/directory', async (req: AuthenticatedRequest, res: Response) => {
       return res.status(400).json({ error: 'Bad Request', message: 'directoryName is required' });
     }
 
-    console.log(
-      `📁 POST /storage/directory - User: ${userId}, Directory: ${directoryName}, Path: ${path}`
-    );
-
     const result = await storageService.createDirectory(userId, directoryName, path);
 
     res.status(201).json(result);
@@ -120,8 +112,6 @@ router.delete('/file', async (req: AuthenticatedRequest, res: Response) => {
       return res.status(400).json({ error: 'Bad Request', message: 'path is required' });
     }
 
-    console.log(`🗑️  DELETE /storage/file - User: ${userId}, Path: ${path}`);
-
     const result = await storageService.deleteFile(userId, path);
 
     res.status(200).json(result);
@@ -150,8 +140,6 @@ router.delete('/directory', async (req: AuthenticatedRequest, res: Response) => 
     if (!path) {
       return res.status(400).json({ error: 'Bad Request', message: 'path is required' });
     }
-
-    console.log(`🗑️  DELETE /storage/directory - User: ${userId}, Path: ${path}`);
 
     const result = await storageService.deleteDirectory(userId, path);
 
@@ -189,8 +177,6 @@ router.get('/download', async (req: AuthenticatedRequest, res: Response) => {
     if (!path) {
       return res.status(400).json({ error: 'Bad Request', message: 'path is required' });
     }
-
-    console.log(`📥 GET /storage/download - User: ${userId}, Path: ${path}`);
 
     const downloadUrl = await storageService.generateDownloadUrl(userId, path);
 
