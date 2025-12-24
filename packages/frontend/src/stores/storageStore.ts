@@ -4,11 +4,12 @@
  */
 
 import { create } from 'zustand';
-import type { StorageItem, ListStorageResponse } from '../api/storage';
+import type { StorageItem, ListStorageResponse, FolderNode } from '../api/storage';
 import * as storageApi from '../api/storage';
 
 // localStorageキー
 const STORAGE_PATH_KEY = 'storage-current-path';
+const EXPANDED_FOLDERS_KEY = 'storage-expanded-folders';
 
 interface StorageState {
   // 状態
@@ -19,6 +20,11 @@ interface StorageState {
   isUploading: boolean;
   uploadProgress: number;
 
+  // フォルダツリー関連
+  folderTree: FolderNode[];
+  isTreeLoading: boolean;
+  expandedFolders: Set<string>;
+
   // アクション
   setCurrentPath: (path: string) => void;
   loadItems: (path?: string) => Promise<void>;
@@ -27,7 +33,34 @@ interface StorageState {
   deleteItem: (item: StorageItem) => Promise<void>;
   refresh: () => Promise<void>;
   clearError: () => void;
+
+  // フォルダツリーアクション
+  loadFolderTree: () => Promise<void>;
+  toggleFolderExpand: (path: string) => void;
+  setExpandedFolders: (folders: Set<string>) => void;
 }
+
+// localStorageから展開フォルダを読み込み
+const loadExpandedFolders = (): Set<string> => {
+  try {
+    const stored = localStorage.getItem(EXPANDED_FOLDERS_KEY);
+    if (stored) {
+      return new Set(JSON.parse(stored));
+    }
+  } catch (error) {
+    console.error('Failed to load expanded folders from localStorage:', error);
+  }
+  return new Set(['/']); // デフォルトでルートを展開
+};
+
+// localStorageに展開フォルダを保存
+const saveExpandedFolders = (folders: Set<string>) => {
+  try {
+    localStorage.setItem(EXPANDED_FOLDERS_KEY, JSON.stringify(Array.from(folders)));
+  } catch (error) {
+    console.error('Failed to save expanded folders to localStorage:', error);
+  }
+};
 
 export const useStorageStore = create<StorageState>((set, get) => ({
   // 初期状態（localStorageから読み込み）
@@ -37,6 +70,11 @@ export const useStorageStore = create<StorageState>((set, get) => ({
   error: null,
   isUploading: false,
   uploadProgress: 0,
+
+  // フォルダツリー初期状態
+  folderTree: [],
+  isTreeLoading: false,
+  expandedFolders: loadExpandedFolders(),
 
   // パスを設定
   setCurrentPath: (path: string) => {
@@ -121,6 +159,9 @@ export const useStorageStore = create<StorageState>((set, get) => ({
       // リストを再読み込み（現在のパスで）
       await get().loadItems(currentPath);
 
+      // 新しいディレクトリが作成された可能性があるのでツリーも更新
+      await get().loadFolderTree();
+
       set({
         isUploading: false,
         uploadProgress: 100,
@@ -151,6 +192,9 @@ export const useStorageStore = create<StorageState>((set, get) => ({
 
       // リストを再読み込み
       await get().loadItems(targetPath);
+
+      // ツリーを更新
+      await get().loadFolderTree();
     } catch (error) {
       console.error('Failed to create directory:', error);
       set({
@@ -174,6 +218,11 @@ export const useStorageStore = create<StorageState>((set, get) => ({
 
       // リストを再読み込み
       await get().loadItems();
+
+      // ディレクトリが削除された場合はツリーも更新
+      if (item.type === 'directory') {
+        await get().loadFolderTree();
+      }
     } catch (error) {
       console.error('Failed to delete item:', error);
       set({
@@ -191,5 +240,42 @@ export const useStorageStore = create<StorageState>((set, get) => ({
   // エラーをクリア
   clearError: () => {
     set({ error: null });
+  },
+
+  // フォルダツリーを読み込み
+  loadFolderTree: async () => {
+    set({ isTreeLoading: true });
+
+    try {
+      const response = await storageApi.fetchFolderTree();
+      set({
+        folderTree: response.tree,
+        isTreeLoading: false,
+      });
+    } catch (error) {
+      console.error('Failed to load folder tree:', error);
+      set({
+        error: error instanceof Error ? error.message : 'フォルダツリーの読み込みに失敗しました',
+        isTreeLoading: false,
+      });
+    }
+  },
+
+  // フォルダの展開/折りたたみをトグル
+  toggleFolderExpand: (path: string) => {
+    const expandedFolders = new Set(get().expandedFolders);
+    if (expandedFolders.has(path)) {
+      expandedFolders.delete(path);
+    } else {
+      expandedFolders.add(path);
+    }
+    set({ expandedFolders });
+    saveExpandedFolders(expandedFolders);
+  },
+
+  // 展開フォルダのセットを設定
+  setExpandedFolders: (folders: Set<string>) => {
+    set({ expandedFolders: folders });
+    saveExpandedFolders(folders);
   },
 }));

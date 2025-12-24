@@ -25,6 +25,7 @@ import type { StorageItem } from '../api/storage';
 import { Modal } from './ui/Modal/Modal';
 import { generateDownloadUrl } from '../api/storage';
 import { Tooltip } from './ui/Tooltip/Tooltip';
+import { FolderTree } from './FolderTree';
 
 interface StorageManagementModalProps {
   isOpen: boolean;
@@ -177,11 +178,16 @@ export function StorageManagementModal({ isOpen, onClose }: StorageManagementMod
     error,
     isUploading,
     uploadProgress,
+    folderTree,
+    isTreeLoading,
+    expandedFolders,
     loadItems,
     uploadFile,
     createDirectory,
     deleteItem,
     clearError,
+    loadFolderTree,
+    toggleFolderExpand,
   } = useStorageStore();
 
   const [newDirectoryName, setNewDirectoryName] = useState('');
@@ -225,11 +231,13 @@ export function StorageManagementModal({ isOpen, onClose }: StorageManagementMod
       // 初期表示時にもURLハッシュを設定（履歴を追加）
       setPathToHash(pathFromHash);
       loadItems(pathFromHash);
+      // フォルダツリーも読み込み
+      loadFolderTree();
     } else {
       // モーダルを閉じたらURLハッシュをクリア
       clearHash();
     }
-  }, [isOpen, loadItems]);
+  }, [isOpen, loadItems, loadFolderTree]);
 
   // ブラウザバック/フォワードの検知
   useEffect(() => {
@@ -483,7 +491,7 @@ export function StorageManagementModal({ isOpen, onClose }: StorageManagementMod
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="xl" className="max-w-4xl">
+    <Modal isOpen={isOpen} onClose={onClose} size="xl" className="max-w-6xl h-[85vh]">
       {/* ヘッダー */}
       <div className="border-b border-gray-200 px-6 py-4">
         <div className="flex items-center justify-between">
@@ -512,32 +520,6 @@ export function StorageManagementModal({ isOpen, onClose }: StorageManagementMod
           >
             <X className="w-5 h-5" />
           </button>
-        </div>
-
-        {/* パンくずナビゲーション */}
-        <div className="flex items-center gap-1 mt-3 text-sm">
-          <button
-            onClick={handleNavigateToRoot}
-            className="flex items-center gap-1 px-2 py-1 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors"
-          >
-            <Home className="w-4 h-4" />
-            <span>ルート</span>
-          </button>
-
-          {pathSegments.map((segment, index) => {
-            const segmentPath = '/' + pathSegments.slice(0, index + 1).join('/');
-            return (
-              <div key={segmentPath} className="flex items-center gap-1">
-                <ChevronRight className="w-4 h-4 text-gray-400" />
-                <button
-                  onClick={() => handleNavigate(segmentPath)}
-                  className="px-2 py-1 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors"
-                >
-                  {segment}
-                </button>
-              </div>
-            );
-          })}
         </div>
       </div>
 
@@ -618,77 +600,128 @@ export function StorageManagementModal({ isOpen, onClose }: StorageManagementMod
         )}
       </div>
 
-      {/* コンテンツエリア */}
-      <div
-        className={`px-6 py-4 overflow-y-auto flex-1 min-h-0 ${
-          isDragOver ? 'bg-blue-50 border-2 border-dashed border-blue-400' : ''
-        }`}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-      >
-        {/* エラー表示 */}
-        {error && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
-            <AlertCircle className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
-            <div className="flex-1">
-              <p className="text-sm text-red-800">{error}</p>
+      {/* コンテンツエリア: 2カラムレイアウト */}
+      <div className="flex divide-x divide-gray-200 flex-1 min-h-0">
+        {/* 左カラム: フォルダツリー */}
+        <div className="w-[240px] flex-shrink-0 overflow-y-auto bg-gray-50">
+          <div className="px-3 py-2">
+            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-2">
+              フォルダ
+            </div>
+            <FolderTree
+              tree={folderTree}
+              selectedPath={currentPath}
+              expandedPaths={expandedFolders}
+              onSelect={handleNavigate}
+              onToggleExpand={toggleFolderExpand}
+              isLoading={isTreeLoading}
+            />
+          </div>
+        </div>
+
+        {/* 右カラム: ファイル一覧 */}
+        <div className="flex-1 flex flex-col min-w-0">
+          {/* パンくずナビゲーション */}
+          <div className="px-6 py-3 border-b border-gray-100 bg-white">
+            <div className="flex items-center gap-1 text-sm">
               <button
-                onClick={clearError}
-                className="text-sm text-red-600 hover:text-red-800 font-medium mt-1"
+                onClick={handleNavigateToRoot}
+                className="flex items-center gap-1 px-2 py-1 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors"
               >
-                閉じる
+                <Home className="w-4 h-4" />
+                <span>ルート</span>
               </button>
+
+              {pathSegments.map((segment, index) => {
+                const segmentPath = '/' + pathSegments.slice(0, index + 1).join('/');
+                return (
+                  <div key={segmentPath} className="flex items-center gap-1">
+                    <ChevronRight className="w-4 h-4 text-gray-400" />
+                    <button
+                      onClick={() => handleNavigate(segmentPath)}
+                      className="px-2 py-1 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors"
+                    >
+                      {segment}
+                    </button>
+                  </div>
+                );
+              })}
             </div>
           </div>
-        )}
 
-        {/* ローディング */}
-        {isLoading && (
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
-            <span className="ml-2 text-sm text-gray-600">読み込み中...</span>
-          </div>
-        )}
-
-        {/* アイテム一覧 */}
-        {!isLoading && (
-          <>
-            {items.length === 0 ? (
-              <div className="text-center py-12">
-                <Folder className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                <p className="text-sm text-gray-600 mb-2">フォルダが空です</p>
-                <p className="text-xs text-gray-500">
-                  ファイルをドラッグ&ドロップするか、アップロードボタンをクリックしてください
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {items.map((item) => (
-                  <StorageItemComponent
-                    key={item.path}
-                    item={item}
-                    onDelete={handleDelete}
-                    onNavigate={handleNavigate}
-                    onDownload={handleDownload}
-                    onContextMenu={handleContextMenu}
-                    isDeleting={deletingItemPath === item.path}
-                  />
-                ))}
+          {/* ファイルリスト */}
+          <div
+            className={`flex-1 overflow-y-auto px-6 py-4 relative ${
+              isDragOver ? 'bg-blue-50' : ''
+            }`}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+          >
+            {/* エラー表示 */}
+            {error && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
+                <div className="flex-1">
+                  <p className="text-sm text-red-800">{error}</p>
+                  <button
+                    onClick={clearError}
+                    className="text-sm text-red-600 hover:text-red-800 font-medium mt-1"
+                  >
+                    閉じる
+                  </button>
+                </div>
               </div>
             )}
-          </>
-        )}
 
-        {/* ドラッグオーバー時のオーバーレイ */}
-        {isDragOver && (
-          <div className="absolute inset-0 flex items-center justify-center bg-blue-50/90 pointer-events-none">
-            <div className="text-center">
-              <Upload className="w-12 h-12 text-blue-500 mx-auto mb-2" />
-              <p className="text-lg font-medium text-blue-900">ファイルをドロップ</p>
-            </div>
+            {/* ローディング */}
+            {isLoading && (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+                <span className="ml-2 text-sm text-gray-600">読み込み中...</span>
+              </div>
+            )}
+
+            {/* アイテム一覧 */}
+            {!isLoading && (
+              <>
+                {items.length === 0 ? (
+                  <div className="text-center py-12">
+                    <Folder className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                    <p className="text-sm text-gray-600 mb-2">フォルダが空です</p>
+                    <p className="text-xs text-gray-500">
+                      ファイルをドラッグ&ドロップするか、アップロードボタンをクリックしてください
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {items.map((item) => (
+                      <StorageItemComponent
+                        key={item.path}
+                        item={item}
+                        onDelete={handleDelete}
+                        onNavigate={handleNavigate}
+                        onDownload={handleDownload}
+                        onContextMenu={handleContextMenu}
+                        isDeleting={deletingItemPath === item.path}
+                      />
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* ドラッグオーバー時のオーバーレイ */}
+            {isDragOver && (
+              <div className="absolute inset-0 flex items-center justify-center bg-blue-50/90 pointer-events-none">
+                <div className="text-center">
+                  <Upload className="w-12 h-12 text-blue-500 mx-auto mb-2" />
+                  <p className="text-lg font-medium text-blue-900">ファイルをドロップ</p>
+                </div>
+              </div>
+            )}
           </div>
-        )}
+        </div>
 
         {/* コンテキストメニュー */}
         {contextMenu && (

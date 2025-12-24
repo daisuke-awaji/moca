@@ -359,3 +359,101 @@ export async function checkFileExists(userId: string, filePath: string): Promise
     return false;
   }
 }
+
+/**
+ * フォルダツリー構造
+ */
+export interface FolderNode {
+  path: string;
+  name: string;
+  children: FolderNode[];
+}
+
+/**
+ * フォルダツリーを取得
+ * ルートからの全フォルダを階層構造で返す
+ */
+export async function getFolderTree(userId: string): Promise<FolderNode[]> {
+  const bucketName = config.userStorageBucketName;
+  if (!bucketName) {
+    throw new Error('USER_STORAGE_BUCKET_NAME is not configured');
+  }
+
+  const prefix = `${getUserStoragePrefix(userId)}/`;
+  console.log(`📁 Building folder tree for user ${userId} (prefix: ${prefix})`);
+
+  // すべてのオブジェクトを取得（ディレクトリマーカー含む）
+  const allObjects: string[] = [];
+  let continuationToken: string | undefined;
+
+  do {
+    const command = new ListObjectsV2Command({
+      Bucket: bucketName,
+      Prefix: prefix,
+      ContinuationToken: continuationToken,
+    });
+
+    const response = await s3Client.send(command);
+
+    if (response.Contents) {
+      for (const obj of response.Contents) {
+        if (obj.Key && obj.Key !== prefix) {
+          // プレフィックスを除いた相対パスを取得
+          const relativePath = obj.Key.replace(prefix, '');
+          allObjects.push(relativePath);
+        }
+      }
+    }
+
+    continuationToken = response.NextContinuationToken;
+  } while (continuationToken);
+
+  // ディレクトリパスを抽出（重複排除）
+  const dirPaths = new Set<string>();
+  for (const objPath of allObjects) {
+    const parts = objPath.split('/');
+    let currentPath = '';
+    for (let i = 0; i < parts.length - 1; i++) {
+      currentPath += (currentPath ? '/' : '') + parts[i];
+      dirPaths.add(currentPath);
+    }
+  }
+
+  // ディレクトリパスをソート
+  const sortedDirPaths = Array.from(dirPaths).sort();
+
+  // ツリー構造を構築
+  const root: FolderNode = {
+    path: '/',
+    name: 'ルート',
+    children: [],
+  };
+
+  const pathMap = new Map<string, FolderNode>();
+  pathMap.set('/', root);
+
+  for (const dirPath of sortedDirPaths) {
+    const parts = dirPath.split('/');
+    const name = parts[parts.length - 1];
+    const fullPath = `/${dirPath}`;
+
+    const node: FolderNode = {
+      path: fullPath,
+      name,
+      children: [],
+    };
+
+    pathMap.set(fullPath, node);
+
+    // 親ノードを見つけて追加
+    const parentPath = parts.length > 1 ? `/${parts.slice(0, -1).join('/')}` : '/';
+    const parentNode = pathMap.get(parentPath);
+    if (parentNode) {
+      parentNode.children.push(node);
+    }
+  }
+
+  console.log(`✅ Folder tree built with ${sortedDirPaths.length} directories`);
+
+  return [root];
+}

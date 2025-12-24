@@ -192,4 +192,27 @@ router.get('/download', async (req: AuthenticatedRequest, res: Response) => {
   }
 });
 
+/**
+ * GET /storage/tree
+ * フォルダツリー構造を取得
+ */
+router.get('/tree', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const userId = req.userId;
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized', message: 'User ID not found' });
+    }
+
+    const tree = await storageService.getFolderTree(userId);
+
+    res.status(200).json({ tree });
+  } catch (error) {
+    console.error('❌ Storage tree generation error:', error);
+    res.status(500).json({
+      error: 'Internal Server Error',
+      message: error instanceof Error ? error.message : 'Failed to generate folder tree',
+    });
+  }
+});
+
 export default router;

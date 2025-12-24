@@ -27,6 +27,16 @@ export interface UploadUrlResponse {
   expiresIn: number;
 }
 
+export interface FolderNode {
+  path: string;
+  name: string;
+  children: FolderNode[];
+}
+
+export interface FolderTreeResponse {
+  tree: FolderNode[];
+}
+
 /**
  * 認証ヘッダーを作成（自動トークンリフレッシュ付き）
  */
@@ -197,4 +207,22 @@ export async function generateDownloadUrl(path: string): Promise<string> {
 
   const data = await response.json();
   return data.downloadUrl;
+}
+
+/**
+ * フォルダツリー構造を取得
+ */
+export async function fetchFolderTree(): Promise<FolderTreeResponse> {
+  const headers = await createAuthHeaders();
+
+  const response = await fetch(`${API_BASE_URL}/storage/tree`, {
+    method: 'GET',
+    headers,
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch folder tree: ${response.statusText}`);
+  }
+
+  return response.json();
 }
