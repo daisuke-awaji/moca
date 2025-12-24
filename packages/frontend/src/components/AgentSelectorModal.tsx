@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Bot, MoreHorizontal, Edit2, Trash2, AlertTriangle, icons } from 'lucide-react';
+import { Plus, Bot, MoreHorizontal, Edit2, Trash2, AlertTriangle } from 'lucide-react';
+import * as icons from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { AgentForm } from './AgentForm';
 import { Modal, ConfirmModal } from './ui/Modal';

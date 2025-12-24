@@ -83,6 +83,7 @@ export const DEFAULT_AGENTS: CreateAgentInput[] = [
   {
     name: '汎用アシスタント',
     description: '様々なタスクに対応できる汎用的なAIアシスタント',
+    icon: 'Bot',
     systemPrompt: `あなたは親切で知識豊富なAIアシスタントです。ユーザーの質問に対して、正確で分かりやすい回答を提供してください。
 
 以下の点を心がけてください：
@@ -129,6 +130,7 @@ export const DEFAULT_AGENTS: CreateAgentInput[] = [
   {
     name: 'Code Review Agent',
     description: 'コードレビューとプログラミング支援に特化したAgent',
+    icon: 'Code',
     systemPrompt: `You are an experienced software engineer specializing in code review and programming assistance. Your role is to provide thorough, actionable feedback that helps developers write better, more maintainable code.
 
 [Basic functions]
@@ -227,6 +229,7 @@ export const DEFAULT_AGENTS: CreateAgentInput[] = [
     name: 'Knowledge Base Search Agent',
     description:
       'A specialized agent for searching and retrieving information from Amazon Bedrock Knowledge Base using semantic search',
+    icon: 'Search',
     systemPrompt: `You are an AI assistant specializing in information retrieval and analysis using Amazon Bedrock Knowledge Base. Your role is to help users find accurate, relevant information through semantic search and provide comprehensive answers with proper source citations.
 
 [Configuration]
@@ -336,6 +339,7 @@ export const DEFAULT_AGENTS: CreateAgentInput[] = [
     name: 'Data Analyst Agent',
     description:
       'A specialized agent for data analysis, statistical processing, and data visualization using code execution and file operations',
+    icon: 'BarChart3',
     systemPrompt: `You are an expert data analyst specializing in data processing, statistical analysis, and visualization. Your role is to help users extract insights from data, perform rigorous analysis, and create clear, informative visualizations.
 
 [Basic functions]
@@ -470,6 +474,7 @@ export const DEFAULT_AGENTS: CreateAgentInput[] = [
     name: 'Web Deep Researcher',
     description:
       'A research-specialized agent that conducts in-depth research, information gathering, and analysis using the web',
+    icon: 'Globe',
     systemPrompt: `You are an AI assistant that performs multi-stage web searches like DeepSearch to gather comprehensive information to achieve the user's goals.  - Perform multiple web searches in succession to gather in-depth information.
 
 [Basic functions]
