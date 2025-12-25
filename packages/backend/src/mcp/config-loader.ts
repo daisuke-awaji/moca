@@ -5,9 +5,28 @@
 import { readFileSync, existsSync } from 'fs';
 import { resolve } from 'path';
 import { z } from 'zod';
-import { logger } from '../config/index.js';
 import type { MCPConfig, MCPServerConfig } from './types.js';
 import { MCPConfigError } from './types.js';
+
+/**
+ * ロガー関数の型定義
+ */
+interface Logger {
+  info: (message: string, ...args: unknown[]) => void;
+  warn: (message: string, ...args: unknown[]) => void;
+  error: (message: string, ...args: unknown[]) => void;
+  debug?: (message: string, ...args: unknown[]) => void;
+}
+
+/**
+ * デフォルトロガー（console を使用）
+ */
+const defaultLogger: Logger = {
+  info: console.log,
+  warn: console.warn,
+  error: console.error,
+  debug: console.debug,
+};
 
 /**
  * Zod スキーマ定義
@@ -56,7 +75,7 @@ const MCPConfigSchema = z.object({
  * 環境変数を展開
  * ${VAR_NAME} 形式の文字列を process.env.VAR_NAME に置換
  */
-function expandEnvVars(value: string): string {
+function expandEnvVars(value: string, logger: Logger = defaultLogger): string {
   return value.replace(/\$\{([^}]+)\}/g, (match, varName) => {
     const envValue = process.env[varName];
     if (envValue === undefined) {
@@ -70,17 +89,17 @@ function expandEnvVars(value: string): string {
 /**
  * オブジェクト内の全ての文字列値に対して環境変数を展開
  */
-function expandEnvVarsInObject<T>(obj: T): T {
+function expandEnvVarsInObject<T>(obj: T, logger: Logger = defaultLogger): T {
   if (typeof obj === 'string') {
-    return expandEnvVars(obj) as T;
+    return expandEnvVars(obj, logger) as T;
   }
   if (Array.isArray(obj)) {
-    return obj.map((item) => expandEnvVarsInObject(item)) as T;
+    return obj.map((item) => expandEnvVarsInObject(item, logger)) as T;
   }
   if (obj !== null && typeof obj === 'object') {
     const result: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(obj)) {
-      result[key] = expandEnvVarsInObject(value);
+      result[key] = expandEnvVarsInObject(value, logger);
     }
     return result as T;
   }
@@ -100,13 +119,13 @@ function inferTransport(serverConfig: Record<string, unknown>): Record<string, u
 
   // commandがあればstdio
   if (serverConfig.command) {
-    logger.debug('transport を自動推測: stdio (command フィールドが存在)');
+    console.debug('transport を自動推測: stdio (command フィールドが存在)');
     return { ...serverConfig, transport: 'stdio' };
   }
 
   // urlがあればhttp (デフォルト、将来的にSSE判定を追加可能)
   if (serverConfig.url) {
-    logger.debug('transport を自動推測: http (url フィールドが存在)');
+    console.debug('transport を自動推測: http (url フィールドが存在)');
     return { ...serverConfig, transport: 'http' };
   }
 
@@ -118,9 +137,13 @@ function inferTransport(serverConfig: Record<string, unknown>): Record<string, u
  * mcp.json 設定ファイルを読み込み
  *
  * @param configPath 設定ファイルのパス (省略時は環境変数 MCP_CONFIG_PATH または ./mcp.json)
+ * @param logger ロガー（省略時はコンソール）
  * @returns MCPConfig オブジェクト、またはファイルが存在しない場合は null
  */
-export function loadMCPConfig(configPath?: string): MCPConfig | null {
+export function loadMCPConfig(
+  configPath?: string,
+  logger: Logger = defaultLogger
+): MCPConfig | null {
   // 設定ファイルパスの決定
   const path = configPath || process.env.MCP_CONFIG_PATH || resolve(process.cwd(), 'mcp.json');
 
@@ -138,7 +161,7 @@ export function loadMCPConfig(configPath?: string): MCPConfig | null {
     const rawConfig = JSON.parse(content);
 
     // 環境変数を展開
-    const expandedConfig = expandEnvVarsInObject(rawConfig);
+    const expandedConfig = expandEnvVarsInObject(rawConfig, logger);
 
     // transport を自動推測
     if (expandedConfig.mcpServers) {

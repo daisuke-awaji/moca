@@ -3,17 +3,18 @@
  * AgentCore Runtime で動作し、AgentCore Gateway のツールを使用する AI Agent
  */
 
-import { Agent, HookProvider, Message } from '@strands-agents/sdk';
+import { Agent, HookProvider, Message, McpClient } from '@strands-agents/sdk';
 import { logger, config } from './config/index.js';
 import { localTools, convertMCPToolsToStrands } from './tools/index.js';
 import { buildSystemPrompt } from './prompts/index.js';
 import { createBedrockModel } from './models/index.js';
 import { MCPToolDefinition } from './schemas/types.js';
 import { mcpClient } from './mcp/client.js';
-import { loadMCPConfig, getEnabledMCPServers, createMCPClients } from './mcp/index.js';
+import { getEnabledMCPServers, createMCPClients } from './mcp/index.js';
 import { getCurrentStoragePath } from './context/request-context.js';
 import type { SessionStorage, SessionConfig } from './session/types.js';
 import { retrieveLongTermMemory } from './session/memory-retriever.js';
+import type { MCPConfig } from './mcp/types.js';
 
 /**
  * AgentCore Runtime 用の Strands Agent 作成オプション
@@ -30,13 +31,15 @@ export interface CreateAgentOptions {
   memoryContext?: string; // 検索クエリ（ユーザーの最新メッセージなど）
   actorId?: string; // ユーザーID
   memoryTopK?: number; // 取得する長期記憶の件数（デフォルト: 10）
+  // ユーザー定義 MCP サーバー設定
+  mcpConfig?: Record<string, unknown>; // mcp.json 形式の設定
 }
 
 /**
  * ツールをフィルタリング
  */
 function filterTools<T extends { name: string }>(tools: T[], enabledTools?: string[]): T[] {
-  if (enabledTools === undefined) return tools;
+  if (enabledTools === undefined) return [];
   if (enabledTools.length === 0) {
     logger.info('🔧 ツールを無効化: 空配列が指定されました');
     return [];
@@ -143,10 +146,19 @@ export async function createAgent(
   logger.info('Strands Agent を初期化中...');
 
   try {
-    // 1. ローカル MCP 設定を読み込み
-    const localMCPConfig = loadMCPConfig();
-    const localMCPClients =
-      localMCPConfig !== null ? createMCPClients(getEnabledMCPServers(localMCPConfig)) : [];
+    // 1. ユーザー定義 MCP クライアントを生成（リクエストから受け取った mcpConfig）
+    let userMCPClients: McpClient[] = [];
+    if (options?.mcpConfig) {
+      try {
+        logger.info('🔧 ユーザー定義 MCP 設定を処理中...');
+        const userMCPServers = getEnabledMCPServers(options.mcpConfig as unknown as MCPConfig);
+        userMCPClients = createMCPClients(userMCPServers);
+        logger.info(`✅ ユーザー定義 MCP クライアント: ${userMCPClients.length}件`);
+      } catch (error) {
+        logger.error('❌ ユーザー定義 MCP クライアントの生成に失敗:', error);
+        // エラーがあってもスキップして続行
+      }
+    }
 
     // 2. セッション履歴復元、Gateway MCPツール取得、長期記憶取得を並列実行
     const [savedMessages, gatewayMCPTools, longTermMemoriesResult] = await Promise.all([
@@ -167,15 +179,17 @@ export async function createAgent(
     const gatewayStrandsTools = convertMCPToolsToStrands(gatewayMCPTools as MCPToolDefinition[]);
 
     // 4. すべてのツールを統合
-    // - ローカル Python ツール等
-    // - AgentCore Gateway 経由のツール
-    // - ローカル MCP サーバー (stdio/http/sse)
-    let allTools: any[] = [...localTools, ...gatewayStrandsTools, ...localMCPClients];
-    allTools = filterTools(allTools, options?.enabledTools);
-    allTools = [...allTools, localMCPClients];
+    // - ローカル Python ツール等（enabledTools でフィルタリング）
+    // - AgentCore Gateway 経由のツール（enabledTools でフィルタリング）
+    // - ユーザー定義 MCP サーバー（リクエストから、常に全て有効）
+    const filteredTools = filterTools(
+      [...localTools, ...gatewayStrandsTools],
+      options?.enabledTools
+    );
+    const allTools = [...filteredTools, ...userMCPClients] as unknown[];
 
     logger.info(
-      `✅ 合計${allTools.length}個のツールを準備 (ローカル: ${localTools.length}, Gateway: ${gatewayStrandsTools.length}, MCP: ${localMCPClients.length})`
+      `✅ 合計${allTools.length}個のツールを準備 (ローカル: ${localTools.length}, Gateway: ${gatewayStrandsTools.length}, ユーザーMCP: ${userMCPClients.length})`
     );
 
     // 3. Bedrock モデルを作成
@@ -186,7 +200,7 @@ export async function createAgent(
     const storagePath = getCurrentStoragePath();
     const systemPrompt = buildSystemPrompt({
       customPrompt: options?.systemPrompt,
-      tools: allTools,
+      tools: allTools as Array<{ name: string; description?: string }>,
       mcpTools: gatewayMCPTools as MCPToolDefinition[],
       storagePath,
       longTermMemories,
@@ -202,10 +216,12 @@ export async function createAgent(
     logger.info({ systemPrompt });
 
     // 6. Agent を作成
+
     const agent = new Agent({
       model,
       systemPrompt,
-      tools: allTools,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      tools: allTools as any,
       messages: savedMessages,
       hooks,
     });

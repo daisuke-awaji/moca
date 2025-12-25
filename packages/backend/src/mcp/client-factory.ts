@@ -8,15 +8,38 @@ import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
-import { logger } from '../config/index.js';
 import type { MCPServerConfig, StdioMCPServer, HttpMCPServer, SseMCPServer } from './types.js';
 import { MCPConfigError } from './types.js';
 
 /**
+ * ロガー関数の型定義
+ */
+interface Logger {
+  info: (message: string, ...args: unknown[]) => void;
+  warn: (message: string, ...args: unknown[]) => void;
+  error: (message: string, ...args: unknown[]) => void;
+  debug?: (message: string, ...args: unknown[]) => void;
+}
+
+/**
+ * デフォルトロガー（console を使用）
+ */
+const defaultLogger: Logger = {
+  info: console.log,
+  warn: console.warn,
+  error: console.error,
+  debug: console.debug,
+};
+
+/**
  * stdio トランスポートのクライアントを作成
  */
-function createStdioClient(name: string, config: StdioMCPServer): McpClient {
-  logger.debug(`stdio MCPクライアントを作成: ${name}`, {
+function createStdioClient(
+  name: string,
+  config: StdioMCPServer,
+  logger: Logger = defaultLogger
+): McpClient {
+  logger.debug?.(`stdio MCPクライアントを作成: ${name}`, {
     command: config.command,
     args: config.args,
   });
@@ -49,8 +72,12 @@ function createStdioClient(name: string, config: StdioMCPServer): McpClient {
 /**
  * Streamable HTTP トランスポートのクライアントを作成
  */
-function createHttpClient(name: string, config: HttpMCPServer): McpClient {
-  logger.debug(`HTTP MCPクライアントを作成: ${name}`, {
+function createHttpClient(
+  name: string,
+  config: HttpMCPServer,
+  logger: Logger = defaultLogger
+): McpClient {
+  logger.debug?.(`HTTP MCPクライアントを作成: ${name}`, {
     url: config.url,
   });
 
@@ -79,8 +106,12 @@ function createHttpClient(name: string, config: HttpMCPServer): McpClient {
 /**
  * SSE トランスポートのクライアントを作成
  */
-function createSseClient(name: string, config: SseMCPServer): McpClient {
-  logger.debug(`SSE MCPクライアントを作成: ${name}`, {
+function createSseClient(
+  name: string,
+  config: SseMCPServer,
+  logger: Logger = defaultLogger
+): McpClient {
+  logger.debug?.(`SSE MCPクライアントを作成: ${name}`, {
     url: config.url,
   });
 
@@ -105,19 +136,24 @@ function createSseClient(name: string, config: SseMCPServer): McpClient {
  *
  * @param name サーバー名
  * @param config サーバー設定
+ * @param logger ロガー（省略時はコンソール）
  * @returns McpClient インスタンス
  */
-export function createMCPClient(name: string, config: MCPServerConfig): McpClient {
+export function createMCPClient(
+  name: string,
+  config: MCPServerConfig,
+  logger: Logger = defaultLogger
+): McpClient {
   try {
     switch (config.transport) {
       case 'stdio': {
-        return createStdioClient(name, config);
+        return createStdioClient(name, config, logger);
       }
       case 'http': {
-        return createHttpClient(name, config);
+        return createHttpClient(name, config, logger);
       }
       case 'sse': {
-        return createSseClient(name, config);
+        return createSseClient(name, config, logger);
       }
       default: {
         // TypeScript の exhaustive check
@@ -142,16 +178,18 @@ export function createMCPClient(name: string, config: MCPServerConfig): McpClien
  * 複数の MCP サーバー設定から McpClient 配列を生成
  *
  * @param servers サーバー名と設定の配列
+ * @param logger ロガー（省略時はコンソール）
  * @returns McpClient インスタンスの配列
  */
 export function createMCPClients(
-  servers: Array<{ name: string; config: MCPServerConfig }>
+  servers: Array<{ name: string; config: MCPServerConfig }>,
+  logger: Logger = defaultLogger
 ): McpClient[] {
   const clients: McpClient[] = [];
 
   for (const { name, config } of servers) {
     try {
-      const client = createMCPClient(name, config);
+      const client = createMCPClient(name, config, logger);
       clients.push(client);
       logger.info(`✅ MCPクライアントを作成: ${name} (${config.transport})`);
     } catch (error) {

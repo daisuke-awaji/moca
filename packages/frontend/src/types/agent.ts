@@ -2,6 +2,24 @@
  * Agent 関連の型定義
  */
 
+/**
+ * MCP サーバー設定
+ */
+export interface MCPServer {
+  command?: string;
+  args?: string[];
+  env?: Record<string, string>;
+  url?: string;
+  transport?: 'stdio' | 'http' | 'sse';
+}
+
+/**
+ * MCP 設定
+ */
+export interface MCPConfig {
+  mcpServers: Record<string, MCPServer>;
+}
+
 export interface Scenario {
   id: string;
   title: string; // シナリオ名（例: 「コードレビュー依頼」）
@@ -16,6 +34,7 @@ export interface Agent {
   systemPrompt: string; // システムプロンプト
   enabledTools: string[]; // 有効化されたツール名の配列
   scenarios: Scenario[]; // よく使うプロンプト
+  mcpConfig?: MCPConfig; // MCP サーバー設定
   createdAt: Date;
   updatedAt: Date;
 }
@@ -30,6 +49,7 @@ export interface CreateAgentInput {
   systemPrompt: string;
   enabledTools: string[];
   scenarios: Omit<Scenario, 'id'>[];
+  mcpConfig?: MCPConfig;
 }
 
 /**

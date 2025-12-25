@@ -8,14 +8,14 @@
 export { mcpClient, AgentCoreMCPClient, MCPClientError } from './client.js';
 export type { MCPToolResult } from './client.js';
 
-// ローカル MCP サーバー設定とクライアント (新規)
+// ローカル MCP サーバー設定とクライアント（ローカル実装から再エクスポート）
 export type {
   MCPServerConfig,
   StdioMCPServer,
   HttpMCPServer,
   SseMCPServer,
   MCPConfig,
+  MCPConfigError,
 } from './types.js';
-export { MCPConfigError } from './types.js';
 export { loadMCPConfig, getEnabledMCPServers } from './config-loader.js';
 export { createMCPClient, createMCPClients } from './client-factory.js';
