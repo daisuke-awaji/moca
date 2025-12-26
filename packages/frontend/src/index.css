@@ -14,7 +14,9 @@
 
 @layer components {
   .chat-container {
-    @apply w-full h-screen flex flex-col bg-white;
+    @apply w-full flex flex-col bg-white;
+    height: 100vh; /* フォールバック */
+    height: 100dvh; /* モバイル対応 */
   }
 
   .message-bubble {

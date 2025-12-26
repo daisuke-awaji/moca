@@ -5,6 +5,7 @@ common:
   loading: 読み込み中...
   error: エラーが発生しました
   save: 保存
+  saving: 保存中...
   cancel: キャンセル
   delete: 削除
   close: 閉じる
@@ -15,13 +16,25 @@ common:
   search: 検索
   filter: フィルター
   clear: クリア
+  clearStorage: クリアする
+  copy: コピー
+  copyToClipboard: クリップボードにコピー
+  noFolders: フォルダがありません
+  inputParameters: 入力パラメータ
+  unsupportedContentType: '未対応のコンテンツタイプ: {{type}}'
   yes: はい
   no: いいえ
   back: 戻る
+  backArrow: ←
   next: 次へ
   renderingDiagram: Rendering diagram...
   diagramLoading: Mermaid diagram loading...
   characters: '{{count}} 文字'
+  charactersWithStatus: '{{count}} 文字 • {{status}}'
+  iconsCount: '{{count}} 個のアイコン'
+  noIconsFound: '「{{query}}」に一致するアイコンが見つかりません'
+  searchIconsPlaceholder: アイコンを検索...
+  clickToSelectIcon: クリックしてアイコンを選択
   success: 成功
   errorStatus: エラー
 
@@ -102,8 +115,12 @@ chat:
 agent:
   selectAgent: エージェントを選択
   createAgent: エージェントを作成
+  createNewAgent: 新規エージェント作成
   editAgent: エージェントを編集
   deleteAgent: エージェントを削除
+  deleteAgentConfirmTitle: Agent削除の確認
+  deleteAgentConfirmMessage: '「{{name}}」を削除しますか？この操作は取り消せません。'
+  clearStorageConfirm: localStorage のエージェントデータをクリアしますか？デフォルトのエージェントが再作成されます。
   noAgentsTitle: Agentがありません
   noAgentsDescription: 最初のAgentを作成してください
   createAgentButton: Agentを作成する
@@ -172,6 +189,10 @@ tool:
   required: required
   showDetails: 詳細を表示
   hideDetails: 詳細を閉じる
+  errorResult: エラー結果 JSON
+  executionResult: 実行結果 JSON
+  jsonResponse: JSON レスポンス
+  textResult: テキスト結果
   searchPlaceholder: 自然言語でツールを検索... (例 テキストをエコーする)
   searching: ツールを検索しています...
   loadingTools: ツール一覧を読み込んでいます...
@@ -225,22 +246,38 @@ tool:
 # ストレージ
 storage:
   title: ストレージ管理
+  fileStorage: ファイルストレージ
+  description: ユーザーごとに Amazon S3 の領域を提供しています。 AI エージェントは S3 操作ツールでこの領域にアクセスできます。ディレクトリを選択している場合、AI エージェントは選択されたディレクトリを読み込みます。
   currentPath: 現在のパス
   uploadFile: ファイルをアップロード
+  upload: アップロード
   uploadFolder: フォルダをアップロード
-  download: ダウンロード
+  newFolder: 新規フォルダ
   createFolder: フォルダを作成
+  create: 作成
+  download: ダウンロード
   rename: 名前を変更
   move: 移動
+  copyPath: パスをコピー
+  copied: コピーしました
   size: サイズ
   lastModified: 最終更新日時
   type: 種類
   folder: フォルダ
+  folders: フォルダ
+  root: ルート
   file: ファイル
   uploading: アップロード中...
+  uploadingProgress: 'アップロード中... ({{completed}}/{{total}})'
   uploadSuccess: アップロード完了
   uploadError: アップロードエラー
   deleteConfirm: 本当に削除しますか？
+  deleteDirectoryConfirm: 'ディレクトリ "{{name}}" を削除しますか？\n\n⚠️ ディレクトリ内のすべてのファイルとサブフォルダも削除されます。'
+  deleteFileConfirm: 'ファイル "{{name}}" を削除しますか？'
+  emptyFolder: フォルダが空です
+  dragAndDropHint: ファイルをドラッグ&ドロップするか、アップロードボタンをクリックしてください
+  dropFiles: ファイルをドロップ
+  folderNamePlaceholder: フォルダ名を入力
   itemCount: '{{count}} 件のアイテム • 最大ファイルサイズ: 5MB'
 
 # メモリ

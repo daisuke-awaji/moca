@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { icons, Search, X } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '../../../lib/utils';
 
 interface IconPickerProps {
@@ -17,6 +18,7 @@ export const IconPicker: React.FC<IconPickerProps> = ({
   disabled = false,
   className,
 }) => {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const containerRef = useRef<HTMLDivElement>(null);
@@ -102,7 +104,7 @@ export const IconPicker: React.FC<IconPickerProps> = ({
           disabled && 'opacity-50 cursor-not-allowed',
           isOpen && 'ring-2 ring-blue-500'
         )}
-        title="クリックしてアイコンを選択"
+        title={t('common.clickToSelectIcon')}
       >
         <SelectedIcon className="w-6 h-6 text-gray-700" />
       </button>
@@ -119,7 +121,7 @@ export const IconPicker: React.FC<IconPickerProps> = ({
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="アイコンを検索..."
+                placeholder={t('common.searchIconsPlaceholder')}
                 className="w-full pl-9 pr-9 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
               {searchQuery && (
@@ -131,7 +133,9 @@ export const IconPicker: React.FC<IconPickerProps> = ({
                 </button>
               )}
             </div>
-            <p className="text-xs text-gray-500 mt-2">{filteredIcons.length} 個のアイコン</p>
+            <p className="text-xs text-gray-500 mt-2">
+              {t('common.iconsCount', { count: filteredIcons.length })}
+            </p>
           </div>
 
           {/* アイコングリッド（仮想スクロール） */}
@@ -196,7 +200,7 @@ export const IconPicker: React.FC<IconPickerProps> = ({
               </div>
             ) : (
               <div className="text-center py-8 text-gray-400 text-sm">
-                「{searchQuery}」に一致するアイコンが見つかりません
+                {t('common.noIconsFound', { query: searchQuery })}
               </div>
             )}
           </div>

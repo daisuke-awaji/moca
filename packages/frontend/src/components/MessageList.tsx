@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useChatStore } from '../stores/chatStore';
 import { useSelectedAgent } from '../stores/agentStore';
 import { useSessionStore } from '../stores/sessionStore';
@@ -11,6 +12,7 @@ interface MessageListProps {
 }
 
 export const MessageList: React.FC<MessageListProps> = ({ onScenarioClick }) => {
+  const { t } = useTranslation();
   const { sessionId } = useParams<{ sessionId?: string }>();
   const { messages, error } = useChatStore();
   const { isLoadingEvents } = useSessionStore();
@@ -53,7 +55,7 @@ export const MessageList: React.FC<MessageListProps> = ({ onScenarioClick }) => 
                 </svg>
               </div>
               <div className="ml-3">
-                <h3 className="text-sm font-medium text-red-800">エラーが発生しました</h3>
+                <h3 className="text-sm font-medium text-red-800">{t('common.error')}</h3>
                 <p className="mt-1 text-sm text-red-700">{error}</p>
               </div>
             </div>

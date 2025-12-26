@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { ToolUse } from '../types/index';
 
 interface ToolUseBlockProps {
@@ -6,6 +7,7 @@ interface ToolUseBlockProps {
 }
 
 export const ToolUseBlock: React.FC<ToolUseBlockProps> = ({ toolUse }) => {
+  const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
 
   // ステータスに基づくスタイル（白背景統一、アイコンのみ変更）
@@ -141,13 +143,15 @@ export const ToolUseBlock: React.FC<ToolUseBlockProps> = ({ toolUse }) => {
         {isExpanded && (
           <div className="px-3 pb-3 pt-1 border-t border-gray-200">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-gray-500 text-xs font-medium">入力パラメータ</span>
+              <span className="text-gray-500 text-xs font-medium">
+                {t('common.inputParameters')}
+              </span>
               <button
                 onClick={() => navigator.clipboard.writeText(inputString)}
                 className="text-gray-400 hover:text-gray-600 text-xs px-2 py-1 rounded hover:bg-gray-100 transition-colors"
-                title="クリップボードにコピー"
+                title={t('common.copyToClipboard')}
               >
-                コピー
+                {t('common.copy')}
               </button>
             </div>
             <pre className="text-gray-800 text-xs font-mono overflow-x-auto whitespace-pre-wrap break-words bg-gray-50 p-2 rounded border border-gray-200">

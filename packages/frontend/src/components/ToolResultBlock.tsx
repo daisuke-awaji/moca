@@ -15,7 +15,7 @@ export const ToolResultBlock: React.FC<ToolResultBlockProps> = ({ toolResult }) 
     if (toolResult.isError) {
       return {
         statusColor: 'text-red-600',
-        label: 'エラー結果 JSON',
+        label: t('tool.errorResult'),
         icon: (
           <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
@@ -30,7 +30,7 @@ export const ToolResultBlock: React.FC<ToolResultBlockProps> = ({ toolResult }) 
     }
     return {
       statusColor: 'text-blue-600',
-      label: '実行結果 JSON',
+      label: t('tool.executionResult'),
       icon: (
         <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
@@ -104,14 +104,14 @@ export const ToolResultBlock: React.FC<ToolResultBlockProps> = ({ toolResult }) 
           <div className="px-3 pb-3 pt-1 border-t border-gray-200">
             <div className="flex items-center justify-between mb-2">
               <span className="text-gray-500 text-xs font-medium">
-                {formattedContent.isJson ? 'JSON レスポンス' : 'テキスト結果'}
+                {formattedContent.isJson ? t('tool.jsonResponse') : t('tool.textResult')}
               </span>
               <button
                 onClick={() => navigator.clipboard.writeText(toolResult.content)}
                 className="text-gray-400 hover:text-gray-600 text-xs px-2 py-1 rounded hover:bg-gray-100 transition-colors"
-                title="クリップボードにコピー"
+                title={t('common.copyToClipboard')}
               >
-                コピー
+                {t('common.copy')}
               </button>
             </div>
 
@@ -132,8 +132,10 @@ export const ToolResultBlock: React.FC<ToolResultBlockProps> = ({ toolResult }) 
             {formattedContent.content.length > 500 && (
               <div className="mt-2 pt-2 border-t border-gray-200">
                 <p className="text-gray-400 text-xs">
-                  {t('common.characters', { count: formattedContent.content.length })} •{' '}
-                  {toolResult.isError ? t('common.errorStatus') : t('common.success')}
+                  {t('common.charactersWithStatus', {
+                    count: formattedContent.content.length,
+                    status: toolResult.isError ? t('common.errorStatus') : t('common.success'),
+                  })}
                 </p>
               </div>
             )}

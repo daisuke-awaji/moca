@@ -5,6 +5,7 @@ import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { useTranslation } from 'react-i18next';
 import type { Message as MessageType } from '../types/index';
 import { TypingIndicator } from './TypingIndicator';
 import { ToolUseBlock } from './ToolUseBlock';
@@ -16,6 +17,7 @@ interface MessageProps {
 }
 
 export const Message: React.FC<MessageProps> = ({ message }) => {
+  const { t } = useTranslation();
   const isUser = message.type === 'user';
 
   // toolUse/toolResult を含むメッセージかどうか判定
@@ -149,7 +151,7 @@ export const Message: React.FC<MessageProps> = ({ message }) => {
                   default:
                     return (
                       <div key={`unknown-${index}`} className="text-gray-500 text-sm">
-                        未対応のコンテンツタイプ: {content.type}
+                        {t('common.unsupportedContentType', { type: content.type })}
                       </div>
                     );
                 }

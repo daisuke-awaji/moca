@@ -110,11 +110,7 @@ export const AgentSelectorModal: React.FC<AgentSelectorModalProps> = ({
 
   // localStorage クリア処理
   const handleClearLocalStorage = () => {
-    if (
-      confirm(
-        'localStorage のエージェントデータをクリアしますか？デフォルトのエージェントが再作成されます。'
-      )
-    ) {
+    if (confirm(t('agent.clearStorageConfirm'))) {
       localStorage.removeItem('agentcore-agents');
       localStorage.removeItem('agentcore-selected-agent');
       initializeStore();
@@ -126,11 +122,11 @@ export const AgentSelectorModal: React.FC<AgentSelectorModalProps> = ({
   const getModalTitle = () => {
     switch (mode) {
       case 'create':
-        return 'エージェント作成';
+        return t('agent.createAgent');
       case 'edit':
-        return 'エージェント編集';
+        return t('agent.editAgent');
       default:
-        return 'エージェント選択';
+        return t('agent.selectAgent');
     }
   };
 
@@ -173,7 +169,7 @@ export const AgentSelectorModal: React.FC<AgentSelectorModalProps> = ({
                 disabled={isLoading}
                 className="px-4 py-2 text-sm text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                キャンセル
+                {t('common.cancel')}
               </button>
               <button
                 type="submit"
@@ -181,7 +177,7 @@ export const AgentSelectorModal: React.FC<AgentSelectorModalProps> = ({
                 disabled={isLoading}
                 className="inline-flex items-center space-x-2 px-4 py-2 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                <span>{isLoading ? '保存中...' : '保存'}</span>
+                <span>{isLoading ? t('common.saving') : t('common.save')}</span>
               </button>
             </Modal.Footer>
           </>
@@ -206,7 +202,7 @@ export const AgentSelectorModal: React.FC<AgentSelectorModalProps> = ({
                       className="inline-flex items-center space-x-3 px-6 py-3 text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition-colors shadow-sm"
                     >
                       <Plus className="w-5 h-5" />
-                      <span className="font-medium">新規エージェント作成</span>
+                      <span className="font-medium">{t('agent.createNewAgent')}</span>
                     </button>
                   </div>
                 )}
@@ -295,7 +291,7 @@ export const AgentSelectorModal: React.FC<AgentSelectorModalProps> = ({
                                         className="w-full px-3 py-1.5 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-2"
                                       >
                                         <Edit2 className="w-3 h-3" />
-                                        <span>編集</span>
+                                        <span>{t('common.edit')}</span>
                                       </button>
                                       <button
                                         onMouseDown={(e) => {
@@ -309,7 +305,7 @@ export const AgentSelectorModal: React.FC<AgentSelectorModalProps> = ({
                                         className="w-full px-3 py-1.5 text-left text-sm text-red-600 hover:bg-red-50 flex items-center space-x-2"
                                       >
                                         <Trash2 className="w-3 h-3" />
-                                        <span>削除</span>
+                                        <span>{t('common.delete')}</span>
                                       </button>
                                     </div>
                                   )}
@@ -336,7 +332,7 @@ export const AgentSelectorModal: React.FC<AgentSelectorModalProps> = ({
                   onClick={handleClearLocalStorage}
                   className="px-2 py-1 text-xs text-gray-600 hover:text-gray-800 underline whitespace-nowrap"
                 >
-                  クリアする
+                  {t('common.clearStorage')}
                 </button>
               </div>
             </Modal.Footer>
@@ -350,10 +346,10 @@ export const AgentSelectorModal: React.FC<AgentSelectorModalProps> = ({
           isOpen={!!deleteConfirmAgent}
           onClose={() => setDeleteConfirmAgent(null)}
           onConfirm={() => handleDeleteAgent(deleteConfirmAgent)}
-          title="Agent削除の確認"
-          message={`「${deleteConfirmAgent.name}」を削除しますか？この操作は取り消せません。`}
-          confirmText="削除"
-          cancelText="キャンセル"
+          title={t('agent.deleteAgentConfirmTitle')}
+          message={t('agent.deleteAgentConfirmMessage', { name: deleteConfirmAgent.name })}
+          confirmText={t('common.delete')}
+          cancelText={t('common.cancel')}
           variant="danger"
         />
       )}

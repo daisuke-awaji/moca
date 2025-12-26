@@ -4,6 +4,7 @@
  */
 
 import { ChevronRight, ChevronDown, Folder, FolderOpen } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import type { FolderNode } from '../api/storage';
 
 interface TreeNodeProps {
@@ -119,10 +120,12 @@ export function FolderTree({
   onContextMenu,
   isLoading,
 }: FolderTreeProps) {
+  const { t } = useTranslation();
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-8">
-        <div className="text-sm text-gray-500">読み込み中...</div>
+        <div className="text-sm text-gray-500">{t('common.loading')}</div>
       </div>
     );
   }
@@ -130,7 +133,7 @@ export function FolderTree({
   if (!tree || tree.length === 0) {
     return (
       <div className="flex items-center justify-center py-8">
-        <div className="text-sm text-gray-500">フォルダがありません</div>
+        <div className="text-sm text-gray-500">{t('common.noFolders')}</div>
       </div>
     );
   }
