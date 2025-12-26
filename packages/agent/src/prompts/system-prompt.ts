@@ -1,5 +1,6 @@
 import { MCPToolDefinition } from '../schemas/types.js';
 import { generateDefaultContext } from './default-context.js';
+import { WORKSPACE_DIRECTORY } from '../config/index.js';
 
 export interface SystemPromptOptions {
   customPrompt?: string;
@@ -32,20 +33,33 @@ ${options.longTermMemories.map((memory, index) => `${index + 1}. ${memory}`).joi
 `;
   }
 
-  // ストレージパス情報を追加（ルート以外の場合）
-  if (options.storagePath && options.storagePath !== '/') {
+  // ワークスペースとストレージパス情報を追加
+  if (options.storagePath) {
     basePrompt += `
 
-## User Storage Path Restriction
-The user has selected the "${options.storagePath}" directory as their working storage.
-When using S3 tools (s3_list_files, s3_download_file, s3_upload_file, s3_get_presigned_urls), 
-please specify paths within this directory:
+## Workspace and Storage
+Your workspace is synchronized with the user's S3 storage at path "${options.storagePath}".
 
-- To list files: Use path="${options.storagePath}"
-- To access files: Use "${options.storagePath}/filename.txt" format
-- Do NOT use path="/" or paths outside "${options.storagePath}"
+### Working Directory
+- Default working directory: ${WORKSPACE_DIRECTORY}
+- All commands (execute_command) run from ${WORKSPACE_DIRECTORY} by default
+- Files from S3 are automatically synced to this directory
 
-This restriction ensures you only access files within the user's selected directory.`;
+### File Operations
+When you create or edit files:
+1. Use ${WORKSPACE_DIRECTORY} as your working directory (this is the default)
+2. Files are automatically uploaded to S3 after tool execution
+3. No need to manually use S3 upload tools - changes sync automatically
+4. When using execute_command, you don't need to specify workingDirectory
+
+### S3 Tools (Optional)
+You can still use S3 tools for specific operations:
+- s3_list_files: List files in "${options.storagePath}"
+- s3_download_file: Download specific files
+- s3_upload_file: Upload files explicitly
+- s3_get_presigned_urls: Get temporary download URLs
+
+The workspace sync handles most file operations automatically, making your workflow seamless.`;
   }
 
   // デフォルトコンテキストを付与

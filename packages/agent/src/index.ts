@@ -9,7 +9,9 @@ import { createAgent } from './agent.js';
 import { getContextMetadata, getCurrentContext } from './context/request-context.js';
 import { requestContextMiddleware } from './middleware/request-context.js';
 import { createSessionStorage, SessionPersistenceHook } from './session/index.js';
+import { WorkspaceSyncHook } from './session/workspace-sync-hook.js';
 import type { SessionConfig } from './session/types.js';
+import { WorkspaceSync } from './services/workspace-sync.js';
 import { logger } from './config/index.js';
 
 /**
@@ -268,6 +270,27 @@ app.post('/invocations', async (req: Request, res: Response) => {
       sessionId: sessionId || 'なし（セッションなしモード）',
     });
 
+    // ワークスペース同期を初期化（storagePathが指定されている場合）
+    let workspaceSync: WorkspaceSync | null = null;
+    let workspaceSyncHook: WorkspaceSyncHook | null = null;
+
+    if (storagePath && actorId !== 'anonymous') {
+      workspaceSync = new WorkspaceSync(actorId, storagePath);
+
+      // 非同期で初期同期を開始（await しない）
+      workspaceSync.startInitialSync();
+
+      // コンテキストに WorkspaceSync を設定（ツールからアクセス可能に）
+      if (context) {
+        context.workspaceSync = workspaceSync;
+      }
+
+      // WorkspaceSyncHook を作成
+      workspaceSyncHook = new WorkspaceSyncHook(workspaceSync);
+
+      logger.info('🔄 ワークスペース同期を初期化:', { actorId, storagePath });
+    }
+
     // セッション設定とフック（sessionIdがある場合のみ）
     let sessionConfig: SessionConfig | undefined;
     let sessionHook: SessionPersistenceHook | undefined;
@@ -292,8 +315,11 @@ app.post('/invocations', async (req: Request, res: Response) => {
       mcpConfig,
     };
 
-    // Agent を作成（セッションフックは条件付き）
-    const hooks = sessionHook ? [sessionHook] : [];
+    // Agent を作成（全てのフックを登録）
+    const hooks = [sessionHook, workspaceSyncHook].filter(
+      (hook): hook is SessionPersistenceHook | WorkspaceSyncHook =>
+        hook !== null && hook !== undefined
+    );
     const { agent, metadata } = await createAgent(hooks, agentOptions);
 
     // Agent作成完了のログ出力

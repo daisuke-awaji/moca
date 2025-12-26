@@ -13,6 +13,8 @@ export interface TooltipProps {
   content: ReactNode;
   /** ツールチップの表示位置 */
   position?: 'top' | 'bottom' | 'left' | 'right';
+  /** 固定幅（設定するとこの幅で固定表示） */
+  width?: string;
   /** 最大幅（デフォルト: 240px） */
   maxWidth?: string;
   /** ツールチップを無効化 */
@@ -28,6 +30,7 @@ export function Tooltip({
   children,
   content,
   position = 'top',
+  width,
   maxWidth = '240px',
   disabled = false,
   delay = 0,
@@ -98,10 +101,14 @@ export function Tooltip({
             pointer-events-none
             animate-in fade-in-0 zoom-in-95 duration-150
           `}
-          style={{ maxWidth }}
+          style={{ width: width, maxWidth: maxWidth }}
         >
           {/* 吹き出し背景 */}
-          <div className="relative bg-gray-800 text-white text-xs rounded-lg px-3 py-2 shadow-lg whitespace-nowrap">
+          <div
+            className={`relative bg-gray-800 text-white text-xs rounded-lg px-3 py-2 shadow-lg ${
+              width ? 'whitespace-normal break-words' : 'whitespace-nowrap'
+            }`}
+          >
             {content}
 
             {/* 矢印 */}

@@ -56,6 +56,12 @@ function parseEnv(): Config {
 export const config = parseEnv();
 
 /**
+ * ワークスペースディレクトリ
+ * Agent がファイル操作を行うデフォルトの作業ディレクトリ
+ */
+export const WORKSPACE_DIRECTORY = '/tmp/ws';
+
+/**
  * ロギング設定
  * オブジェクトを自動的に JSON.stringify して CloudWatch で可読性を向上
  */

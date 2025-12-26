@@ -6,7 +6,8 @@ import { tool } from '@strands-agents/sdk';
 import { z } from 'zod';
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import { logger } from '../config/index.js';
+import { logger, WORKSPACE_DIRECTORY } from '../config/index.js';
+import { getCurrentContext } from '../context/request-context.js';
 
 const execAsync = promisify(exec);
 
@@ -105,6 +106,15 @@ export const executeCommandTool = tool({
     logger.info(`🔧 コマンド実行開始: ${command}`);
 
     try {
+      // ワークスペース同期が完了していることを確認
+      const context = getCurrentContext();
+      if (context?.workspaceSync) {
+        await context.workspaceSync.waitForInitialSync();
+      }
+
+      // デフォルト作業ディレクトリを設定
+      const effectiveWorkingDirectory = workingDirectory || WORKSPACE_DIRECTORY;
+
       // 1. セキュリティチェック: 危険なコマンドの検出
       if (isDangerousCommand(command)) {
         const errorMsg = `⚠️ セキュリティエラー: 危険なコマンドが検出されました\nコマンド: ${command}`;
@@ -113,8 +123,8 @@ export const executeCommandTool = tool({
       }
 
       // 2. 作業ディレクトリのチェック
-      if (workingDirectory && !isAllowedWorkingDirectory(workingDirectory)) {
-        const errorMsg = `⚠️ セキュリティエラー: 許可されていない作業ディレクトリです\nディレクトリ: ${workingDirectory}`;
+      if (!isAllowedWorkingDirectory(effectiveWorkingDirectory)) {
+        const errorMsg = `⚠️ セキュリティエラー: 許可されていない作業ディレクトリです\nディレクトリ: ${effectiveWorkingDirectory}`;
         logger.warn(errorMsg);
         return errorMsg;
       }
@@ -123,7 +133,7 @@ export const executeCommandTool = tool({
       const execOptions = {
         timeout,
         maxBuffer: 1024 * 1024 * 10, // 10MB
-        cwd: workingDirectory,
+        cwd: effectiveWorkingDirectory,
         encoding: 'utf8' as const,
       };
 
@@ -137,7 +147,7 @@ export const executeCommandTool = tool({
 
       const output = `実行結果:
 コマンド: ${command}
-作業ディレクトリ: ${workingDirectory || '(現在のディレクトリ)'}
+作業ディレクトリ: ${effectiveWorkingDirectory}
 実行時間: ${duration}ms
 終了コード: 0
 
@@ -151,9 +161,11 @@ ${stderr ? `標準エラー:\n${stderr}` : ''}`.trim();
     } catch (error: unknown) {
       // エラーハンドリング
       const execError = error as ExecError;
+      const effectiveWorkingDirectory = workingDirectory || WORKSPACE_DIRECTORY;
+
       let errorOutput = `実行エラー:
 コマンド: ${command}
-作業ディレクトリ: ${workingDirectory || '(現在のディレクトリ)'}
+作業ディレクトリ: ${effectiveWorkingDirectory}
 `;
 
       if (execError.code !== undefined) {

@@ -6,6 +6,7 @@ import { tool } from '@strands-agents/sdk';
 import { z } from 'zod';
 import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { logger } from '../config/index.js';
+import { getCurrentContext } from '../context/request-context.js';
 
 /**
  * Check if oldString appears exactly once in the file content
@@ -76,6 +77,12 @@ Best Practices:
     logger.info(`📝 File editor operation started: ${filePath}`);
 
     try {
+      // ワークスペース同期が完了していることを確認
+      const context = getCurrentContext();
+      if (context?.workspaceSync) {
+        await context.workspaceSync.waitForInitialSync();
+      }
+
       // Check if file exists
       const fileExists = existsSync(filePath);
 

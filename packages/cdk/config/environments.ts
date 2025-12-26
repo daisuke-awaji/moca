@@ -165,7 +165,7 @@ export const environments: Record<Environment, EnvironmentConfig> = {
     userStorageBucketPrefix: 'agentcore-app',
     backendApiName: 'agentcore-app-backend-api',
     tavilyApiKeySecretName: 'agentcore/default/tavily-api-key',
-    allowedSignUpEmailDomains: ['amazon.com', 'amazon.jp'],
+    allowedSignUpEmailDomains: ['amazon.com', 'amazon.co.jp'],
   },
 
   dev: {

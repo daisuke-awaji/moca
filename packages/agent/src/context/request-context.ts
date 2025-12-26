@@ -5,6 +5,7 @@
 
 import { AsyncLocalStorage } from 'async_hooks';
 import { randomUUID } from 'crypto';
+import type { WorkspaceSync } from '../services/workspace-sync.js';
 
 /**
  * リクエストコンテキストの型定義
@@ -16,6 +17,8 @@ export interface RequestContext {
   userId?: string;
   /** ユーザーが選択しているS3ディレクトリパス */
   storagePath?: string;
+  /** ワークスペース同期サービス */
+  workspaceSync?: WorkspaceSync;
   /** リクエスト固有ID（ログ追跡用） */
   requestId: string;
   /** リクエスト開始時刻 */

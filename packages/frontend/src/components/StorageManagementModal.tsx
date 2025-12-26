@@ -588,11 +588,9 @@ export function StorageManagementModal({ isOpen, onClose }: StorageManagementMod
             <Folder className="w-5 h-5 text-amber-500" />
             <h2 className="text-lg font-semibold text-gray-900">{t('storage.fileStorage')}</h2>
             <Tooltip
-              content={
-                <div className="text-xs leading-relaxed w-64">{t('storage.description')}</div>
-              }
+              content={<div className="text-xs leading-relaxed">{t('storage.description')}</div>}
               position="bottom"
-              maxWidth="280px"
+              width="480px"
             >
               <button className="w-6 h-6 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-600 transition-colors">
                 <HelpCircle className="w-4 h-4" />
