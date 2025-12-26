@@ -97,6 +97,13 @@ export interface EnvironmentConfig {
    * Set for production/staging environments to retrieve API key from Secrets Manager
    */
   tavilyApiKeySecretName?: string;
+
+  /**
+   * Allowed email domains for sign-up (optional)
+   * If set, only emails from these domains can sign up
+   * Example: ['amazon.com', 'amazon.jp']
+   */
+  allowedSignUpEmailDomains?: string[];
 }
 
 /**
@@ -119,6 +126,7 @@ export const environments: Record<Environment, EnvironmentConfig> = {
     userStorageBucketPrefix: 'agentcore-app',
     backendApiName: 'agentcore-app-backend-api',
     tavilyApiKeySecretName: 'agentcore/default/tavily-api-key',
+    allowedSignUpEmailDomains: ['amazon.com', 'amazon.jp'],
   },
 
   dev: {
@@ -137,6 +145,7 @@ export const environments: Record<Environment, EnvironmentConfig> = {
     userStorageBucketPrefix: 'agentcore-app-dev',
     backendApiName: 'agentcore-app-dev-backend-api',
     tavilyApiKeySecretName: 'agentcore/dev/tavily-api-key',
+    allowedSignUpEmailDomains: ['amazon.com', 'amazon.jp'],
   },
 
   stg: {

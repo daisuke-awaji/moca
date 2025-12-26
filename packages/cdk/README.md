@@ -1,154 +1,207 @@
 # CDK - Multi-Environment Deployment
 
-Amazon Bedrock AgentCore のマルチ環境デプロイメント用 CDK スタック
+CDK stack for multi-environment deployment of Amazon Bedrock AgentCore
 
-## 📁 プロジェクト構成
+## 📁 Project Structure
 
 ```
 packages/cdk/
 ├── bin/
-│   └── app.ts              # CDK アプリエントリポイント
+│   └── app.ts              # CDK app entry point
 ├── lib/
-│   ├── agentcore-stack.ts  # メインスタック
-│   └── constructs/         # 再利用可能な Construct
+│   ├── agentcore-stack.ts  # Main stack
+│   └── constructs/         # Reusable constructs
 └── config/
-    ├── environments.ts     # 環境別設定
+    ├── environments.ts     # Environment-specific configurations
     └── index.ts
 ```
 
-## 🌍 対応環境
+## 🌍 Supported Environments
 
-| 環境 | スタック名 | 用途 | 削除保護 |
-|------|-----------|------|---------|
-| dev | DevAgentCoreApp | 開発・検証 | ❌ OFF |
-| stg | StgAgentCoreApp | ステージング・QA | ❌ OFF |
-| prd | PrdAgentCoreApp | 本番 | ✅ ON |
+| Environment | Stack Name | Purpose | Termination Protection |
+|-------------|-----------|---------|----------------------|
+| dev | DevAgentCoreApp | Development & Testing | ❌ OFF |
+| stg | StgAgentCoreApp | Staging & QA | ❌ OFF |
+| prd | PrdAgentCoreApp | Production | ✅ ON |
 
-## 🚀 デプロイ方法
+## 🚀 Deployment Methods
 
-### 事前準備: Tavily API キーの設定
+### Prerequisites: Setting up Tavily API Key
 
-すべての環境で AWS Secrets Manager を使用して Tavily API キーを管理します：
+All environments use AWS Secrets Manager to manage the Tavily API key:
 
 ```bash
-# デフォルト環境用
+# For default environment
 aws secretsmanager create-secret \
   --name "agentcore/default/tavily-api-key" \
   --secret-string "tvly-your-api-key-here" \
   --region ap-northeast-1
 
-# 開発環境用
+# For development environment
 aws secretsmanager create-secret \
   --name "agentcore/dev/tavily-api-key" \
   --secret-string "tvly-your-api-key-here" \
   --region ap-northeast-1
 
-# ステージング環境用
+# For staging environment
 aws secretsmanager create-secret \
   --name "agentcore/stg/tavily-api-key" \
   --secret-string "tvly-your-api-key-here" \
   --region ap-northeast-1
 
-# 本番環境用
+# For production environment
 aws secretsmanager create-secret \
   --name "agentcore/prd/tavily-api-key" \
   --secret-string "tvly-your-api-key-here" \
   --region ap-northeast-1
 ```
 
-> **Note**: ローカル開発時は `packages/agent/.env` に `TAVILY_API_KEY` を設定することでフォールバックとして使用できますが、デプロイ環境では Secrets Manager のみを使用します。
+> **Note**: For local development, you can set `TAVILY_API_KEY` in `packages/agent/.env` as a fallback, but deployed environments only use Secrets Manager.
 
-### 開発環境へのデプロイ
+### Deploy to Development Environment
 
 ```bash
-# 開発環境（デフォルト）
+# Development environment (default)
 npm run deploy:dev
 
-# または
+# Or
 npx -w packages/cdk cdk deploy -c env=dev
 ```
 
-### ステージング環境へのデプロイ
+### Deploy to Staging Environment
 
 ```bash
 npm run deploy:stg
 ```
 
-### 本番環境へのデプロイ
+### Deploy to Production Environment
 
 ```bash
-# 本番環境は承認が必要
+# Production requires approval
 npm run deploy:prd
 
-# または
+# Or
 npx -w packages/cdk cdk deploy -c env=prd --require-approval broadening
 ```
 
-## 🔍 差分確認
+## 🔍 Checking Differences
 
-デプロイ前に変更内容を確認:
+Review changes before deployment:
 
 ```bash
-# 開発環境
+# Development environment
 npm run diff:dev
 
-# ステージング環境
+# Staging environment
 npm run diff:stg
 
-# 本番環境
+# Production environment
 npm run diff:prd
 ```
 
-## 🔧 環境設定
+## 🔧 Environment Configuration
 
-環境別設定は `config/environments.ts` で定義されています。
+Environment-specific configurations are defined in `config/environments.ts`.
 
-### 主な設定項目
+### Main Configuration Items
 
-| 設定項目 | dev | stg | prd |
-|---------|-----|-----|-----|
-| Gateway名 | agentcore-dev | agentcore-stg | agentcore-prd |
-| Memory有効期限 | 30日 | 60日 | 365日 |
-| S3削除ポリシー | DESTROY | RETAIN | RETAIN |
-| CORS | `*` | 限定URL | 限定URL |
-| ログ保持期間 | 7日 | 14日 | 30日 |
-| Tavily API キー | Secrets Manager | Secrets Manager | Secrets Manager |
+| Configuration | dev | stg | prd |
+|--------------|-----|-----|-----|
+| Gateway Name | agentcore-dev | agentcore-stg | agentcore-prd |
+| Memory TTL | 30 days | 60 days | 365 days |
+| S3 Removal Policy | DESTROY | RETAIN | RETAIN |
+| CORS | `*` | Limited URLs | Limited URLs |
+| Log Retention | 7 days | 14 days | 30 days |
+| Tavily API Key | Secrets Manager | Secrets Manager | Secrets Manager |
+| Sign-up Domain Restriction | amazon.com, amazon.jp | None | None |
 
-### カスタム設定の追加
+### Adding Custom Configuration
 
-`config/environments.ts` を編集して環境固有の設定を追加できます:
+Edit `config/environments.ts` to add environment-specific settings:
 
 ```typescript
 export const environments: Record<Environment, EnvironmentConfig> = {
   dev: {
     env: 'dev',
     awsRegion: 'ap-northeast-1',
-    awsAccount: '123456789012', // オプション：AWS アカウント指定
+    awsAccount: '123456789012', // Optional: Specify AWS account
     gatewayName: 'agentcore-dev',
-    // ... その他の設定
+    allowedSignUpEmailDomains: ['amazon.com', 'amazon.jp'], // Optional: Allowed sign-up domains
+    // ... other settings
   },
   // ...
 };
 ```
 
-## 🗑️ スタックの削除
+### Sign-up Domain Restriction
 
-### 開発環境
+You can restrict which email domains are allowed to sign up in the Cognito User Pool. This feature allows you to configure sign-ups to be limited to users from specific organizations or domains.
+
+#### Configuration
+
+Add `allowedSignUpEmailDomains` to each environment configuration in `config/environments.ts`:
+
+```typescript
+dev: {
+  // ... other settings
+  allowedSignUpEmailDomains: ['amazon.com', 'amazon.jp'],
+},
+```
+
+#### Behavior
+
+- **With configuration**: Only email addresses from specified domains can sign up
+- **Without configuration** (`undefined` or empty array): Allow sign-ups from all domains
+- **Validation timing**: Validated by Pre Sign Up Lambda trigger
+- **Error message**: Clear error message displayed for disallowed domains
+
+#### Configuration Examples
+
+```typescript
+// Allow only specific domains
+allowedSignUpEmailDomains: ['example.com', 'example.jp']
+
+// Allow multiple organization domains
+allowedSignUpEmailDomains: ['company1.com', 'company2.com', 'partner.co.jp']
+
+// No restriction (allow all domains)
+allowedSignUpEmailDomains: undefined
+// Or
+// allowedSignUpEmailDomains: []
+```
+
+#### Checking Lambda Function Logs
+
+To verify that domain restrictions are working correctly, check CloudWatch Logs:
+
+```bash
+# View Lambda function log stream
+aws logs tail /aws/lambda/PreSignUpTrigger --follow
+```
+
+During sign-up attempts, you'll see logs like:
+
+- Allowed domain: `Sign up allowed: Email domain 'amazon.com' is in allowed list`
+- Denied domain: `Sign up denied: Email domain 'gmail.com' is not in allowed list: amazon.com, amazon.jp`
+
+## 🗑️ Stack Deletion
+
+### Development Environment
 
 ```bash
 npm run destroy:dev
 ```
 
-### ステージング環境
+### Staging Environment
 
 ```bash
 npm run destroy:stg
 ```
 
-### 本番環境
+### Production Environment
 
 ```bash
-# 本番環境は削除保護が有効なため、手動で無効化が必要
+# Production has termination protection enabled, requires manual disabling
 aws cloudformation update-termination-protection \
   --stack-name PrdAgentCoreApp \
   --no-enable-termination-protection
@@ -156,136 +209,136 @@ aws cloudformation update-termination-protection \
 npx -w packages/cdk cdk destroy -c env=prd
 ```
 
-## 📝 デプロイ例
+## 📝 Deployment Examples
 
-### 初回デプロイ（Bootstrap）
+### First-time Deployment (Bootstrap)
 
-初めてデプロイする場合は CDK Bootstrap が必要です:
+CDK Bootstrap is required for first-time deployment:
 
 ```bash
-# デフォルトリージョン
+# Default region
 npx -w packages/cdk cdk bootstrap
 
-# 特定のリージョン
+# Specific region
 npx -w packages/cdk cdk bootstrap aws://ACCOUNT-ID/ap-northeast-1
 ```
 
-### 開発環境への完全なデプロイフロー
+### Complete Deployment Flow to Development Environment
 
 ```bash
-# 1. 差分確認
+# 1. Check differences
 npm run diff:dev
 
-# 2. デプロイ
+# 2. Deploy
 npm run deploy:dev
 
-# 3. 出力確認
-# CloudFormation の Outputs セクションに以下が表示されます:
+# 3. Check outputs
+# The following will be displayed in CloudFormation Outputs section:
 # - UserPoolId
 # - UserPoolClientId
 # - FrontendUrl
 # - BackendApiUrl
 # - RuntimeInvocationEndpoint
-# など
+# etc.
 ```
 
-## 🔐 認証情報
+## 🔐 Credentials
 
-デプロイには適切な AWS 認証情報が必要です:
+Appropriate AWS credentials are required for deployment:
 
 ```bash
-# AWS CLI プロファイルを使用
+# Use AWS CLI profile
 export AWS_PROFILE=your-profile
 
-# または環境変数で指定
+# Or specify with environment variables
 export AWS_ACCESS_KEY_ID=xxx
 export AWS_SECRET_ACCESS_KEY=xxx
 export AWS_DEFAULT_REGION=ap-northeast-1
 ```
 
-## 📊 スタック出力
+## 📊 Stack Outputs
 
-デプロイ後、以下の情報が CloudFormation Outputs として出力されます:
+After deployment, the following information is output as CloudFormation Outputs:
 
 - **GatewayId**: AgentCore Gateway ID
 - **UserPoolId**: Cognito User Pool ID
 - **UserPoolClientId**: Cognito Client ID
-- **FrontendUrl**: フロントエンドアプリケーションURL
-- **BackendApiUrl**: バックエンドAPI URL
-- **RuntimeInvocationEndpoint**: Runtime呼び出しエンドポイント
+- **FrontendUrl**: Frontend application URL
+- **BackendApiUrl**: Backend API URL
+- **RuntimeInvocationEndpoint**: Runtime invocation endpoint
 - **MemoryId**: AgentCore Memory ID
-- **UserStorageBucketName**: ユーザーストレージS3バケット名
+- **UserStorageBucketName**: User storage S3 bucket name
 
-## 🔧 トラブルシューティング
+## 🔧 Troubleshooting
 
-### スタック名が既に存在する
+### Stack Name Already Exists
 
-既存のスタックを削除するか、環境名を変更してください:
+Delete the existing stack or change the environment name:
 
 ```bash
 npx -w packages/cdk cdk destroy -c env=dev
 ```
 
-### Bootstrap が必要
+### Bootstrap Required
 
 ```bash
 npx -w packages/cdk cdk bootstrap
 ```
 
-### リージョンが正しくない
+### Incorrect Region
 
-`config/environments.ts` で対象リージョンを確認してください。
+Check the target region in `config/environments.ts`.
 
-### Tavily API キーの確認
+### Verifying Tavily API Key
 
-Secrets Manager に正しく設定されているか確認:
+Check if it's correctly configured in Secrets Manager:
 
 ```bash
-# シークレット値の確認
+# Check secret value
 aws secretsmanager get-secret-value \
   --secret-id "agentcore/prd/tavily-api-key" \
   --query SecretString \
   --output text
 
-# シークレットの更新
+# Update secret
 aws secretsmanager update-secret \
   --secret-id "agentcore/prd/tavily-api-key" \
   --secret-string "tvly-new-api-key"
 ```
 
-## 📚 関連ドキュメント
+## 📚 Related Documentation
 
 - [AWS CDK Documentation](https://docs.aws.amazon.com/cdk/)
 - [Amazon Bedrock AgentCore](https://docs.aws.amazon.com/bedrock/)
-- [デプロイメントガイド](../../docs/DEVELOPMENT.md)
+- [Deployment Guide](../../docs/DEVELOPMENT.md)
 
-## 💡 ヒント
+## 💡 Tips
 
-### 環境を切り替える
+### Switching Environments
 
-Context パラメータ `-c env=<環境名>` を使用します:
+Use the context parameter `-c env=<environment-name>`:
 
 ```bash
-# 環境を明示的に指定
+# Explicitly specify environment
 npx -w packages/cdk cdk deploy -c env=stg
 
-# 省略した場合はデフォルトの dev
+# Defaults to dev if omitted
 npx -w packages/cdk cdk deploy
 ```
 
-### スタック名をカスタマイズ
+### Customizing Stack Name
 
-`bin/app.ts` で以下の行を編集:
+Edit the following line in `bin/app.ts`:
 
 ```typescript
 const stackName = `${envName.charAt(0).toUpperCase() + envName.slice(1)}AgentCoreApp`;
 ```
 
-### 本番環境の安全性
+### Production Environment Safety
 
-本番環境には以下の保護が有効化されています:
+The following protections are enabled for production:
 
-- **削除保護**: スタックの誤削除を防止
-- **S3 RETAIN ポリシー**: バケットデータを保持
-- **承認フロー**: デプロイ時に変更確認を要求
-- **Cognito 削除保護**: ユーザープールの誤削除を防止
+- **Termination Protection**: Prevents accidental stack deletion
+- **S3 RETAIN Policy**: Retains bucket data
+- **Approval Flow**: Requires change confirmation during deployment
+- **Cognito Deletion Protection**: Prevents accidental user pool deletion

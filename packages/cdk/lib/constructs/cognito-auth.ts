@@ -1,6 +1,8 @@
 import { Construct } from 'constructs';
 import * as cognito from 'aws-cdk-lib/aws-cognito';
 import * as cdk from 'aws-cdk-lib';
+import * as lambda from 'aws-cdk-lib/aws-lambda';
+import * as logs from 'aws-cdk-lib/aws-logs';
 
 export interface CognitoAuthProps {
   /**
@@ -37,6 +39,13 @@ export interface CognitoAuthProps {
       phone?: boolean;
     };
   };
+
+  /**
+   * 許可するメールドメインのリスト (オプション)
+   * 設定した場合、これらのドメインのメールアドレスのみサインアップ可能
+   * 例: ['amazon.com', 'amazon.jp']
+   */
+  readonly allowedSignUpEmailDomains?: string[];
 }
 
 /**
@@ -80,6 +89,55 @@ export class CognitoAuth extends Construct {
   constructor(scope: Construct, id: string, props: CognitoAuthProps) {
     super(scope, id);
 
+    // Pre Sign Up Lambda トリガー (メールドメイン検証用)
+    let preSignUpTrigger: lambda.Function | undefined;
+    if (props.allowedSignUpEmailDomains && props.allowedSignUpEmailDomains.length > 0) {
+      preSignUpTrigger = new lambda.Function(this, 'PreSignUpTrigger', {
+        runtime: lambda.Runtime.NODEJS_20_X,
+        handler: 'index.handler',
+        code: lambda.Code.fromInline(`
+exports.handler = async (event) => {
+  console.log('Pre Sign Up Trigger - Event:', JSON.stringify(event, null, 2));
+  
+  const allowedDomains = process.env.ALLOWED_DOMAINS?.split(',') || [];
+  const email = event.request.userAttributes.email;
+  
+  if (!email) {
+    throw new Error('Email is required for sign up');
+  }
+  
+  const emailDomain = email.split('@')[1]?.toLowerCase();
+  
+  if (!emailDomain) {
+    throw new Error('Invalid email format');
+  }
+  
+  const isAllowed = allowedDomains.some(domain => 
+    emailDomain === domain.toLowerCase()
+  );
+  
+  if (!isAllowed) {
+    console.log(\`Sign up denied: Email domain '\${emailDomain}' is not in allowed list: \${allowedDomains.join(', ')}\`);
+    throw new Error(\`Sign up is restricted to the following email domains: \${allowedDomains.join(', ')}\`);
+  }
+  
+  console.log(\`Sign up allowed: Email domain '\${emailDomain}' is in allowed list\`);
+  
+  // Auto-confirm the user
+  event.response.autoConfirmUser = false;
+  event.response.autoVerifyEmail = false;
+  
+  return event;
+};
+        `),
+        environment: {
+          ALLOWED_DOMAINS: props.allowedSignUpEmailDomains.join(','),
+        },
+        timeout: cdk.Duration.seconds(10),
+        logRetention: logs.RetentionDays.ONE_WEEK,
+      });
+    }
+
     // User Pool 作成
     this.userPool = new cognito.UserPool(this, 'UserPool', {
       userPoolName: props.userPoolName,
@@ -120,6 +178,13 @@ export class CognitoAuth extends Construct {
 
       // アカウント復旧
       accountRecovery: cognito.AccountRecovery.EMAIL_ONLY,
+
+      // Lambda トリガー設定
+      lambdaTriggers: preSignUpTrigger
+        ? {
+            preSignUp: preSignUpTrigger,
+          }
+        : undefined,
     });
 
     // App Client 作成

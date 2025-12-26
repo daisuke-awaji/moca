@@ -142,6 +142,7 @@ export class AgentCoreStack extends cdk.Stack {
           email: true, // Enable automatic email verification
         },
       },
+      allowedSignUpEmailDomains: envConfig.allowedSignUpEmailDomains,
     });
 
     // 2. Create AgentCore Gateway

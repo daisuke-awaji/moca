@@ -7,6 +7,11 @@ description: Code style guidelines and conventions for the Fullstack AgentCore p
 
 This document defines the code style and conventions for the Fullstack AgentCore project.
 
+## Language
+
+!IMPORTANT RULE: Unless explicitly specified, please implement documentation and code in English even if requested in Japanese.
+
+
 ## TypeScript Configuration
 
 ### Strict Mode
