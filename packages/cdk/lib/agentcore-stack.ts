@@ -291,6 +291,7 @@ export class AgentCoreStack extends cdk.Stack {
       runtimeEndpoint: `https://bedrock-agentcore.${this.region}.amazonaws.com/runtimes/${this.agentRuntime.runtimeArn}/invocations?qualifier=DEFAULT`,
       awsRegion: this.region,
       backendApiUrl: this.backendApi.apiUrl, // Add Backend API URL
+      customDomain: envConfig.customDomain, // Add custom domain configuration
     });
 
     // 8. Additional CloudFormation outputs (authentication related)

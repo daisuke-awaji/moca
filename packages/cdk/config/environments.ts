@@ -104,6 +104,24 @@ export interface EnvironmentConfig {
    * Example: ['amazon.com', 'amazon.jp']
    */
   allowedSignUpEmailDomains?: string[];
+
+  /**
+   * Custom domain configuration for frontend (optional)
+   * If set, CloudFront distribution will use custom domain with ACM certificate
+   */
+  customDomain?: {
+    /**
+     * Hostname for the website (e.g., 'genai')
+     * A record will be created by CDK
+     */
+    hostName: string;
+
+    /**
+     * Domain name of the public hosted zone (e.g., 'example.com')
+     * The hosted zone must exist in the same AWS account
+     */
+    domainName: string;
+  };
 }
 
 /**

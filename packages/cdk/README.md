@@ -184,6 +184,82 @@ During sign-up attempts, you'll see logs like:
 - Allowed domain: `Sign up allowed: Email domain 'amazon.com' is in allowed list`
 - Denied domain: `Sign up denied: Email domain 'gmail.com' is not in allowed list: amazon.com, amazon.jp`
 
+### Custom Domain Configuration
+
+You can configure a custom domain for your frontend application using Route53 and ACM (AWS Certificate Manager). The CloudFront distribution will automatically use your custom domain with an SSL certificate.
+
+#### Prerequisites
+
+- A public hosted zone must be created in Route53 in the same AWS account
+- For more information on public hosted zones, see: [Using Public Hosted Zones - Amazon Route 53](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/AboutHZWorkingWith.html)
+
+#### Configuration
+
+Add `customDomain` to each environment configuration in `config/environments.ts`:
+
+```typescript
+dev: {
+  // ... other settings
+  customDomain: {
+    hostName: 'genai',
+    domainName: 'example.com',
+  },
+},
+```
+
+This will create:
+- ACM certificate for `genai.example.com` (automatically validated via DNS)
+- CloudFront distribution with custom domain
+- Route53 A record pointing to CloudFront
+
+Final website URL: `https://genai.example.com`
+
+#### Configuration Examples
+
+```typescript
+// Development environment with custom domain
+dev: {
+  // ... other settings
+  customDomain: {
+    hostName: 'dev-genai',
+    domainName: 'example.com',
+  },
+},
+// Result: https://dev-genai.example.com
+
+// Staging environment with custom domain
+stg: {
+  // ... other settings
+  customDomain: {
+    hostName: 'stg-genai',
+    domainName: 'example.com',
+  },
+},
+// Result: https://stg-genai.example.com
+
+// Production without custom domain (uses CloudFront default domain)
+prd: {
+  // ... other settings
+  customDomain: undefined,
+},
+// Result: https://d1234567890abc.cloudfront.net
+```
+
+#### How It Works
+
+1. **Hosted Zone Lookup**: CDK automatically finds the hosted zone using the `domainName`
+2. **Certificate Creation**: ACM certificate is created in `us-east-1` (required for CloudFront)
+3. **DNS Validation**: Certificate is automatically validated using DNS records in Route53
+4. **CloudFront Configuration**: Distribution is configured with the custom domain and certificate
+5. **A Record Creation**: Route53 A record is created pointing to the CloudFront distribution
+
+#### Important Notes
+
+- The hosted zone must exist in the same AWS account before deployment
+- Certificate creation and DNS validation may take several minutes
+- Stack must have explicit `env` property (account/region) for hosted zone lookup
+- No need to specify `hostedZoneId` - it's automatically looked up by domain name
+
 ## 🗑️ Stack Deletion
 
 ### Development Environment

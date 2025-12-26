@@ -3,6 +3,9 @@ import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
 import * as iam from 'aws-cdk-lib/aws-iam';
+import * as route53 from 'aws-cdk-lib/aws-route53';
+import * as route53Targets from 'aws-cdk-lib/aws-route53-targets';
+import * as acm from 'aws-cdk-lib/aws-certificatemanager';
 import { NodejsBuild } from 'deploy-time-build';
 import { Construct } from 'constructs';
 
@@ -38,6 +41,21 @@ export interface FrontendProps {
    * AWS Region
    */
   awsRegion: string;
+
+  /**
+   * Custom domain configuration (optional)
+   */
+  customDomain?: {
+    /**
+     * Hostname (e.g., 'genai')
+     */
+    hostName: string;
+
+    /**
+     * Domain name (e.g., 'example.com')
+     */
+    domainName: string;
+  };
 }
 
 export class Frontend extends Construct {
@@ -50,6 +68,32 @@ export class Frontend extends Construct {
 
     // リソースプレフィックスの取得
     const resourcePrefix = props.resourcePrefix || 'agentcore';
+
+    // カスタムドメインの処理
+    let certificate: acm.ICertificate | undefined;
+    let domainNames: string[] | undefined;
+    let hostedZone: route53.IHostedZone | undefined;
+    let fullDomainName: string | undefined;
+
+    if (props.customDomain) {
+      const { hostName, domainName } = props.customDomain;
+      fullDomainName = `${hostName}.${domainName}`;
+
+      // Route53 ホストゾーンの参照（ドメイン名から自動検索）
+      hostedZone = route53.HostedZone.fromLookup(this, 'HostedZone', {
+        domainName: domainName,
+      });
+
+      // ACM 証明書の作成（CloudFront用にus-east-1で作成）
+      // DnsValidatedCertificate を使用することで、us-east-1 に証明書を作成し、DNS 検証も自動で行う
+      certificate = new acm.DnsValidatedCertificate(this, 'Certificate', {
+        domainName: fullDomainName,
+        hostedZone: hostedZone,
+        region: 'us-east-1', // CloudFront requires certificate in us-east-1
+      });
+
+      domainNames = [fullDomainName];
+    }
 
     // S3 Bucket for Frontend Static Website
     this.s3Bucket = new s3.Bucket(this, 'AgentCoreFrontendBucket', {
@@ -155,8 +199,22 @@ export class Frontend extends Construct {
           },
         ],
         priceClass: cloudfront.PriceClass.PRICE_CLASS_100,
+        // カスタムドメイン設定
+        domainNames: domainNames,
+        certificate: certificate,
       }
     );
+
+    // Route53 Aレコードの作成（カスタムドメインが設定されている場合）
+    if (hostedZone && fullDomainName) {
+      new route53.ARecord(this, 'AliasRecord', {
+        zone: hostedZone,
+        recordName: fullDomainName,
+        target: route53.RecordTarget.fromAlias(
+          new route53Targets.CloudFrontTarget(this.cloudFrontDistribution)
+        ),
+      });
+    }
 
     // Frontend Build and Deployment using deploy-time-build
     const frontendBuild = new NodejsBuild(this, 'FrontendBuild', {
@@ -191,6 +249,8 @@ export class Frontend extends Construct {
     });
 
     // Set website URL for easy access
-    this.websiteUrl = `https://${this.cloudFrontDistribution.distributionDomainName}`;
+    this.websiteUrl = fullDomainName
+      ? `https://${fullDomainName}`
+      : `https://${this.cloudFrontDistribution.distributionDomainName}`;
   }
 }
