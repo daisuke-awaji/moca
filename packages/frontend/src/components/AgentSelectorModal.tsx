@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Bot, MoreHorizontal, Edit2, Trash2, AlertTriangle } from 'lucide-react';
 import * as icons from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { AgentForm } from './AgentForm';
 import { Modal, ConfirmModal } from './ui/Modal';
 import { useAgentStore } from '../stores/agentStore';
@@ -19,6 +20,7 @@ export const AgentSelectorModal: React.FC<AgentSelectorModalProps> = ({
   onClose,
   onAgentSelect,
 }) => {
+  const { t } = useTranslation();
   const {
     agents,
     selectedAgent,
@@ -213,13 +215,15 @@ export const AgentSelectorModal: React.FC<AgentSelectorModalProps> = ({
                 {agents.length === 0 ? (
                   <div className="text-center py-20">
                     <Bot className="w-16 h-16 text-gray-300 mx-auto mb-6" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">Agentがありません</h3>
-                    <p className="text-gray-500 mb-6">最初のAgentを作成してください</p>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                      {t('agent.noAgentsTitle')}
+                    </h3>
+                    <p className="text-gray-500 mb-6">{t('agent.noAgentsDescription')}</p>
                     <button
                       onClick={() => setMode('create')}
                       className="text-blue-600 hover:text-blue-800 font-medium"
                     >
-                      Agentを作成する
+                      {t('agent.createAgentButton')}
                     </button>
                   </div>
                 ) : (
@@ -326,11 +330,7 @@ export const AgentSelectorModal: React.FC<AgentSelectorModalProps> = ({
               <div className="flex items-start space-x-2 w-full">
                 <AlertTriangle className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5" />
                 <div className="flex-1">
-                  <p className="text-xs text-gray-500">
-                    エージェント管理機能は現在開発中で、localStorage
-                    に保存されています。アプリケーションのバージョンアップに伴い、不整合が生じる可能性があるため定期的に
-                    localStorage をクリアしてください。
-                  </p>
+                  <p className="text-xs text-gray-500">{t('agent.storageNotice')}</p>
                 </div>
                 <button
                   onClick={handleClearLocalStorage}

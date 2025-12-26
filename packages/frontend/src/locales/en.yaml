@@ -19,6 +19,11 @@ common:
   no: No
   back: Back
   next: Next
+  renderingDiagram: Rendering diagram...
+  diagramLoading: Mermaid diagram loading...
+  characters: '{{count}} characters'
+  success: Success
+  errorStatus: Error
 
 # Authentication
 auth:
@@ -99,6 +104,10 @@ agent:
   createAgent: Create Agent
   editAgent: Edit Agent
   deleteAgent: Delete Agent
+  noAgentsTitle: No Agents Available
+  noAgentsDescription: Create your first Agent
+  createAgentButton: Create an Agent
+  storageNotice: Agent management is currently under development and stored in localStorage. Due to application version upgrades, inconsistencies may occur, so please periodically clear localStorage.
   agentName: Agent Name
   description: Description
   systemPrompt: System Prompt
@@ -228,6 +237,7 @@ storage:
   uploadSuccess: Upload Successful
   uploadError: Upload Error
   deleteConfirm: Are you sure you want to delete?
+  itemCount: '{{count}} items • Max file size: 5MB'
 
 # Memory
 memory:
@@ -245,6 +255,7 @@ memory:
   searchPlaceholder: Search memory
   searchButton: Search
   searchResults: Search Results
+  searchResultsCount: '{{count}} items'
   noSearchResults: No search results found
   noMemoriesYet: No memories saved yet
   autoAccumulate: Memories will accumulate automatically as you continue conversing with the agent

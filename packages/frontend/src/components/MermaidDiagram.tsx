@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import mermaid from 'mermaid';
 
 interface MermaidDiagramProps {
@@ -15,6 +16,7 @@ const generateUniqueId = () => {
 };
 
 const MermaidDiagramComponent: React.FC<MermaidDiagramProps> = ({ chart, className = '' }) => {
+  const { t } = useTranslation();
   const [svgContent, setSvgContent] = useState<string | null>(null);
   const [isValidSyntax, setIsValidSyntax] = useState<boolean | null>(null);
   const [isRendering, setIsRendering] = useState(false);
@@ -157,11 +159,13 @@ const MermaidDiagramComponent: React.FC<MermaidDiagramProps> = ({ chart, classNa
       }}
     >
       {/* ローディング中 */}
-      {isRendering && <div className="text-blue-500 text-sm italic py-2">Rendering diagram...</div>}
+      {isRendering && (
+        <div className="text-blue-500 text-sm italic py-2">{t('common.renderingDiagram')}</div>
+      )}
 
       {/* 構文エラーの場合 */}
       {isValidSyntax === false && chart.trim() && !isRendering && (
-        <div className="text-gray-400 text-sm italic py-2">Mermaid diagram loading...</div>
+        <div className="text-gray-400 text-sm italic py-2">{t('common.diagramLoading')}</div>
       )}
 
       {/* SVGコンテンツを表示（React管理下で） */}

@@ -223,7 +223,8 @@ export function MemoryManagementModal({ isOpen, onClose }: MemoryManagementModal
             {searchQuery && (
               <div className="mb-4">
                 <p className="text-sm text-gray-600">
-                  {t('memory.searchResults')}: "{searchQuery}" ({searchResults.length}件)
+                  {t('memory.searchResults')}: {searchQuery} (
+                  {t('memory.searchResultsCount', { count: searchResults.length })})
                 </p>
               </div>
             )}

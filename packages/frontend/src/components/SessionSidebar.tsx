@@ -202,7 +202,7 @@ export function SessionSidebar() {
               >
                 <Donut className="w-5 h-5 text-gray-700 group-hover:text-amber-600 transition-colors" />
                 <span className="text-lg font-semibold text-gray-900 group-hover:text-amber-700 transition-colors">
-                  Donuts
+                  {t('auth.welcomeTitle')}
                 </span>
               </Link>
 

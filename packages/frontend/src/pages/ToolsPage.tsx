@@ -245,7 +245,7 @@ export function ToolsPage() {
           {searchQuery && (
             <div className="mt-3 flex items-center gap-2 text-xs text-gray-600">
               <span>
-                {t('tool.searchingFor')}: "{searchQuery}"
+                {t('tool.searchingFor')}: {searchQuery}
               </span>
               <button
                 onClick={handleClearSearch}

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { ToolResult } from '../types/index';
 
 interface ToolResultBlockProps {
@@ -6,6 +7,7 @@ interface ToolResultBlockProps {
 }
 
 export const ToolResultBlock: React.FC<ToolResultBlockProps> = ({ toolResult }) => {
+  const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
 
   // エラー状態に基づくスタイル（白背景統一、アイコンのみ変更）
@@ -130,7 +132,8 @@ export const ToolResultBlock: React.FC<ToolResultBlockProps> = ({ toolResult }) 
             {formattedContent.content.length > 500 && (
               <div className="mt-2 pt-2 border-t border-gray-200">
                 <p className="text-gray-400 text-xs">
-                  {formattedContent.content.length} 文字 • {toolResult.isError ? 'エラー' : '成功'}
+                  {t('common.characters', { count: formattedContent.content.length })} •{' '}
+                  {toolResult.isError ? t('common.errorStatus') : t('common.success')}
                 </p>
               </div>
             )}

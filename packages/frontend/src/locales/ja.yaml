@@ -19,6 +19,11 @@ common:
   no: いいえ
   back: 戻る
   next: 次へ
+  renderingDiagram: Rendering diagram...
+  diagramLoading: Mermaid diagram loading...
+  characters: '{{count}} 文字'
+  success: 成功
+  errorStatus: エラー
 
 # 認証
 auth:
@@ -99,6 +104,10 @@ agent:
   createAgent: エージェントを作成
   editAgent: エージェントを編集
   deleteAgent: エージェントを削除
+  noAgentsTitle: Agentがありません
+  noAgentsDescription: 最初のAgentを作成してください
+  createAgentButton: Agentを作成する
+  storageNotice: エージェント管理機能は現在開発中で、localStorage に保存されています。アプリケーションのバージョンアップに伴い、不整合が生じる可能性があるため定期的に localStorage をクリアしてください。
   agentName: エージェント名
   description: 説明
   systemPrompt: システムプロンプト
@@ -228,6 +237,7 @@ storage:
   uploadSuccess: アップロード完了
   uploadError: アップロードエラー
   deleteConfirm: 本当に削除しますか？
+  itemCount: '{{count}} 件のアイテム • 最大ファイルサイズ: 5MB'
 
 # メモリ
 memory:
@@ -245,6 +255,7 @@ memory:
   searchPlaceholder: メモリを検索
   searchButton: 検索
   searchResults: 検索結果
+  searchResultsCount: '{{count}}件'
   noSearchResults: 検索結果が見つかりませんでした
   noMemoriesYet: まだメモリが保存されていません
   autoAccumulate: エージェントとの会話を続けると、自動的にメモリが蓄積されます

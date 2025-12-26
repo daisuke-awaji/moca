@@ -4,6 +4,7 @@
  */
 
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   X,
   Folder,
@@ -178,6 +179,7 @@ function StorageItemComponent({
  * Storage Management Modal
  */
 export function StorageManagementModal({ isOpen, onClose }: StorageManagementModalProps) {
+  const { t } = useTranslation();
   const {
     currentPath,
     items,
@@ -905,9 +907,7 @@ export function StorageManagementModal({ isOpen, onClose }: StorageManagementMod
       {/* フッター */}
       <div className="border-t border-gray-200 px-6 py-4 bg-gray-50">
         <div className="flex justify-between items-center">
-          <p className="text-xs text-gray-500">
-            {items.length} 件のアイテム • 最大ファイルサイズ: 5MB
-          </p>
+          <p className="text-xs text-gray-500">{t('storage.itemCount', { count: items.length })}</p>
           <button
             onClick={onClose}
             className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
