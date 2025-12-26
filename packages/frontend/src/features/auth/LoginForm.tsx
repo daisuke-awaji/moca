@@ -6,9 +6,13 @@ import { loginSchema, type LoginFormData } from '../../schemas/auth';
 
 interface LoginFormProps {
   onSwitchToSignUp?: () => void;
+  onSwitchToForgotPassword?: () => void;
 }
 
-export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToSignUp }) => {
+export const LoginForm: React.FC<LoginFormProps> = ({ 
+  onSwitchToSignUp,
+  onSwitchToForgotPassword 
+}) => {
   const { login, isLoading, error, clearError } = useAuthStore();
   const [formData, setFormData] = useState<LoginFormData>({
     username: '',
@@ -128,6 +132,19 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToSignUp }) => {
               )}
             </div>
           </div>
+
+          {/* パスワードを忘れた方はこちら */}
+          {onSwitchToForgotPassword && (
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={onSwitchToForgotPassword}
+                className="text-sm text-indigo-600 hover:text-indigo-500 transition-colors"
+              >
+                パスワードを忘れた方はこちら
+              </button>
+            </div>
+          )}
 
           {error && (
             <div className="bg-red-50 border border-red-200 rounded-2xl p-4">
