@@ -139,9 +139,9 @@ export function MemoryManagementModal({ isOpen, onClose }: MemoryManagementModal
   const displayRecords = searchQuery ? searchResults : records;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="xl" className="max-w-4xl">
+    <Modal isOpen={isOpen} onClose={onClose} size="xl" className="max-w-4xl h-[70vh] flex flex-col">
       {/* ヘッダー */}
-      <div className="border-b border-gray-200 px-6 py-4">
+      <div className="border-b border-gray-200 px-6 py-4 flex-shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Brain className="w-5 h-5 text-gray-700" />
@@ -158,7 +158,7 @@ export function MemoryManagementModal({ isOpen, onClose }: MemoryManagementModal
       </div>
 
       {/* 検索セクション */}
-      <div className="px-6 py-4 border-b border-gray-100">
+      <div className="px-6 py-4 border-b border-gray-100 flex-shrink-0">
         <div className="flex gap-3">
           <div className="flex-1 relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -260,7 +260,7 @@ export function MemoryManagementModal({ isOpen, onClose }: MemoryManagementModal
       </div>
 
       {/* フッター */}
-      <div className="border-t border-gray-200 px-6 py-4 bg-gray-50">
+      <div className="border-t border-gray-200 px-6 py-4 bg-gray-50 flex-shrink-0">
         <div className="flex justify-between items-center">
           <p className="text-xs text-gray-500">
             {t('memory.totalCount', { count: records.length })}

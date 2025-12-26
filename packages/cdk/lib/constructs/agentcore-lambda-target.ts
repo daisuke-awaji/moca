@@ -7,6 +7,14 @@ import * as agentcore from '@aws-cdk/aws-bedrock-agentcore-alpha';
 import * as path from 'path';
 import * as fs from 'fs';
 
+/**
+ * Tool Schema ファイルの型定義
+ * AgentCore の型と互換性を保つため unknown を使用
+ */
+interface ToolSchemaFile {
+  tools: unknown[];
+}
+
 export interface AgentCoreLambdaTargetProps {
   /**
    * Target の名前
@@ -88,7 +96,9 @@ export class AgentCoreLambdaTarget extends Construct {
 
     // Tool Schema を読み込み
     const toolSchemaContent = this.loadToolSchema(props.toolSchemaPath);
-    this.toolSchema = agentcore.ToolSchema.fromInline(toolSchemaContent.tools);
+    // AgentCore の型と互換性を保つため any にキャスト
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    this.toolSchema = agentcore.ToolSchema.fromInline(toolSchemaContent.tools as any);
 
     // Lambda 関数を作成
     this.lambdaFunction = new nodejs.NodejsFunction(this, 'Function', {
@@ -130,11 +140,11 @@ export class AgentCoreLambdaTarget extends Construct {
   /**
    * Tool Schema ファイルを読み込む
    */
-  private loadToolSchema(schemaPath: string): any {
+  private loadToolSchema(schemaPath: string): ToolSchemaFile {
     try {
       const fullPath = path.resolve(schemaPath);
       const schemaContent = fs.readFileSync(fullPath, 'utf8');
-      const schema = JSON.parse(schemaContent);
+      const schema = JSON.parse(schemaContent) as ToolSchemaFile;
 
       // Tool Schema の構造を検証
       if (!schema.tools || !Array.isArray(schema.tools)) {

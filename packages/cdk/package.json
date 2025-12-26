@@ -8,6 +8,8 @@
   "scripts": {
     "build": "tsc",
     "watch": "tsc -w",
+    "lint": "eslint bin lib",
+    "lint:fix": "eslint bin lib --fix",
     "test": "jest --passWithNoTests",
     "cdk": "cd ../.. && cdk",
     "synth": "cd ../.. && cdk synth",

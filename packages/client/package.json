@@ -11,7 +11,9 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "dev": "tsx src/index.ts",
-    "clean": "rimraf dist"
+    "clean": "rimraf dist",
+    "lint": "eslint src",
+    "lint:fix": "eslint src --fix"
   },
   "keywords": [
     "agentcore",
