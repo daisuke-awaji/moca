@@ -40,10 +40,16 @@ export function useSessionSync(): UseSessionSyncReturn {
 
   // URL → Store 同期
   useEffect(() => {
-    // 新規セッション作成中は同期をスキップ（競合状態を回避）
+    // 新規セッション作成中の場合
     if (isCreatingSession) {
-      console.log('⏳ 新規セッション作成中、URL同期をスキップ');
-      return;
+      // urlSessionId が activeSessionId と一致したら、URL同期が完了した証拠
+      if (urlSessionId && urlSessionId === activeSessionId) {
+        console.log('✅ 新規セッションのURL同期完了');
+        finalizeNewSession();
+      } else {
+        console.log('⏳ 新規セッション作成中、URL同期をスキップ');
+      }
+      return; // どちらの場合もここでreturn
     }
 
     if (!urlSessionId) {
@@ -73,6 +79,7 @@ export function useSessionSync(): UseSessionSyncReturn {
     selectSession,
     clearActiveSession,
     clearMessages,
+    finalizeNewSession,
   ]);
 
   // セッション履歴を chatStore に復元
@@ -87,14 +94,9 @@ export function useSessionSync(): UseSessionSyncReturn {
   const createAndNavigateToNewSession = useCallback(() => {
     const newSessionId = createNewSession();
     navigate(`/chat/${newSessionId}`, { replace: true });
-
-    // 少し遅延してフラグをリセット（URL同期が完了するのを待つ）
-    setTimeout(() => {
-      finalizeNewSession();
-    }, 100);
-
+    // setTimeout削除 - useEffect内でURL同期完了後にfinalizeする
     return newSessionId;
-  }, [navigate, createNewSession, finalizeNewSession]);
+  }, [navigate, createNewSession]);
 
   return {
     currentSessionId: urlSessionId || null,
