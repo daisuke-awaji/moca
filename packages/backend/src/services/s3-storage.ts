@@ -361,6 +361,21 @@ export async function checkFileExists(userId: string, filePath: string): Promise
 }
 
 /**
+ * フォルダダウンロード用のファイル情報
+ */
+export interface DownloadFileInfo {
+  relativePath: string; // ZIP内の相対パス
+  downloadUrl: string; // S3署名付きURL
+  size: number; // ファイルサイズ
+}
+
+export interface FolderDownloadInfo {
+  files: DownloadFileInfo[];
+  totalSize: number;
+  fileCount: number;
+}
+
+/**
  * フォルダツリー構造
  */
 export interface FolderNode {
@@ -456,4 +471,75 @@ export async function getFolderTree(userId: string): Promise<FolderNode[]> {
   console.log(`✅ Folder tree built with ${sortedDirPaths.length} directories`);
 
   return [root];
+}
+
+/**
+ * フォルダ内のすべてのファイルの署名付きURLを取得（再帰的）
+ */
+export async function getRecursiveDownloadUrls(
+  userId: string,
+  folderPath: string
+): Promise<FolderDownloadInfo> {
+  const bucketName = config.userStorageBucketName;
+  if (!bucketName) {
+    throw new Error('USER_STORAGE_BUCKET_NAME is not configured');
+  }
+
+  const normalizedPath = normalizePath(folderPath);
+  const prefix = normalizedPath
+    ? `${getUserStoragePrefix(userId)}/${normalizedPath}/`
+    : `${getUserStoragePrefix(userId)}/`;
+
+  console.log(`📦 Getting recursive download URLs for folder: ${prefix}`);
+
+  const files: DownloadFileInfo[] = [];
+  let totalSize = 0;
+  let continuationToken: string | undefined;
+
+  do {
+    const command = new ListObjectsV2Command({
+      Bucket: bucketName,
+      Prefix: prefix,
+      ContinuationToken: continuationToken,
+      MaxKeys: 1000,
+    });
+
+    const response = await s3Client.send(command);
+
+    if (response.Contents) {
+      for (const obj of response.Contents) {
+        // ディレクトリマーカー（末尾が/で終わるオブジェクト）はスキップ
+        if (obj.Key && !obj.Key.endsWith('/') && obj.Key !== prefix) {
+          const relativePath = obj.Key.replace(prefix, '');
+          const size = obj.Size || 0;
+
+          // 署名付きURLを生成
+          const downloadCommand = new GetObjectCommand({
+            Bucket: bucketName,
+            Key: obj.Key,
+          });
+
+          const downloadUrl = await getSignedUrl(s3Client, downloadCommand, { expiresIn: 3600 });
+
+          files.push({
+            relativePath,
+            downloadUrl,
+            size,
+          });
+
+          totalSize += size;
+        }
+      }
+    }
+
+    continuationToken = response.NextContinuationToken;
+  } while (continuationToken);
+
+  console.log(`✅ Found ${files.length} files (total size: ${totalSize} bytes)`);
+
+  return {
+    files,
+    totalSize,
+    fileCount: files.length,
+  };
 }

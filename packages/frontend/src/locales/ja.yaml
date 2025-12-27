@@ -256,6 +256,7 @@ storage:
   createFolder: フォルダを作成
   create: 作成
   download: ダウンロード
+  downloadFolder: フォルダをダウンロード
   rename: 名前を変更
   move: 移動
   copyPath: パスをコピー
@@ -279,6 +280,17 @@ storage:
   dropFiles: ファイルをドロップ
   folderNamePlaceholder: フォルダ名を入力
   itemCount: '{{count}} 件のアイテム • 最大ファイルサイズ: 5MB'
+
+  # フォルダダウンロード進捗
+  downloadProgress:
+    downloading: ダウンロード中
+    success: ダウンロード完了
+    error: ダウンロードエラー
+    cancelled: ダウンロードをキャンセルしました
+    files: ファイル
+    currentFile: 現在のファイル
+    successMessage: フォルダのダウンロードが完了しました。ZIPファイルが保存されています。
+    cancelledMessage: ダウンロードがキャンセルされました。
 
 # メモリ
 memory:

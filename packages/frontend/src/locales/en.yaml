@@ -229,6 +229,7 @@ storage:
   uploadFile: Upload File
   uploadFolder: Upload Folder
   download: Download
+  downloadFolder: Download Folder
   createFolder: Create Folder
   rename: Rename
   move: Move
@@ -242,6 +243,17 @@ storage:
   uploadError: Upload Error
   deleteConfirm: Are you sure you want to delete?
   itemCount: '{{count}} items • Max file size: 5MB'
+
+  # Folder download progress
+  downloadProgress:
+    downloading: Downloading
+    success: Download Complete
+    error: Download Error
+    cancelled: Download Cancelled
+    files: files
+    currentFile: Current file
+    successMessage: Folder download completed. The ZIP file has been saved.
+    cancelledMessage: Download was cancelled.
 
 # Memory
 memory:

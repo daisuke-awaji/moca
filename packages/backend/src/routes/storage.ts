@@ -215,4 +215,44 @@ router.get('/tree', async (req: AuthenticatedRequest, res: Response) => {
   }
 });
 
+/**
+ * GET /storage/download-folder
+ * フォルダ内のすべてのファイルの署名付きURLを取得（ZIP作成用）
+ */
+router.get('/download-folder', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const userId = req.userId;
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized', message: 'User ID not found' });
+    }
+
+    const path = req.query.path as string;
+
+    if (!path) {
+      return res.status(400).json({ error: 'Bad Request', message: 'path is required' });
+    }
+
+    const downloadInfo = await storageService.getRecursiveDownloadUrls(userId, path);
+
+    // 1GB制限チェック
+    const maxSize = 1024 * 1024 * 1024; // 1GB
+    if (downloadInfo.totalSize > maxSize) {
+      return res.status(400).json({
+        error: 'Bad Request',
+        message: `Folder size (${Math.round(downloadInfo.totalSize / 1024 / 1024)}MB) exceeds 1GB limit`,
+        totalSize: downloadInfo.totalSize,
+        fileCount: downloadInfo.fileCount,
+      });
+    }
+
+    res.status(200).json(downloadInfo);
+  } catch (error) {
+    console.error('❌ Storage folder download error:', error);
+    res.status(500).json({
+      error: 'Internal Server Error',
+      message: error instanceof Error ? error.message : 'Failed to get folder download URLs',
+    });
+  }
+});
+
 export default router;

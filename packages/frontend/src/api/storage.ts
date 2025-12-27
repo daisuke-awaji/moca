@@ -226,3 +226,129 @@ export async function fetchFolderTree(): Promise<FolderTreeResponse> {
 
   return response.json();
 }
+
+/**
+ * フォルダダウンロード用のファイル情報
+ */
+export interface DownloadFileInfo {
+  relativePath: string;
+  downloadUrl: string;
+  size: number;
+}
+
+export interface FolderDownloadInfo {
+  files: DownloadFileInfo[];
+  totalSize: number;
+  fileCount: number;
+}
+
+export interface DownloadProgress {
+  current: number;
+  total: number;
+  percentage: number;
+  currentFile: string;
+}
+
+/**
+ * フォルダ内のすべてのファイル情報を取得
+ */
+export async function getFolderDownloadInfo(path: string): Promise<FolderDownloadInfo> {
+  const url = new URL(`${API_BASE_URL}/storage/download-folder`);
+  url.searchParams.append('path', path);
+
+  const headers = await createAuthHeaders();
+
+  const response = await fetch(url.toString(), {
+    method: 'GET',
+    headers,
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(
+      errorData.message || `Failed to get folder download info: ${response.statusText}`
+    );
+  }
+
+  return response.json();
+}
+
+/**
+ * フォルダを一括ダウンロード（ZIP形式）
+ */
+export async function downloadFolder(
+  folderPath: string,
+  folderName: string,
+  onProgress?: (progress: DownloadProgress) => void,
+  signal?: AbortSignal
+): Promise<void> {
+  const JSZip = (await import('jszip')).default;
+  const { saveAs } = await import('file-saver');
+
+  // フォルダ内のファイル情報を取得
+  const downloadInfo = await getFolderDownloadInfo(folderPath);
+
+  if (downloadInfo.fileCount === 0) {
+    throw new Error('Folder is empty');
+  }
+
+  // ZIPファイルを作成
+  const zip = new JSZip();
+  let downloadedCount = 0;
+
+  // 各ファイルをダウンロードしてZIPに追加
+  for (const file of downloadInfo.files) {
+    // キャンセルチェック
+    if (signal?.aborted) {
+      throw new Error('Download cancelled');
+    }
+
+    // 進捗を通知
+    if (onProgress) {
+      onProgress({
+        current: downloadedCount,
+        total: downloadInfo.fileCount,
+        percentage: Math.round((downloadedCount / downloadInfo.fileCount) * 100),
+        currentFile: file.relativePath,
+      });
+    }
+
+    try {
+      // ファイルをダウンロード
+      const response = await fetch(file.downloadUrl, { signal });
+
+      if (!response.ok) {
+        console.error(`Failed to download file: ${file.relativePath}`);
+        continue;
+      }
+
+      const blob = await response.blob();
+
+      // ZIPに追加
+      zip.file(file.relativePath, blob);
+
+      downloadedCount++;
+    } catch (error) {
+      if (signal?.aborted) {
+        throw new Error('Download cancelled');
+      }
+      console.error(`Error downloading file ${file.relativePath}:`, error);
+      // エラーが発生してもスキップして続行
+      downloadedCount++;
+    }
+  }
+
+  // 最終進捗を通知
+  if (onProgress) {
+    onProgress({
+      current: downloadedCount,
+      total: downloadInfo.fileCount,
+      percentage: 100,
+      currentFile: 'Creating ZIP file...',
+    });
+  }
+
+  // ZIPファイルを生成してダウンロード
+  const zipBlob = await zip.generateAsync({ type: 'blob' });
+  saveAs(zipBlob, `${folderName}.zip`);
+}

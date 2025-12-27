@@ -26,8 +26,8 @@ RUN npm run build
 # ========================================
 FROM node:20-slim
 
-# curl をインストール（ヘルスチェック用）
-RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+# curl、python3、pip をインストール（ヘルスチェック用およびツール実行用）
+RUN apt-get update && apt-get install -y curl python3 python3-pip && rm -rf /var/lib/apt/lists/*
 
 # uv/uvx をインストール（Python 製 MCP サーバー用）
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh && \

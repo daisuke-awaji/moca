@@ -24,10 +24,11 @@ import {
 import { useStorageStore } from '../stores/storageStore';
 import type { StorageItem, FolderNode } from '../api/storage';
 import { Modal } from './ui/Modal/Modal';
-import { generateDownloadUrl } from '../api/storage';
+import { generateDownloadUrl, downloadFolder, type DownloadProgress } from '../api/storage';
 import { Tooltip } from './ui/Tooltip/Tooltip';
 import { FolderTree } from './FolderTree';
 import { getFileIcon } from '../utils/fileIcons';
+import { DownloadProgressModal } from './ui/DownloadProgressModal';
 
 interface StorageManagementModalProps {
   isOpen: boolean;
@@ -221,6 +222,20 @@ export function StorageManagementModal({ isOpen, onClose }: StorageManagementMod
   const fileInputRef = useRef<HTMLInputElement>(null);
   const contextMenuRef = useRef<HTMLDivElement>(null);
   const folderContextMenuRef = useRef<HTMLDivElement>(null);
+
+  // フォルダダウンロード関連の状態
+  const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState<DownloadProgress>({
+    current: 0,
+    total: 0,
+    percentage: 0,
+    currentFile: '',
+  });
+  const [downloadStatus, setDownloadStatus] = useState<
+    'downloading' | 'success' | 'error' | 'cancelled'
+  >('downloading');
+  const [downloadError, setDownloadError] = useState<string>('');
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   // URLハッシュからパスを取得
   const getPathFromHash = (): string => {
@@ -579,6 +594,77 @@ export function StorageManagementModal({ isOpen, onClose }: StorageManagementMod
     }
   };
 
+  // フォルダダウンロード
+  const handleFolderDownload = async (folderPath: string, folderName: string) => {
+    // モーダルを開いて進捗表示開始
+    setDownloadStatus('downloading');
+    setDownloadError('');
+    setDownloadProgress({ current: 0, total: 0, percentage: 0, currentFile: '' });
+    setIsDownloadModalOpen(true);
+
+    // AbortControllerを作成
+    abortControllerRef.current = new AbortController();
+
+    try {
+      await downloadFolder(
+        folderPath,
+        folderName,
+        (progress) => {
+          setDownloadProgress(progress);
+        },
+        abortControllerRef.current.signal
+      );
+
+      // 成功
+      setDownloadStatus('success');
+    } catch (error) {
+      if (error instanceof Error) {
+        if (error.message === 'Download cancelled') {
+          setDownloadStatus('cancelled');
+        } else {
+          setDownloadStatus('error');
+          setDownloadError(error.message);
+        }
+      } else {
+        setDownloadStatus('error');
+        setDownloadError('Unknown error occurred');
+      }
+    } finally {
+      abortControllerRef.current = null;
+    }
+  };
+
+  // ダウンロードキャンセル
+  const handleCancelDownload = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+  };
+
+  // ダウンロードモーダルを閉じる
+  const handleCloseDownloadModal = () => {
+    setIsDownloadModalOpen(false);
+    setDownloadProgress({ current: 0, total: 0, percentage: 0, currentFile: '' });
+    setDownloadError('');
+  };
+
+  // コンテキストメニューからフォルダダウンロード
+  const handleContextFolderDownload = async () => {
+    if (!contextMenu) return;
+    const item = items.find((i) => i.path === contextMenu.path);
+    if (item && item.type === 'directory') {
+      setContextMenu(null);
+      await handleFolderDownload(item.path, item.name);
+    }
+  };
+
+  // フォルダツリーのコンテキストメニューからフォルダダウンロード
+  const handleTreeFolderDownload = async () => {
+    if (!folderContextMenu) return;
+    setFolderContextMenu(null);
+    await handleFolderDownload(folderContextMenu.path, folderContextMenu.name);
+  };
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="xl" className="max-w-6xl h-[85vh]">
       {/* ヘッダー */}
@@ -822,13 +908,21 @@ export function StorageManagementModal({ isOpen, onClose }: StorageManagementMod
               top: `${contextMenu.y}px`,
             }}
           >
-            {contextMenu.type === 'file' && (
+            {contextMenu.type === 'file' ? (
               <button
                 onClick={handleContextDownload}
                 className="w-full px-4 py-2 text-sm text-left hover:bg-gray-100 flex items-center gap-2 transition-colors"
               >
                 <Download className="w-4 h-4 text-gray-600" />
                 <span className="text-gray-900">{t('storage.download')}</span>
+              </button>
+            ) : (
+              <button
+                onClick={handleContextFolderDownload}
+                className="w-full px-4 py-2 text-sm text-left hover:bg-gray-100 flex items-center gap-2 transition-colors"
+              >
+                <Download className="w-4 h-4 text-gray-600" />
+                <span className="text-gray-900">{t('storage.downloadFolder')}</span>
               </button>
             )}
             <button
@@ -868,6 +962,13 @@ export function StorageManagementModal({ isOpen, onClose }: StorageManagementMod
               top: `${folderContextMenu.y}px`,
             }}
           >
+            <button
+              onClick={handleTreeFolderDownload}
+              className="w-full px-4 py-2 text-sm text-left hover:bg-gray-100 flex items-center gap-2 transition-colors"
+            >
+              <Download className="w-4 h-4 text-gray-600" />
+              <span className="text-gray-900">{t('storage.downloadFolder')}</span>
+            </button>
             <button
               onClick={handleFolderDelete}
               className="w-full px-4 py-2 text-sm text-left hover:bg-gray-100 flex items-center gap-2 transition-colors"
@@ -910,6 +1011,16 @@ export function StorageManagementModal({ isOpen, onClose }: StorageManagementMod
           </button>
         </div>
       </div>
+
+      {/* ダウンロード進捗モーダル */}
+      <DownloadProgressModal
+        isOpen={isDownloadModalOpen}
+        onClose={handleCloseDownloadModal}
+        progress={downloadProgress}
+        status={downloadStatus}
+        errorMessage={downloadError}
+        onCancel={downloadStatus === 'downloading' ? handleCancelDownload : undefined}
+      />
     </Modal>
   );
 }
