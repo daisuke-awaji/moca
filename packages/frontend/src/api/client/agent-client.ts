@@ -6,6 +6,40 @@
 import { createAuthHeaders } from './base-client';
 
 /**
+ * Check if API debugging is enabled
+ */
+const isDebugEnabled = (): boolean => {
+  return import.meta.env.DEV || import.meta.env.VITE_API_DEBUG === 'true';
+};
+
+/**
+ * Log API request start
+ */
+const logRequestStart = (method: string, url: string): void => {
+  if (isDebugEnabled()) {
+    console.log(`🚀 ${method} ${url}`);
+  }
+};
+
+/**
+ * Log API request success
+ */
+const logRequestSuccess = (method: string, url: string, status: number): void => {
+  if (isDebugEnabled()) {
+    console.log(`✅ ${method} ${url} -> ${status}`);
+  }
+};
+
+/**
+ * Log API request error
+ */
+const logRequestError = (method: string, url: string, error: unknown): void => {
+  if (isDebugEnabled()) {
+    console.error(`💥 ${method} ${url} failed:`, error);
+  }
+};
+
+/**
  * Get Agent Service endpoint URL
  */
 export const getAgentEndpoint = (): string => {
@@ -32,13 +66,26 @@ function encodeAgentUrl(url: string): string {
  * @returns Response object (not JSON, for streaming support)
  */
 export async function agentRequest(options: RequestInit = {}): Promise<Response> {
+  const method = options.method || 'POST';
   const url = encodeAgentUrl(getAgentEndpoint());
-  const headers = await createAuthHeaders();
 
-  return fetch(url, {
-    ...options,
-    headers: { ...headers, ...(options.headers as Record<string, string>) },
-  });
+  try {
+    logRequestStart(method, url);
+
+    const headers = await createAuthHeaders();
+
+    const response = await fetch(url, {
+      ...options,
+      headers: { ...headers, ...(options.headers as Record<string, string>) },
+    });
+
+    logRequestSuccess(method, url, response.status);
+
+    return response;
+  } catch (error) {
+    logRequestError(method, url, error);
+    throw error;
+  }
 }
 
 /**

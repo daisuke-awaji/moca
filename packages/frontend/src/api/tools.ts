@@ -478,26 +478,13 @@ export async function fetchTools(cursor?: string): Promise<{
   tools: MCPTool[];
   nextCursor?: string;
 }> {
-  try {
-    const url = cursor ? `/tools?cursor=${encodeURIComponent(cursor)}` : '/tools';
+  const url = cursor ? `/tools?cursor=${encodeURIComponent(cursor)}` : '/tools';
+  const data = await backendGet<ToolsResponse>(url);
 
-    console.log('🔧 ツール一覧取得開始...', cursor ? { cursor } : {});
-
-    const data = await backendGet<ToolsResponse>(url);
-
-    console.log(
-      `✅ ツール一覧取得完了: ${data.tools.length}件`,
-      data.nextCursor ? { nextCursor: 'あり' } : { nextCursor: 'なし' }
-    );
-
-    return {
-      tools: data.tools,
-      nextCursor: data.nextCursor,
-    };
-  } catch (error) {
-    console.error('💥 ツール一覧取得エラー:', error);
-    throw error;
-  }
+  return {
+    tools: data.tools,
+    nextCursor: data.nextCursor,
+  };
 }
 
 /**
@@ -509,21 +496,11 @@ export async function fetchTools(cursor?: string): Promise<{
 export async function fetchLocalMCPTools(
   mcpConfig: Record<string, unknown>
 ): Promise<(MCPTool & { serverName: string })[]> {
-  try {
-    console.log('🔧 ローカル MCP ツール取得開始...');
+  const data = await backendPost<{ tools: (MCPTool & { serverName: string })[] }>('/tools/local', {
+    mcpConfig,
+  });
 
-    const data = await backendPost<{ tools: (MCPTool & { serverName: string })[] }>(
-      '/tools/local',
-      { mcpConfig }
-    );
-
-    console.log(`✅ ローカル MCP ツール取得完了: ${data.tools.length}件`);
-
-    return data.tools;
-  } catch (error) {
-    console.error('💥 ローカル MCP ツール取得エラー:', error);
-    throw error;
-  }
+  return data.tools;
 }
 
 /**
@@ -536,20 +513,11 @@ export async function searchTools(query: string): Promise<MCPTool[]> {
     throw new Error('検索クエリが必要です');
   }
 
-  try {
-    console.log(`🔍 ツール検索開始: "${query}"`);
+  const data = await backendPost<ToolsResponse>('/tools/search', {
+    query: query.trim(),
+  });
 
-    const data = await backendPost<ToolsResponse>('/tools/search', {
-      query: query.trim(),
-    });
-
-    console.log(`✅ ツール検索完了: ${data.tools.length}件 (クエリ: "${query}")`);
-
-    return data.tools;
-  } catch (error) {
-    console.error('💥 ツール検索エラー:', error);
-    throw error;
-  }
+  return data.tools;
 }
 
 /**
@@ -557,16 +525,5 @@ export async function searchTools(query: string): Promise<MCPTool[]> {
  * @returns 接続状態情報
  */
 export async function checkGatewayHealth(): Promise<HealthResponse> {
-  try {
-    console.log('💓 Gateway 接続確認開始...');
-
-    const data = await backendGet<HealthResponse>('/tools/health');
-
-    console.log('✅ Gateway 接続確認完了:', data.status);
-
-    return data;
-  } catch (error) {
-    console.error('💥 Gateway 接続確認エラー:', error);
-    throw error;
-  }
+  return backendGet<HealthResponse>('/tools/health');
 }

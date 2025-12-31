@@ -6,6 +6,40 @@
 import { createAuthHeaders, handleApiError, normalizeBaseUrl } from './base-client';
 
 /**
+ * Check if API debugging is enabled
+ */
+const isDebugEnabled = (): boolean => {
+  return import.meta.env.DEV || import.meta.env.VITE_API_DEBUG === 'true';
+};
+
+/**
+ * Log API request start
+ */
+const logRequestStart = (method: string, endpoint: string): void => {
+  if (isDebugEnabled()) {
+    console.log(`🚀 ${method} ${endpoint}`);
+  }
+};
+
+/**
+ * Log API request success
+ */
+const logRequestSuccess = (method: string, endpoint: string, status: number): void => {
+  if (isDebugEnabled()) {
+    console.log(`✅ ${method} ${endpoint} -> ${status}`);
+  }
+};
+
+/**
+ * Log API request error
+ */
+const logRequestError = (method: string, endpoint: string, error: unknown): void => {
+  if (isDebugEnabled()) {
+    console.error(`💥 ${method} ${endpoint} failed:`, error);
+  }
+};
+
+/**
  * Get Backend Service base URL
  */
 const getBaseUrl = (): string => {
@@ -19,19 +53,30 @@ const getBaseUrl = (): string => {
  * @returns Response data
  */
 export async function backendRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  const baseUrl = getBaseUrl();
-  const headers = await createAuthHeaders();
+  const method = options.method || 'GET';
 
-  const response = await fetch(`${baseUrl}${endpoint}`, {
-    ...options,
-    headers: { ...headers, ...(options.headers as Record<string, string>) },
-  });
+  try {
+    logRequestStart(method, endpoint);
 
-  if (!response.ok) {
-    await handleApiError(response);
+    const baseUrl = getBaseUrl();
+    const headers = await createAuthHeaders();
+
+    const response = await fetch(`${baseUrl}${endpoint}`, {
+      ...options,
+      headers: { ...headers, ...(options.headers as Record<string, string>) },
+    });
+
+    if (!response.ok) {
+      await handleApiError(response);
+    }
+
+    logRequestSuccess(method, endpoint, response.status);
+
+    return response.json();
+  } catch (error) {
+    logRequestError(method, endpoint, error);
+    throw error;
   }
-
-  return response.json();
 }
 
 /**

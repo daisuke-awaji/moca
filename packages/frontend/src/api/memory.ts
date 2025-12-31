@@ -45,18 +45,7 @@ interface SearchMemoryResponse {
  * @returns メモリレコード一覧
  */
 export async function fetchMemoryRecords(): Promise<MemoryRecordList> {
-  try {
-    console.log('📋 メモリレコード取得開始');
-
-    const data = await backendGet<MemoryRecordList>('/memory/records');
-
-    console.log(`✅ メモリレコード取得完了: ${data.records.length}件`);
-
-    return data;
-  } catch (error) {
-    console.error('💥 メモリレコード取得エラー:', error);
-    throw error;
-  }
+  return backendGet<MemoryRecordList>('/memory/records');
 }
 
 /**
@@ -64,16 +53,7 @@ export async function fetchMemoryRecords(): Promise<MemoryRecordList> {
  * @param recordId レコードID
  */
 export async function deleteMemoryRecord(recordId: string): Promise<void> {
-  try {
-    console.log(`🗑️ メモリレコード削除開始: ${recordId}`);
-
-    await backendDelete<void>(`/memory/records/${recordId}`);
-
-    console.log(`✅ メモリレコード削除完了: ${recordId}`);
-  } catch (error) {
-    console.error('💥 メモリレコード削除エラー:', error);
-    throw error;
-  }
+  return backendDelete<void>(`/memory/records/${recordId}`);
 }
 
 /**
@@ -84,16 +64,6 @@ export async function deleteMemoryRecord(recordId: string): Promise<void> {
 export async function searchMemoryRecords(
   searchRequest: SearchMemoryRequest
 ): Promise<MemoryRecord[]> {
-  try {
-    console.log(`🔍 メモリ検索開始: "${searchRequest.query}"`);
-
-    const data = await backendPost<SearchMemoryResponse>('/memory/search', searchRequest);
-
-    console.log(`✅ メモリ検索完了: ${data.records.length}件`);
-
-    return data.records;
-  } catch (error) {
-    console.error('💥 メモリ検索エラー:', error);
-    throw error;
-  }
+  const data = await backendPost<SearchMemoryResponse>('/memory/search', searchRequest);
+  return data.records;
 }

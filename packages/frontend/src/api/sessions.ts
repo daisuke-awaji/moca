@@ -84,18 +84,8 @@ interface SessionEventsResponse {
  * @returns セッション一覧
  */
 export async function fetchSessions(): Promise<SessionSummary[]> {
-  try {
-    console.log('📋 セッション一覧取得開始...');
-
-    const data = await backendGet<SessionsResponse>('/sessions');
-
-    console.log(`✅ セッション一覧取得完了: ${data.sessions.length}件`);
-
-    return data.sessions;
-  } catch (error) {
-    console.error('💥 セッション一覧取得エラー:', error);
-    throw error;
-  }
+  const data = await backendGet<SessionsResponse>('/sessions');
+  return data.sessions;
 }
 
 /**
@@ -104,16 +94,6 @@ export async function fetchSessions(): Promise<SessionSummary[]> {
  * @returns 会話履歴
  */
 export async function fetchSessionEvents(sessionId: string): Promise<ConversationMessage[]> {
-  try {
-    console.log(`💬 セッション会話履歴取得開始: ${sessionId}`);
-
-    const data = await backendGet<SessionEventsResponse>(`/sessions/${sessionId}/events`);
-
-    console.log(`✅ セッション会話履歴取得完了: ${data.events.length}件`);
-
-    return data.events;
-  } catch (error) {
-    console.error('💥 セッション会話履歴取得エラー:', error);
-    throw error;
-  }
+  const data = await backendGet<SessionEventsResponse>(`/sessions/${sessionId}/events`);
+  return data.events;
 }
