@@ -38,6 +38,31 @@ export interface FolderTreeResponse {
 }
 
 /**
+ * パスを正規化（エンコード済み・未エンコード両方に対応）
+ * 二重エンコード、単一エンコード、未エンコードのすべてに対応
+ */
+function normalizeStoragePath(path: string): string {
+  let normalized = path;
+
+  // 最大2回までデコードを試みる（二重エンコード対策）
+  for (let i = 0; i < 2; i++) {
+    try {
+      const decoded = decodeURIComponent(normalized);
+      if (decoded === normalized) {
+        // これ以上デコードできない（未エンコードまたはデコード完了）
+        break;
+      }
+      normalized = decoded;
+    } catch {
+      // デコードに失敗した場合は現在の値を使用
+      break;
+    }
+  }
+
+  return normalized;
+}
+
+/**
  * 認証ヘッダーを作成（自動トークンリフレッシュ付き）
  */
 async function createAuthHeaders(): Promise<Record<string, string>> {
@@ -192,7 +217,10 @@ export async function deleteDirectory(path: string, force: boolean = false) {
  */
 export async function generateDownloadUrl(path: string): Promise<string> {
   const url = new URL(`${API_BASE_URL}/storage/download`);
-  url.searchParams.append('path', path);
+
+  // パスを正規化（二重エンコード対策）
+  const normalizedPath = normalizeStoragePath(path);
+  url.searchParams.append('path', normalizedPath);
 
   const headers = await createAuthHeaders();
 
