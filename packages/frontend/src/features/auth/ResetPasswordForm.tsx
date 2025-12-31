@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ZodError, z } from 'zod';
 import { Donut, ArrowLeft, CheckCircle } from 'lucide-react';
 import { confirmResetPassword } from '../../lib/cognito';
+import { useTranslation } from 'react-i18next';
 
 interface ResetPasswordFormProps {
   email: string;
@@ -9,29 +10,30 @@ interface ResetPasswordFormProps {
   onBack?: () => void;
 }
 
-const resetPasswordSchema = z
-  .object({
-    code: z.string().min(6, '確認コードは6桁以上必要です'),
-    newPassword: z
-      .string()
-      .min(8, 'パスワードは8文字以上必要です')
-      .regex(/[A-Z]/, 'パスワードには大文字を含む必要があります')
-      .regex(/[a-z]/, 'パスワードには小文字を含む必要があります')
-      .regex(/[0-9]/, 'パスワードには数字を含む必要があります'),
-    confirmPassword: z.string(),
-  })
-  .refine((data) => data.newPassword === data.confirmPassword, {
-    message: 'パスワードが一致しません',
-    path: ['confirmPassword'],
-  });
-
-type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>;
-
 export const ResetPasswordForm: React.FC<ResetPasswordFormProps> = ({
   email,
   onSuccess,
   onBack,
 }) => {
+  const { t } = useTranslation();
+
+  const resetPasswordSchema = z
+    .object({
+      code: z.string().min(6, t('auth.resetPassword.codeMinLength')),
+      newPassword: z
+        .string()
+        .min(8, t('auth.resetPassword.passwordMinLength'))
+        .regex(/[A-Z]/, t('auth.resetPassword.passwordUpperCase'))
+        .regex(/[a-z]/, t('auth.resetPassword.passwordLowerCase'))
+        .regex(/[0-9]/, t('auth.resetPassword.passwordNumber')),
+      confirmPassword: z.string(),
+    })
+    .refine((data) => data.newPassword === data.confirmPassword, {
+      message: t('auth.resetPassword.passwordMismatch'),
+      path: ['confirmPassword'],
+    });
+
+  type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>;
   const [formData, setFormData] = useState<ResetPasswordFormData>({
     code: '',
     newPassword: '',
@@ -108,7 +110,7 @@ export const ResetPasswordForm: React.FC<ResetPasswordFormProps> = ({
       } else if (err instanceof Error) {
         setError(err.message);
       } else {
-        setError('パスワードのリセットに失敗しました');
+        setError(t('auth.resetPassword.resetFailed'));
       }
     } finally {
       setIsLoading(false);
@@ -123,8 +125,10 @@ export const ResetPasswordForm: React.FC<ResetPasswordFormProps> = ({
             <div className="absolute inset-0 bg-green-200 rounded-full blur-2xl opacity-30 scale-125"></div>
             <CheckCircle className="w-16 h-16 text-green-600 mx-auto" />
           </div>
-          <h2 className="text-3xl font-bold text-gray-900 mb-2">パスワードをリセットしました</h2>
-          <p className="text-gray-600">新しいパスワードでログインしてください</p>
+          <h2 className="text-3xl font-bold text-gray-900 mb-2">
+            {t('auth.resetPassword.successTitle')}
+          </h2>
+          <p className="text-gray-600">{t('auth.resetPassword.successDescription')}</p>
           <div className="flex justify-center">
             <svg className="animate-spin h-8 w-8 text-amber-600" fill="none" viewBox="0 0 24 24">
               <circle
@@ -155,12 +159,12 @@ export const ResetPasswordForm: React.FC<ResetPasswordFormProps> = ({
             <div className="absolute inset-0 bg-amber-200 rounded-full blur-2xl opacity-30 scale-125"></div>
             <Donut className="w-16 h-16 text-amber-600 mx-auto" />
           </div>
-          <h2 className="text-3xl font-bold text-amber-900 mb-2">パスワードをリセット</h2>
-          <p className="text-gray-600 text-sm">
-            メールに送信された確認コードと新しいパスワードを入力してください
-          </p>
+          <h2 className="text-3xl font-bold text-amber-900 mb-2">
+            {t('auth.resetPassword.title')}
+          </h2>
+          <p className="text-gray-600 text-sm">{t('auth.resetPassword.description')}</p>
           <p className="text-gray-600 text-sm mt-2">
-            メールアドレス: <span className="font-semibold">{email}</span>
+            {t('auth.email')}: <span className="font-semibold">{email}</span>
           </p>
         </div>
 
@@ -168,7 +172,7 @@ export const ResetPasswordForm: React.FC<ResetPasswordFormProps> = ({
           <div className="space-y-4">
             <div>
               <label htmlFor="code" className="block text-sm font-medium text-gray-700 mb-2">
-                確認コード
+                {t('auth.resetPassword.code')}
               </label>
               <input
                 id="code"
@@ -189,7 +193,7 @@ export const ResetPasswordForm: React.FC<ResetPasswordFormProps> = ({
 
             <div>
               <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 mb-2">
-                新しいパスワード
+                {t('auth.resetPassword.newPassword')}
               </label>
               <input
                 id="newPassword"
@@ -207,9 +211,7 @@ export const ResetPasswordForm: React.FC<ResetPasswordFormProps> = ({
               {validationErrors.newPassword && (
                 <p className="mt-2 text-sm text-red-600">{validationErrors.newPassword}</p>
               )}
-              <p className="mt-2 text-xs text-gray-500">
-                8文字以上、大文字・小文字・数字を含む必要があります
-              </p>
+              <p className="mt-2 text-xs text-gray-500">{t('auth.passwordRequirements')}</p>
             </div>
 
             <div>
@@ -217,7 +219,7 @@ export const ResetPasswordForm: React.FC<ResetPasswordFormProps> = ({
                 htmlFor="confirmPassword"
                 className="block text-sm font-medium text-gray-700 mb-2"
               >
-                パスワード確認
+                {t('auth.resetPassword.confirmNewPassword')}
               </label>
               <input
                 id="confirmPassword"
@@ -283,10 +285,10 @@ export const ResetPasswordForm: React.FC<ResetPasswordFormProps> = ({
                     d="m12 2v4m0 12v4m10-10h-4m-12 0H2m15.364-7.364-2.829 2.829m-9.899 9.899-2.829 2.829m12.728 0-2.829-2.829M4.929 4.929l-2.829 2.829"
                   ></path>
                 </svg>
-                パスワードをリセット中...
+                {t('auth.resetPassword.resettingButton')}
               </>
             ) : (
-              'パスワードをリセット'
+              t('auth.resetPassword.resetButton')
             )}
           </button>
         </form>
@@ -299,7 +301,7 @@ export const ResetPasswordForm: React.FC<ResetPasswordFormProps> = ({
               className="flex items-center justify-center w-full text-sm text-gray-600 hover:text-gray-900 transition-colors"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
-              戻る
+              {t('auth.resetPassword.backToForgotPassword')}
             </button>
           )}
         </div>

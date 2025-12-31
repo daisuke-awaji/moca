@@ -76,6 +76,33 @@ auth:
   confirmAccount: アカウントを確認
   resendCodeSuccess: 確認コードを再送信しました
   backToSignUp: サインアップに戻る
+  forgotPassword:
+    title: パスワードを忘れた方
+    description: パスワードをリセットするため、確認コードをメールアドレスに送信します
+    sendCode: 確認コードを送信
+    sendingCode: 送信中...
+    backToLogin: ログインに戻る
+    validEmail: 有効なメールアドレスを入力してください
+    validationError: バリデーションエラー
+    sendFailed: パスワードリセットコードの送信に失敗しました
+  resetPassword:
+    title: パスワードをリセット
+    description: メールに送信された確認コードを入力して、新しいパスワードを設定してください
+    code: 確認コード
+    newPassword: 新しいパスワード
+    confirmNewPassword: 新しいパスワード（確認）
+    resetButton: パスワードをリセット
+    resettingButton: リセット中...
+    backToForgotPassword: パスワードリセットに戻る
+    successTitle: パスワードをリセットしました
+    successDescription: 新しいパスワードでログインしてください
+    codeMinLength: 確認コードは6桁以上必要です
+    passwordMinLength: パスワードは8文字以上必要です
+    passwordUpperCase: パスワードには大文字を含む必要があります
+    passwordLowerCase: パスワードには小文字を含む必要があります
+    passwordNumber: パスワードには数字を含む必要があります
+    passwordMismatch: パスワードが一致しません
+    resetFailed: パスワードのリセットに失敗しました
 
 # ナビゲーション
 navigation:

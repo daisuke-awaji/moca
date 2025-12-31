@@ -63,6 +63,33 @@ auth:
   confirmAccount: Confirm Account
   resendCodeSuccess: Verification code has been resent
   backToSignUp: Back to Sign Up
+  forgotPassword:
+    title: Forgot Password
+    description: We'll send a verification code to your email address to reset your password
+    sendCode: Send Verification Code
+    sendingCode: Sending...
+    backToLogin: Back to Login
+    validEmail: Please enter a valid email address
+    validationError: Validation error
+    sendFailed: Failed to send password reset code
+  resetPassword:
+    title: Reset Password
+    description: Enter the verification code sent to your email and set a new password
+    code: Verification Code
+    newPassword: New Password
+    confirmNewPassword: Confirm New Password
+    resetButton: Reset Password
+    resettingButton: Resetting...
+    backToForgotPassword: Back to Forgot Password
+    successTitle: Password Reset Successfully
+    successDescription: Please login with your new password
+    codeMinLength: Verification code must be at least 6 characters
+    passwordMinLength: Password must be at least 8 characters
+    passwordUpperCase: Password must contain an uppercase letter
+    passwordLowerCase: Password must contain a lowercase letter
+    passwordNumber: Password must contain a number
+    passwordMismatch: Passwords do not match
+    resetFailed: Failed to reset password
 
 # Navigation
 navigation:

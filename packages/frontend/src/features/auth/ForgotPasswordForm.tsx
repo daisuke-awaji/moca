@@ -2,24 +2,26 @@ import React, { useState } from 'react';
 import { ZodError, z } from 'zod';
 import { Donut, ArrowLeft } from 'lucide-react';
 import { forgotPassword } from '../../lib/cognito';
+import { useTranslation } from 'react-i18next';
 
 interface ForgotPasswordFormProps {
   onSwitchToLogin?: () => void;
   onCodeSent?: (email: string) => void;
 }
 
-const emailSchema = z.object({
-  email: z.string().email('有効なメールアドレスを入力してください'),
-});
-
 export const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({
   onSwitchToLogin,
   onCodeSent,
 }) => {
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [validationError, setValidationError] = useState<string>('');
+
+  const emailSchema = z.object({
+    email: z.string().email(t('auth.forgotPassword.validEmail')),
+  });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -63,7 +65,7 @@ export const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({
       } else if (err instanceof Error) {
         setError(err.message);
       } else {
-        setError('パスワードリセットコードの送信に失敗しました');
+        setError(t('auth.forgotPassword.sendFailed'));
       }
     } finally {
       setIsLoading(false);
@@ -79,17 +81,17 @@ export const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({
             <div className="absolute inset-0 bg-amber-200 rounded-full blur-2xl opacity-30 scale-125"></div>
             <Donut className="w-16 h-16 text-amber-600 mx-auto" />
           </div>
-          <h2 className="text-3xl font-bold text-amber-900 mb-2">パスワードを忘れた方</h2>
-          <p className="text-gray-600 text-sm">
-            パスワードをリセットするため、確認コードをメールアドレスに送信します
-          </p>
+          <h2 className="text-3xl font-bold text-amber-900 mb-2">
+            {t('auth.forgotPassword.title')}
+          </h2>
+          <p className="text-gray-600 text-sm">{t('auth.forgotPassword.description')}</p>
         </div>
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4">
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                メールアドレス
+                {t('auth.email')}
               </label>
               <input
                 id="email"
@@ -153,10 +155,10 @@ export const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({
                     d="m12 2v4m0 12v4m10-10h-4m-12 0H2m15.364-7.364-2.829 2.829m-9.899 9.899-2.829 2.829m12.728 0-2.829-2.829M4.929 4.929l-2.829 2.829"
                   ></path>
                 </svg>
-                送信中...
+                {t('auth.forgotPassword.sendingCode')}
               </>
             ) : (
-              '確認コードを送信'
+              t('auth.forgotPassword.sendCode')
             )}
           </button>
         </form>
@@ -169,7 +171,7 @@ export const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({
               className="flex items-center justify-center w-full text-sm text-gray-600 hover:text-gray-900 transition-colors"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
-              ログイン画面に戻る
+              {t('auth.forgotPassword.backToLogin')}
             </button>
           )}
         </div>
