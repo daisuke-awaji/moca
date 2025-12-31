@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Plus, X, AlertCircle, Sparkles, Settings, Wrench, Server } from 'lucide-react';
 import { ToolSelector } from './ToolSelector';
@@ -10,6 +10,7 @@ import { streamAgentResponse, createAgentConfigGenerationPrompt } from '../api/a
 import { useToolStore } from '../stores/toolStore';
 import { parseStreamingXml, createInitialXmlState } from '../utils/xmlParser';
 import { translateIfKey } from '../utils/agent-translation';
+import toast from 'react-hot-toast';
 
 interface AgentFormProps {
   agent?: Agent;
@@ -53,7 +54,15 @@ export const AgentForm: React.FC<AgentFormProps> = ({ agent, onSubmit, isLoading
   // AI生成関連の状態
   const [isGenerating, setIsGenerating] = useState(false);
 
-  const { tools } = useToolStore();
+  const { tools, isLoading: isToolsLoading, loadAllTools } = useToolStore();
+
+  // ツールが未ロードの場合、自動的に読み込む
+  useEffect(() => {
+    if (tools.length === 0 && !isToolsLoading) {
+      console.log('🔧 AgentForm: ツールが未ロードのため自動読み込み開始');
+      loadAllTools();
+    }
+  }, [tools.length, isToolsLoading, loadAllTools]);
 
   // バリデーション
   const validateForm = (): boolean => {
@@ -154,6 +163,12 @@ export const AgentForm: React.FC<AgentFormProps> = ({ agent, onSubmit, isLoading
   // AI生成機能
   const handleAIGeneration = async () => {
     if (!formData.name.trim() || !formData.description.trim()) {
+      return;
+    }
+
+    // ツールが読み込まれていない場合は警告を表示
+    if (tools.length === 0) {
+      toast.error(t('agent.pleaseWaitToolsLoading'));
       return;
     }
 
@@ -336,13 +351,21 @@ export const AgentForm: React.FC<AgentFormProps> = ({ agent, onSubmit, isLoading
                     disabled={
                       isLoading ||
                       isGenerating ||
+                      isToolsLoading ||
+                      tools.length === 0 ||
                       !formData.name.trim() ||
                       !formData.description.trim()
                     }
                     className="inline-flex items-center space-x-1 px-3 py-1.5 text-xs text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     <Sparkles className="w-3.5 h-3.5" />
-                    <span>{isGenerating ? t('agent.aiGenerating') : t('agent.aiGenerate')}</span>
+                    <span>
+                      {isToolsLoading && tools.length === 0
+                        ? t('agent.loadingTools')
+                        : isGenerating
+                          ? t('agent.aiGenerating')
+                          : t('agent.aiGenerate')}
+                    </span>
                   </button>
                 </div>
                 <p className="text-sm text-gray-500 mb-3">{t('agent.systemPromptDescription')}</p>

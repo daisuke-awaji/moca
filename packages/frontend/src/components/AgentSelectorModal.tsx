@@ -9,6 +9,7 @@ import { Modal, ConfirmModal } from './ui/Modal';
 import { LoadingIndicator } from './ui/LoadingIndicator/LoadingIndicator';
 import { useAgentStore } from '../stores/agentStore';
 import { useUIStore } from '../stores/uiStore';
+import { useToolStore } from '../stores/toolStore';
 import type { Agent, CreateAgentInput } from '../types/agent';
 import { translateIfKey } from '../utils/agent-translation';
 
@@ -36,13 +37,14 @@ export const AgentSelectorModal: React.FC<AgentSelectorModalProps> = ({
     error,
   } = useAgentStore();
   const { isMobileView } = useUIStore();
+  const { tools, isLoading: isToolsLoading, loadAllTools } = useToolStore();
 
   const [mode, setMode] = useState<'list' | 'create' | 'edit'>('list');
   const [editingAgent, setEditingAgent] = useState<Agent | null>(null);
   const [deleteConfirmAgent, setDeleteConfirmAgent] = useState<Agent | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
-  // モーダルが開かれたときに初期化
+  // モーダルが開かれたときに初期化 & ツールの事前読み込み
   useEffect(() => {
     if (isOpen) {
       requestAnimationFrame(() => {
@@ -51,8 +53,14 @@ export const AgentSelectorModal: React.FC<AgentSelectorModalProps> = ({
         setDeleteConfirmAgent(null);
         setOpenMenuId(null);
       });
+
+      // フォームモードの場合、ツールが未ロードなら事前に読み込む
+      if ((mode === 'create' || mode === 'edit') && tools.length === 0 && !isToolsLoading) {
+        console.log('🔧 AgentSelectorModal: モーダル表示時にツール事前読み込み開始');
+        loadAllTools();
+      }
     }
-  }, [isOpen]);
+  }, [isOpen, mode, tools.length, isToolsLoading, loadAllTools]);
 
   // メニュー外クリックで閉じる
   useEffect(() => {
@@ -144,11 +152,20 @@ export const AgentSelectorModal: React.FC<AgentSelectorModalProps> = ({
                     <p className="text-sm text-red-600">{error}</p>
                   </div>
                 )}
-                <AgentForm
-                  agent={editingAgent || undefined}
-                  onSubmit={mode === 'create' ? handleCreateAgent : handleUpdateAgent}
-                  isLoading={isLoading}
-                />
+                {/* ツール読み込み中の表示 */}
+                {isToolsLoading && tools.length === 0 && (
+                  <div className="flex justify-center py-8">
+                    <LoadingIndicator message={t('agent.loadingTools')} />
+                  </div>
+                )}
+                {/* ツール読み込み完了後にフォームを表示 */}
+                {(!isToolsLoading || tools.length > 0) && (
+                  <AgentForm
+                    agent={editingAgent || undefined}
+                    onSubmit={mode === 'create' ? handleCreateAgent : handleUpdateAgent}
+                    isLoading={isLoading}
+                  />
+                )}
               </div>
             </Modal.Content>
             <Modal.Footer>

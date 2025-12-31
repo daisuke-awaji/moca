@@ -188,6 +188,8 @@ agent:
   validationScenarioTitleRequired: Scenario title is required
   validationScenarioPromptRequired: Scenario prompt is required
   validationGenerationFailed: Generation failed
+  pleaseWaitToolsLoading: Tools are loading. Please wait a moment
+  loadingTools: Loading tools list...
   share: Share
   unshare: Unshare
   shareSuccess: Agent shared successfully

@@ -205,6 +205,8 @@ agent:
   validationScenarioTitleRequired: シナリオタイトルは必須です
   validationScenarioPromptRequired: シナリオプロンプトは必須です
   validationGenerationFailed: 生成に失敗しました
+  pleaseWaitToolsLoading: ツールを読み込み中です。しばらくお待ちください
+  loadingTools: ツール一覧を読み込んでいます...
   share: 共有する
   unshare: 共有を解除
   shareSuccess: エージェントを共有しました
