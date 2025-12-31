@@ -4,8 +4,7 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
-import { logger } from '../utils/logger.js';
-import type { Logger as LoggerType } from '../utils/logger.js';
+import { logger, Logger } from '../utils/logger.js';
 import type { AuthenticatedRequest } from './auth.js';
 
 /**
@@ -19,7 +18,7 @@ function generateRequestId(): string {
  * ロガー付きリクエスト型定義
  */
 export interface RequestWithLogger extends Request {
-  logger?: LoggerType;
+  logger?: Logger;
   requestId?: string;
 }
 
@@ -94,6 +93,6 @@ export function enrichLoggerWithAuth(
  * リクエストからロガーを取得するヘルパー関数
  * ロガーが存在しない場合はグローバルロガーを返す
  */
-export function getRequestLogger(req: RequestWithLogger): LoggerType {
+export function getRequestLogger(req: RequestWithLogger): Logger {
   return req.logger || logger;
 }
