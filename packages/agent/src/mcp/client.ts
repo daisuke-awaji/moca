@@ -1,4 +1,4 @@
-// MCP SDK が利用できない場合のフォールバック実装
+// Fallback implementation when MCP SDK is not available
 // import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/http.js";
 // import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { config, logger } from '../config/index.js';
@@ -6,7 +6,7 @@ import { getCurrentAuthHeader } from '../context/request-context.js';
 import { MCPToolDefinition } from '../schemas/types.js';
 
 /**
- * JSONRPC レスポンスの基本型
+ * Basic JSONRPC response type
  */
 interface JSONRPCResponse<T = unknown> {
   jsonrpc: string;
@@ -20,7 +20,7 @@ interface JSONRPCResponse<T = unknown> {
 }
 
 /**
- * ツール一覧のレスポンス型
+ * Tool list response type
  */
 interface ListToolsResult {
   tools: Array<MCPToolDefinition>;
@@ -28,7 +28,7 @@ interface ListToolsResult {
 }
 
 /**
- * ツール呼び出しのレスポンス型
+ * Tool call response type
  */
 interface CallToolResult {
   toolUseId?: string;
@@ -41,7 +41,7 @@ interface CallToolResult {
 }
 
 /**
- * MCP ツール呼び出しの結果
+ * MCP tool call result
  */
 export interface MCPToolResult {
   toolUseId: string;
@@ -54,7 +54,7 @@ export interface MCPToolResult {
 }
 
 /**
- * MCP クライアントエラー
+ * MCP client error
  */
 export class MCPClientError extends Error {
   constructor(
@@ -67,7 +67,7 @@ export class MCPClientError extends Error {
 }
 
 /**
- * リトライ設定
+ * Retry configuration
  */
 interface RetryConfig {
   maxRetries: number;
@@ -77,7 +77,7 @@ interface RetryConfig {
 }
 
 /**
- * デフォルトのリトライ設定
+ * Default retry configuration
  */
 const DEFAULT_RETRY_CONFIG: RetryConfig = {
   maxRetries: 3,
@@ -87,7 +87,7 @@ const DEFAULT_RETRY_CONFIG: RetryConfig = {
 };
 
 /**
- * エラーのcauseプロパティを持つ型
+ * Type with error cause property
  */
 interface ErrorWithCause extends Error {
   cause?: {
@@ -96,7 +96,7 @@ interface ErrorWithCause extends Error {
 }
 
 /**
- * リトライ可能なエラーかどうかを判定
+ * Determine if error is retryable
  */
 function isRetryableError(error: unknown): boolean {
   if (!(error instanceof Error)) {
@@ -106,17 +106,17 @@ function isRetryableError(error: unknown): boolean {
   const message = error.message.toLowerCase();
   const cause = (error as ErrorWithCause).cause;
 
-  // Node.js のネットワークエラーコード
+  // Node.js network error codes
   const retryableCodes = [
-    'econnreset', // 接続リセット
-    'etimedout', // タイムアウト
-    'econnrefused', // 接続拒否
-    'epipe', // パイプ破損
-    'eai_again', // DNS一時エラー
-    'enotfound', // DNS解決エラー
+    'econnreset', // Connection reset
+    'etimedout', // Timeout
+    'econnrefused', // Connection refused
+    'epipe', // Broken pipe
+    'eai_again', // DNS temporary error
+    'enotfound', // DNS resolution error
   ];
 
-  // エラーメッセージに含まれる文字列チェック
+  // Check strings in error message
   const retryableMessages = [
     'fetch failed',
     'network error',
@@ -125,7 +125,7 @@ function isRetryableError(error: unknown): boolean {
     'timeout',
   ];
 
-  // エラーコードの確認
+  // Check error code
   if (cause?.code) {
     const code = String(cause.code).toLowerCase();
     if (retryableCodes.includes(code)) {
@@ -133,7 +133,7 @@ function isRetryableError(error: unknown): boolean {
     }
   }
 
-  // エラーメッセージの確認
+  // Check error message
   if (retryableMessages.some((msg) => message.includes(msg))) {
     return true;
   }
@@ -142,14 +142,14 @@ function isRetryableError(error: unknown): boolean {
 }
 
 /**
- * 指数バックオフでの待機
+ * Wait with exponential backoff
  */
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /**
- * リトライロジック付きfetch
+ * Fetch with retry logic
  */
 async function fetchWithRetry(
   url: string,
@@ -161,7 +161,7 @@ async function fetchWithRetry(
 
   for (let attempt = 0; attempt <= config.maxRetries; attempt++) {
     try {
-      // タイムアウト設定
+      // Set timeout
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), config.timeout);
 
@@ -174,7 +174,7 @@ async function fetchWithRetry(
         const response = await fetch(url, fetchOptions);
         clearTimeout(timeoutId);
 
-        // HTTP 5xx エラーもリトライ対象
+        // HTTP 5xx errors are also retryable
         if (response.status >= 500 && response.status < 600 && attempt < config.maxRetries) {
           throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
@@ -187,22 +187,22 @@ async function fetchWithRetry(
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
 
-      // 最後のリトライの場合はエラーを投げる
+      // Throw error if this is the last retry
       if (attempt >= config.maxRetries) {
         break;
       }
 
-      // リトライ可能なエラーかチェック
+      // Check if error is retryable
       if (!isRetryableError(error)) {
-        logger.debug(`リトライ不可能なエラー (attempt ${attempt + 1}):`, lastError.message);
+        logger.debug(`Non-retryable error (attempt ${attempt + 1}):`, lastError.message);
         throw lastError;
       }
 
-      // 待機時間を計算（指数バックオフ）
+      // Calculate wait time (exponential backoff)
       const delay = Math.min(config.baseDelay * Math.pow(2, attempt), config.maxDelay);
 
       logger.debug(
-        `リトライ可能なエラー (attempt ${attempt + 1}/${config.maxRetries + 1}): ${lastError.message}, ${delay}ms後にリトライ`
+        `Retryable error (attempt ${attempt + 1}/${config.maxRetries + 1}): ${lastError.message}, retrying after ${delay}ms`
       );
 
       if (delay > 0) {
@@ -212,54 +212,54 @@ async function fetchWithRetry(
   }
 
   throw new MCPClientError(
-    `${config.maxRetries + 1}回のリトライ後に失敗: ${lastError.message}`,
+    `Failed after ${config.maxRetries + 1} retries: ${lastError.message}`,
     lastError
   );
 }
 
 /**
- * AgentCore Gateway MCP クライアント (HTTP ベース)
+ * AgentCore Gateway MCP client (HTTP-based)
  */
 export class AgentCoreMCPClient {
   private readonly endpointUrl: string;
 
   constructor() {
     this.endpointUrl = config.AGENTCORE_GATEWAY_ENDPOINT;
-    logger.debug('AgentCore MCP クライアントを初期化', {
+    logger.debug('Initializing AgentCore MCP client', {
       endpoint: this.endpointUrl,
     });
   }
 
   /**
-   * Authorization ヘッダーを取得（JWT 伝播のみ）
+   * Get Authorization header (JWT propagation only)
    */
   private getAuthorizationHeader(required = true): string | null {
-    // リクエストコンテキストから Inbound JWT を取得
+    // Get Inbound JWT from request context
     const contextAuthHeader = getCurrentAuthHeader();
     if (contextAuthHeader) {
-      logger.debug('リクエストコンテキストから JWT を使用');
+      logger.debug('Using JWT from request context');
       return contextAuthHeader;
     }
 
-    // JWT が見つからない場合の処理
+    // Handle when JWT is not found
     if (required) {
       throw new MCPClientError(
-        'JWT認証情報が見つかりません。リクエストに Authorization ヘッダーが必要です。'
+        'JWT authentication information not found. Authorization header is required in the request.'
       );
     }
 
-    logger.debug('JWT認証情報が見つかりませんが、必須ではないため継続');
+    logger.debug('JWT authentication information not found, but not required so continuing');
     return null;
   }
 
   /**
-   * 利用可能なツール一覧を取得（ページネーション対応）
+   * Get list of available tools (with pagination support)
    */
   async listTools(): Promise<Array<MCPToolDefinition>> {
     try {
-      logger.debug('ツール一覧を取得中...');
+      logger.debug('Retrieving tool list...');
 
-      // Agent 初期化時はJWT不要（認証なしでツール一覧を取得）
+      // JWT not required during Agent initialization (get tool list without authentication)
       const authHeader = this.getAuthorizationHeader(false);
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
@@ -273,10 +273,10 @@ export class AgentCoreMCPClient {
       let cursor: string | undefined = undefined;
       let pageCount = 0;
 
-      // nextCursor がある限り全てのページを取得
+      // Get all pages while nextCursor exists
       do {
         pageCount++;
-        logger.debug(`ページ${pageCount}を取得中...`, cursor ? { cursor } : {});
+        logger.debug(`Retrieving page ${pageCount}...`, cursor ? { cursor } : {});
 
         const params = cursor ? { cursor } : {};
 
@@ -298,7 +298,7 @@ export class AgentCoreMCPClient {
         const data = (await response.json()) as JSONRPCResponse<ListToolsResult>;
 
         if (config.DEBUG_MCP) {
-          logger.debug(`ページ${pageCount}の取得結果:`, data);
+          logger.debug(`Page ${pageCount} retrieval result:`, data);
         }
 
         if (data.error) {
@@ -306,38 +306,38 @@ export class AgentCoreMCPClient {
         }
 
         if (!data.result) {
-          throw new Error('ツール一覧の結果が空です');
+          throw new Error('Tool list result is empty');
         }
 
-        // このページのツールを追加
+        // Add tools from this page
         allTools.push(...data.result.tools);
-        logger.debug(`ページ${pageCount}: ${data.result.tools.length}個のツールを取得`);
+        logger.debug(`Page ${pageCount}: Retrieved ${data.result.tools.length} tools`);
 
-        // 次のページがあるかチェック
+        // Check if there's a next page
         cursor = data.result.nextCursor;
       } while (cursor);
 
-      logger.info(`✅ 全${pageCount}ページから合計${allTools.length}個のツールを取得しました`);
+      logger.info(`✅ Retrieved total of ${allTools.length} tools from ${pageCount} pages`);
       return allTools;
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : '不明なエラー';
-      logger.error('ツール一覧の取得に失敗:', errorMessage);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Failed to retrieve tool list:', errorMessage);
 
       throw new MCPClientError(
-        `ツール一覧の取得に失敗: ${errorMessage}`,
+        `Failed to retrieve tool list: ${errorMessage}`,
         error instanceof Error ? error : undefined
       );
     }
   }
 
   /**
-   * ツールを呼び出し
+   * Call tool
    */
   async callTool(toolName: string, arguments_: Record<string, unknown>): Promise<MCPToolResult> {
     try {
-      logger.info('ツールを呼び出し中:', { toolName, arguments: arguments_ });
+      logger.info('Calling tool:', { toolName, arguments: arguments_ });
 
-      // ツール呼び出し時はJWT認証必須
+      // JWT authentication required for tool calls
       const authHeader = this.getAuthorizationHeader(true);
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
@@ -368,7 +368,7 @@ export class AgentCoreMCPClient {
       const data = (await response.json()) as JSONRPCResponse<CallToolResult>;
 
       if (config.DEBUG_MCP) {
-        logger.debug('ツール呼び出し結果:', data);
+        logger.debug('Tool call result:', data);
       }
 
       if (data.error) {
@@ -379,7 +379,7 @@ export class AgentCoreMCPClient {
         };
       }
 
-      // レスポンスを統一形式に変換
+      // Convert response to unified format
       const result: MCPToolResult = {
         toolUseId: data.result?.toolUseId || 'unknown',
         content: data.result?.content || [
@@ -388,18 +388,18 @@ export class AgentCoreMCPClient {
         isError: data.result?.isError || false,
       };
 
-      logger.info('ツール呼び出しが完了しました:', {
+      logger.info('Tool call completed:', {
         toolName,
         success: !result.isError,
       });
 
       return result;
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : '不明なエラー';
-      logger.error('ツール呼び出しに失敗:', errorMessage);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Tool call failed:', errorMessage);
 
       throw new MCPClientError(
-        `ツール呼び出しに失敗: ${errorMessage}`,
+        `Tool call failed: ${errorMessage}`,
         error instanceof Error ? error : undefined
       );
     }
@@ -407,6 +407,6 @@ export class AgentCoreMCPClient {
 }
 
 /**
- * シングルトンのMCPクライアント
+ * Singleton MCP client
  */
 export const mcpClient = new AgentCoreMCPClient();

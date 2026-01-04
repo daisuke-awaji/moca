@@ -1,12 +1,12 @@
 /**
- * MCP サーバーからツール一覧を取得するユーティリティ
+ * Utility to retrieve tool list from MCP servers
  */
 import { MCPConfig } from './types.js';
 import { getEnabledMCPServers } from './config-loader.js';
 import { createMCPClients } from './client-factory.js';
 
 /**
- * ロガー関数の型定義
+ * Logger function type definition
  */
 interface Logger {
   info: (message: string, ...args: unknown[]) => void;
@@ -16,7 +16,7 @@ interface Logger {
 }
 
 /**
- * デフォルトロガー（console を使用）
+ * Default logger (using console)
  */
 const defaultLogger: Logger = {
   info: console.log,
@@ -26,21 +26,21 @@ const defaultLogger: Logger = {
 };
 
 /**
- * MCP ツール情報の型定義
+ * MCP tool information type definition
  */
 export interface MCPToolInfo {
   name: string;
   description?: string;
   inputSchema: Record<string, unknown>;
-  serverName: string; // どのサーバーのツールか識別用
+  serverName: string; // For identifying which server the tool belongs to
 }
 
 /**
- * MCP 設定からツール一覧を取得
+ * Retrieve tool list from MCP configuration
  *
- * @param mcpConfig MCP サーバー設定
- * @param logger ロガー（省略時はコンソール）
- * @returns ツール情報の配列
+ * @param mcpConfig MCP server configuration
+ * @param logger Logger (defaults to console if omitted)
+ * @returns Array of tool information
  */
 export async function fetchToolsFromMCPConfig(
   mcpConfig: MCPConfig,
@@ -55,7 +55,7 @@ export async function fetchToolsFromMCPConfig(
     const serverName = servers[i].name;
 
     try {
-      logger.info(`🔍 ツール取得開始: ${serverName}`);
+      logger.info(`🔍 Tool retrieval started: ${serverName}`);
       const tools = await client.listTools();
 
       for (const tool of tools) {
@@ -74,10 +74,10 @@ export async function fetchToolsFromMCPConfig(
         });
       }
 
-      logger.info(`✅ ツール取得成功: ${serverName} (${tools.length}件)`);
+      logger.info(`✅ Tool retrieval successful: ${serverName} (${tools.length} items)`);
     } catch (error) {
-      logger.error(`❌ ツール取得失敗 (${serverName}):`, error);
-      // エラーが発生してもスキップして続行（他のサーバーのツールは取得）
+      logger.error(`❌ Tool retrieval failed (${serverName}):`, error);
+      // Skip and continue even if error occurs (retrieve tools from other servers)
     }
   }
 

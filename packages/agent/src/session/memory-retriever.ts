@@ -1,6 +1,6 @@
 /**
- * 長期記憶取得ユーティリティ
- * AgentCore Memory からセマンティック検索で長期記憶を取得
+ * Long-term memory retrieval utility
+ * Retrieve long-term memory from AgentCore Memory using semantic search
  */
 
 import {
@@ -14,7 +14,7 @@ import {
 import { logger } from '../config/index.js';
 
 /**
- * AWS SDK の型定義が不完全な部分を補完する型定義
+ * Type definitions to complement incomplete AWS SDK types
  */
 interface MemoryRecordSummary {
   memoryRecordId?: string;
@@ -37,18 +37,18 @@ interface RetrieveMemoryRecordsParams {
 }
 
 /**
- * セマンティックメモリ戦略IDを取得（キャッシュ付き）
+ * Get semantic memory strategy ID (with cache)
  */
 let cachedStrategyId: string | null = null;
 
 async function getSemanticMemoryStrategyId(memoryId: string, region: string): Promise<string> {
   if (cachedStrategyId) {
-    logger.info(`[MemoryRetriever] キャッシュされた strategyId を使用: ${cachedStrategyId}`);
+    logger.info(`[MemoryRetriever] Using cached strategyId: ${cachedStrategyId}`);
     return cachedStrategyId as string;
   }
 
   try {
-    logger.info(`[MemoryRetriever] GetMemory API で strategyId を取得中: memoryId=${memoryId}`);
+    logger.info(`[MemoryRetriever] Retrieving strategyId via GetMemory API: memoryId=${memoryId}`);
 
     const controlClient = new BedrockAgentCoreControlClient({ region });
     const command = new GetMemoryCommand({
@@ -58,12 +58,12 @@ async function getSemanticMemoryStrategyId(memoryId: string, region: string): Pr
     const response = await controlClient.send(command);
 
     if (!response.memory?.strategies || response.memory.strategies.length === 0) {
-      logger.warn('[MemoryRetriever] Memory に strategies が見つかりません');
-      cachedStrategyId = 'semantic_memory_strategy'; // フォールバック
+      logger.warn('[MemoryRetriever] No strategies found in Memory');
+      cachedStrategyId = 'semantic_memory_strategy'; // Fallback
       return cachedStrategyId as string;
     }
 
-    // name または strategyId が 'semantic_memory_strategy' で始まる strategy を検索
+    // Search for strategy whose name or strategyId starts with 'semantic_memory_strategy'
     const semanticStrategy = response.memory.strategies.find(
       (strategy: { name?: string; strategyId?: string }) =>
         strategy.name?.startsWith('semantic_memory_strategy') ||
@@ -73,37 +73,37 @@ async function getSemanticMemoryStrategyId(memoryId: string, region: string): Pr
     if (semanticStrategy?.strategyId) {
       cachedStrategyId = semanticStrategy.strategyId;
       logger.info(
-        `[MemoryRetriever] セマンティック戦略ID を取得: ${cachedStrategyId} (name: ${semanticStrategy.name || 'N/A'})`
+        `[MemoryRetriever] Retrieved semantic strategy ID: ${cachedStrategyId} (name: ${semanticStrategy.name || 'N/A'})`
       );
     } else {
       logger.warn(
-        '[MemoryRetriever] セマンティック戦略が見つかりません、全strategies:',
+        '[MemoryRetriever] Semantic strategy not found, all strategies:',
         response.memory?.strategies?.map((s) => ({
           name: s.name,
           strategyId: s.strategyId,
         }))
       );
-      logger.warn('[MemoryRetriever] フォールバックを使用: semantic_memory_strategy');
-      cachedStrategyId = 'semantic_memory_strategy'; // フォールバック
+      logger.warn('[MemoryRetriever] Using fallback: semantic_memory_strategy');
+      cachedStrategyId = 'semantic_memory_strategy'; // Fallback
     }
 
     return cachedStrategyId as string;
   } catch (error) {
-    logger.error('[MemoryRetriever] GetMemory API エラー:', error);
-    // エラー時はフォールバック値を使用
+    logger.error('[MemoryRetriever] GetMemory API error:', error);
+    // Use fallback value on error
     cachedStrategyId = 'semantic_memory_strategy';
     return cachedStrategyId as string;
   }
 }
 
 /**
- * AgentCore Memory から長期記憶を取得
+ * Retrieve long-term memory from AgentCore Memory
  * @param memoryId AgentCore Memory ID
- * @param actorId ユーザーID
- * @param query 検索クエリ（ユーザーの最新メッセージなど）
- * @param topK 取得件数（デフォルト: 10）
- * @param region AWS リージョン（デフォルト: us-east-1）
- * @returns 長期記憶の文字列配列
+ * @param actorId User ID
+ * @param query Search query (e.g., user's latest message)
+ * @param topK Number of items to retrieve (default: 10)
+ * @param region AWS region (default: us-east-1)
+ * @returns Array of long-term memory strings
  */
 export async function retrieveLongTermMemory(
   memoryId: string,
@@ -113,17 +113,17 @@ export async function retrieveLongTermMemory(
   region: string = 'us-east-1'
 ): Promise<string[]> {
   try {
-    logger.info(`[MemoryRetriever] 長期記憶を取得中:`, {
+    logger.info(`[MemoryRetriever] Retrieving long-term memory:`, {
       actorId,
       query: query.substring(0, 100),
       topK,
       region,
     });
 
-    // セマンティックメモリ戦略IDを取得
+    // Get semantic memory strategy ID
     const memoryStrategyId = await getSemanticMemoryStrategyId(memoryId, region);
 
-    // namespace形式を構築
+    // Build namespace format
     const namespace = `/strategies/${memoryStrategyId}/actors/${actorId}`;
 
     const client = new BedrockAgentCoreClient({ region });
@@ -141,7 +141,7 @@ export async function retrieveLongTermMemory(
     const command = new RetrieveMemoryRecordsCommand(retrieveParams);
     const response = await client.send(command);
 
-    // AWS SDKのレスポンス型にmemoryRecordSummariesが含まれていない場合の型アサーション
+    // Type assertion for when memoryRecordSummaries is not included in AWS SDK response type
     const extendedResponse = response as typeof response & {
       memoryRecordSummaries?: MemoryRecordSummary[];
     };
@@ -150,17 +150,17 @@ export async function retrieveLongTermMemory(
       !extendedResponse.memoryRecordSummaries ||
       extendedResponse.memoryRecordSummaries.length === 0
     ) {
-      logger.info('[MemoryRetriever] 長期記憶が見つかりませんでした:', {
+      logger.info('[MemoryRetriever] No long-term memory found:', {
         namespace,
         memoryStrategyId,
       });
       return [];
     }
 
-    // content を抽出
+    // Extract content
     const memories: string[] = extendedResponse.memoryRecordSummaries
       .map((record: MemoryRecordSummary) => {
-        // contentがオブジェクトの場合はtextプロパティを抽出
+        // Extract text property if content is object
         if (typeof record.content === 'object' && record.content?.text) {
           return record.content.text;
         } else if (typeof record.content === 'string') {
@@ -170,19 +170,19 @@ export async function retrieveLongTermMemory(
       })
       .filter((content) => content.length > 0);
 
-    logger.info(`[MemoryRetriever] ${memories.length} 件の長期記憶を取得しました:`, {
+    logger.info(`[MemoryRetriever] Retrieved ${memories.length} long-term memories:`, {
       memoriesCount: memories.length,
       actorId,
     });
     return memories;
   } catch (error) {
-    // ResourceNotFoundException の場合は空配列を返す（新規ユーザー対応）
+    // Return empty array for ResourceNotFoundException (new user handling)
     if (error instanceof Error && error.name === 'ResourceNotFoundException') {
-      logger.info(`[MemoryRetriever] 長期記憶が存在しません（新規ユーザー）`);
+      logger.info(`[MemoryRetriever] Long-term memory does not exist (new user)`);
       return [];
     }
-    logger.error('[MemoryRetriever] 長期記憶取得エラー:', error);
-    // エラー時も空配列を返してエージェント初期化を継続
+    logger.error('[MemoryRetriever] Long-term memory retrieval error:', error);
+    // Return empty array on error to continue agent initialization
     return [];
   }
 }

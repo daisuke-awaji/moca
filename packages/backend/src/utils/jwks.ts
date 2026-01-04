@@ -1,13 +1,13 @@
 /**
- * JWKS (JSON Web Key Set) 検証ユーティリティ
- * Cognito User Pool のJWKSエンドポイントから公開鍵を取得してJWTを検証
+ * JWKS (JSON Web Key Set) verification utility
+ * Verify JWT by retrieving public key from Cognito User Pool JWKS endpoint
  */
 
 import { jwtVerify, createRemoteJWKSet, JWTPayload, JWTVerifyResult } from 'jose';
 import { config } from '../config/index.js';
 
 /**
- * JWT ペイロードの型定義
+ * JWT payload type definition
  */
 export interface CognitoJWTPayload extends JWTPayload {
   /** Cognito Username */
@@ -27,34 +27,34 @@ export interface CognitoJWTPayload extends JWTPayload {
 }
 
 /**
- * JWT 検証結果の型定義
+ * JWT verification result type definition
  */
 export interface JWTVerificationResult {
-  /** 検証成功フラグ */
+  /** Verification success flag */
   valid: boolean;
-  /** デコードされたペイロード */
+  /** Decoded payload */
   payload?: CognitoJWTPayload;
-  /** エラーメッセージ */
+  /** Error message */
   error?: string;
-  /** エラー詳細 */
+  /** Error details */
   details?: unknown;
 }
 
 /**
- * JWKS インスタンスをキャッシュ
+ * Cache JWKS instance
  */
 let jwksInstance: ReturnType<typeof createRemoteJWKSet> | null = null;
 
 /**
- * JWKS インスタンスを取得（遅延初期化）
+ * Get JWKS instance (lazy initialization)
  */
 function getJWKS(): ReturnType<typeof createRemoteJWKSet> {
   if (!jwksInstance) {
     if (!config.jwks.uri) {
-      throw new Error('JWKS URI が設定されていません');
+      throw new Error('JWKS URI is not configured');
     }
 
-    console.log(`🔑 JWKS エンドポイントを初期化: ${config.jwks.uri}`);
+    console.log(`🔑 Initializing JWKS endpoint: ${config.jwks.uri}`);
     jwksInstance = createRemoteJWKSet(new URL(config.jwks.uri), {
       cacheMaxAge: config.jwks.cacheDuration,
     });
@@ -64,16 +64,16 @@ function getJWKS(): ReturnType<typeof createRemoteJWKSet> {
 }
 
 /**
- * JWT トークンを検証
- * @param token JWT トークン（Bearer プレフィックスなし）
- * @returns 検証結果
+ * Verify JWT token
+ * @param token JWT token (without Bearer prefix)
+ * @returns Verification result
  */
 export async function verifyJWT(token: string): Promise<JWTVerificationResult> {
   try {
-    // JWKS インスタンスを取得
+    // Get JWKS instance
     const JWKS = getJWKS();
 
-    // JWT を検証
+    // Verify JWT
     const verifyOptions: {
       issuer?: string;
       audience?: string;
@@ -82,19 +82,19 @@ export async function verifyJWT(token: string): Promise<JWTVerificationResult> {
       algorithms: ['RS256'],
     };
 
-    // issuerが設定されている場合のみ追加
+    // Add issuer only if configured
     if (config.jwt.issuer) {
       verifyOptions.issuer = config.jwt.issuer;
     }
 
-    // audienceが設定されている場合のみ追加
+    // Add audience only if configured
     if (config.jwt.audience) {
       verifyOptions.audience = config.jwt.audience;
     }
 
     const { payload }: JWTVerifyResult = await jwtVerify(token, JWKS, verifyOptions);
 
-    console.log('✅ JWT 検証成功:', {
+    console.log('✅ JWT verification successful:', {
       sub: payload.sub,
       username: payload['cognito:username'],
       tokenUse: payload.token_use,
@@ -106,7 +106,7 @@ export async function verifyJWT(token: string): Promise<JWTVerificationResult> {
       payload: payload as CognitoJWTPayload,
     };
   } catch (error) {
-    console.warn('❌ JWT 検証失敗:', {
+    console.warn('❌ JWT verification failed:', {
       error: error instanceof Error ? error.message : 'Unknown error',
       tokenLength: token.length,
       tokenPrefix: token.substring(0, 50) + '...',
@@ -121,47 +121,44 @@ export async function verifyJWT(token: string): Promise<JWTVerificationResult> {
 }
 
 /**
- * Authorization ヘッダーから JWT トークンを抽出
- * @param authHeader Authorization ヘッダー
- * @returns JWT トークン（Bearer プレフィックスなし）
+ * Extract JWT token from Authorization header
+ * @param authHeader Authorization header
+ * @returns JWT token (without Bearer prefix)
  */
 export function extractJWTFromHeader(authHeader: string): string | null {
   if (!authHeader) {
     return null;
   }
 
-  // "Bearer " プレフィックスをチェック
+  // Check for "Bearer " prefix
   const bearerPrefix = 'Bearer ';
   if (!authHeader.startsWith(bearerPrefix)) {
-    console.warn(
-      '⚠️  Authorization ヘッダーが Bearer 形式ではありません:',
-      authHeader.substring(0, 20)
-    );
+    console.warn('⚠️  Authorization header is not in Bearer format:', authHeader.substring(0, 20));
     return null;
   }
 
-  // JWT トークン部分を抽出
+  // Extract JWT token part
   return authHeader.substring(bearerPrefix.length).trim();
 }
 
 /**
- * JWT をデコード（検証なし）
- * 開発環境やデバッグ用途
- * @param token JWT トークン
- * @returns デコード結果
+ * Decode JWT (without verification)
+ * For development and debugging purposes
+ * @param token JWT token
+ * @returns Decode result
  */
 export function decodeJWTUnsafe(token: string): {
   payload: CognitoJWTPayload | null;
   error?: string;
 } {
   try {
-    // JWTは3つの部分（header.payload.signature）に分かれている
+    // JWT consists of 3 parts (header.payload.signature)
     const parts = token.split('.');
     if (parts.length !== 3) {
       return { payload: null, error: 'Invalid JWT format' };
     }
 
-    // Base64URL デコード
+    // Base64URL decode
     const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
 
     return { payload: payload as CognitoJWTPayload };
@@ -174,7 +171,7 @@ export function decodeJWTUnsafe(token: string): {
 }
 
 /**
- * JWKS 設定状況を確認
+ * Check JWKS configuration status
  */
 export function getJWKSStatus() {
   return {

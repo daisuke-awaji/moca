@@ -7,11 +7,11 @@ export interface SystemPromptOptions {
   tools: Array<{ name: string; description?: string }>;
   mcpTools: MCPToolDefinition[];
   storagePath?: string;
-  longTermMemories?: string[]; // 長期記憶の配列
+  longTermMemories?: string[]; // Array of long-term memories
 }
 
 /**
- * システムプロンプトを生成
+ * Generate system prompt
  */
 export function buildSystemPrompt(options: SystemPromptOptions): string {
   let basePrompt: string;
@@ -19,11 +19,11 @@ export function buildSystemPrompt(options: SystemPromptOptions): string {
   if (options.customPrompt) {
     basePrompt = options.customPrompt;
   } else {
-    // デフォルトプロンプト生成ロジック
+    // Default prompt generation logic
     basePrompt = generateDefaultSystemPrompt(options.tools, options.mcpTools);
   }
 
-  // 長期記憶情報を追加（長期記憶がある場合）
+  // Add long-term memory information (if long-term memories exist)
   if (options.longTermMemories && options.longTermMemories.length > 0) {
     basePrompt += `
 
@@ -33,7 +33,7 @@ ${options.longTermMemories.map((memory, index) => `${index + 1}. ${memory}`).joi
 `;
   }
 
-  // ワークスペースとストレージパス情報を追加
+  // Add workspace and storage path information
   if (options.storagePath) {
     basePrompt += `
 
@@ -84,10 +84,10 @@ When referencing files in the user's S3 storage in your responses, ALWAYS use re
 - Any file: \`[Data](/data/results.csv)\`
 `;
 
-    // S3ツールの利用可否をチェック
+    // Check S3 tool availability
     const hasS3ListFiles = options.tools.some((tool) => tool.name === 's3_list_files');
 
-    // S3ツールが利用可能な場合のみセクションを追加
+    // Add section only if S3 tools are available
     if (hasS3ListFiles) {
       basePrompt += `
 
@@ -97,7 +97,7 @@ You can still use S3 tools for specific operations:
     }
   }
 
-  // CodeInterpreter ツールの利用可否をチェック
+  // Check CodeInterpreter tool availability
   const hasCodeInterpreter = options.tools.some((tool) => tool.name === 'code_interpreter');
 
   if (hasCodeInterpreter) {
@@ -190,7 +190,7 @@ jp_font = FontProperties(fname='/usr/share/fonts/google-droid-sans-fonts/DroidSa
 **GOOD Pattern:**
 \`\`\`python
 # Japanese title with explicit font
-ax.set_title('売上推移グラフ', fontproperties=jp_font, fontsize=16)
+ax.set_title('Sales Trend Graph', fontproperties=jp_font, fontsize=16)
 
 # English axis labels (no font issues)
 ax.set_xlabel('Date', fontsize=14)
@@ -203,7 +203,7 @@ ax.legend(prop=jp_font, fontsize=12)
 **BAD Patterns (Avoid):**
 \`\`\`python
 # ❌ Japanese axis labels cause garbled text
-ax.set_xlabel('日付', fontproperties=jp_font)
+ax.set_xlabel('Date (JP)', fontproperties=jp_font)
 
 # ❌ Global rcParams breaks ASCII rendering
 plt.rcParams['font.family'] = 'Droid Sans Fallback'
@@ -226,12 +226,12 @@ plt.rcParams['font.family'] = 'Droid Sans Fallback'
 `;
   }
 
-  // デフォルトコンテキストを付与
+  // Add default context
   return basePrompt + generateDefaultContext(options.tools, options.mcpTools);
 }
 
 /**
- * デフォルトシステムプロンプトを生成
+ * Generate default system prompt
  */
 function generateDefaultSystemPrompt(
   _tools: Array<{ name: string; description?: string }>,

@@ -1,6 +1,6 @@
 /**
- * MCP クライアントファクトリー
- * transport 別に適切な McpClient を生成
+ * MCP client factory
+ * Generate appropriate McpClient for each transport
  */
 
 import { McpClient } from '@strands-agents/sdk';
@@ -13,21 +13,21 @@ import type { MCPServerConfig, StdioMCPServer, HttpMCPServer, SseMCPServer } fro
 import { MCPConfigError } from './types.js';
 
 /**
- * stdio トランスポートのクライアントを作成
+ * Create client for stdio transport
  */
 function createStdioClient(name: string, config: StdioMCPServer): McpClient {
-  logger.debug(`stdio MCPクライアントを作成: ${name}`, {
+  logger.debug(`Creating stdio MCP client: ${name}`, {
     command: config.command,
     args: config.args,
   });
 
-  // Lambda環境対応の環境変数
+  // Environment variables for Lambda environment
   const lambdaEnv = {
     HOME: '/tmp',
     NPM_CONFIG_CACHE: '/tmp/.npm',
   };
 
-  // 環境変数のマージ (undefined を除外)
+  // Merge environment variables (exclude undefined)
   const mergedEnv = Object.fromEntries(
     Object.entries({ ...process.env, ...lambdaEnv, ...(config.env || {}) }).filter(
       ([, value]) => value !== undefined
@@ -47,10 +47,10 @@ function createStdioClient(name: string, config: StdioMCPServer): McpClient {
 }
 
 /**
- * Streamable HTTP トランスポートのクライアントを作成
+ * Create client for Streamable HTTP transport
  */
 function createHttpClient(name: string, config: HttpMCPServer): McpClient {
-  logger.debug(`HTTP MCPクライアントを作成: ${name}`, {
+  logger.debug(`Creating HTTP MCP client: ${name}`, {
     url: config.url,
   });
 
@@ -70,17 +70,17 @@ function createHttpClient(name: string, config: HttpMCPServer): McpClient {
     });
   } catch (error) {
     throw new MCPConfigError(
-      `HTTP MCPクライアントの作成に失敗 (${name}): 無効なURL - ${config.url}`,
+      `Failed to create HTTP MCP client (${name}): Invalid URL - ${config.url}`,
       error instanceof Error ? error : undefined
     );
   }
 }
 
 /**
- * SSE トランスポートのクライアントを作成
+ * Create client for SSE transport
  */
 function createSseClient(name: string, config: SseMCPServer): McpClient {
-  logger.debug(`SSE MCPクライアントを作成: ${name}`, {
+  logger.debug(`Creating SSE MCP client: ${name}`, {
     url: config.url,
   });
 
@@ -94,18 +94,18 @@ function createSseClient(name: string, config: SseMCPServer): McpClient {
     });
   } catch (error) {
     throw new MCPConfigError(
-      `SSE MCPクライアントの作成に失敗 (${name}): 無効なURL - ${config.url}`,
+      `Failed to create SSE MCP client (${name}): Invalid URL - ${config.url}`,
       error instanceof Error ? error : undefined
     );
   }
 }
 
 /**
- * MCP サーバー設定から McpClient を生成
+ * Generate McpClient from MCP server configuration
  *
- * @param name サーバー名
- * @param config サーバー設定
- * @returns McpClient インスタンス
+ * @param name Server name
+ * @param config Server configuration
+ * @returns McpClient instance
  */
 export function createMCPClient(name: string, config: MCPServerConfig): McpClient {
   try {
@@ -120,10 +120,10 @@ export function createMCPClient(name: string, config: MCPServerConfig): McpClien
         return createSseClient(name, config);
       }
       default: {
-        // TypeScript の exhaustive check
+        // TypeScript exhaustive check
         const _exhaustive: never = config;
         throw new MCPConfigError(
-          `未対応のトランスポート: ${(_exhaustive as { transport?: string }).transport}`
+          `Unsupported transport: ${(_exhaustive as { transport?: string }).transport}`
         );
       }
     }
@@ -132,17 +132,17 @@ export function createMCPClient(name: string, config: MCPServerConfig): McpClien
       throw error;
     }
     throw new MCPConfigError(
-      `MCPクライアントの作成に失敗 (${name}): ${error instanceof Error ? error.message : String(error)}`,
+      `Failed to create MCP client (${name}): ${error instanceof Error ? error.message : String(error)}`,
       error instanceof Error ? error : undefined
     );
   }
 }
 
 /**
- * 複数の MCP サーバー設定から McpClient 配列を生成
+ * Generate McpClient array from multiple MCP server configurations
  *
- * @param servers サーバー名と設定の配列
- * @returns McpClient インスタンスの配列
+ * @param servers Array of server names and configurations
+ * @returns Array of McpClient instances
  */
 export function createMCPClients(
   servers: Array<{ name: string; config: MCPServerConfig }>
@@ -153,10 +153,10 @@ export function createMCPClients(
     try {
       const client = createMCPClient(name, config);
       clients.push(client);
-      logger.info(`✅ MCPクライアントを作成: ${name} (${config.transport})`);
+      logger.info(`✅ MCP client created: ${name} (${config.transport})`);
     } catch (error) {
-      logger.error(`❌ MCPクライアントの作成に失敗: ${name}`, error);
-      // エラーが発生してもスキップして続行（他のクライアントは作成）
+      logger.error(`❌ Failed to create MCP client: ${name}`, error);
+      // Skip and continue even if error occurs (create other clients)
     }
   }
 

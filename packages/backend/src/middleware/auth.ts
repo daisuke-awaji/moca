@@ -1,6 +1,6 @@
 /**
  * JWT Authentication Middleware
- * JWT認証を実行するExpressミドルウェア
+ * Express middleware that executes JWT authentication
  */
 
 import { Request, Response, NextFunction } from 'express';
@@ -8,20 +8,20 @@ import { verifyJWT, extractJWTFromHeader, CognitoJWTPayload } from '../utils/jwk
 import { config } from '../config/index.js';
 
 /**
- * 認証済みリクエストの型定義
- * Express Request オブジェクトにJWT情報を追加
+ * Authenticated request type definition
+ * Add JWT information to Express Request object
  */
 export interface AuthenticatedRequest extends Request {
-  /** JWT ペイロード */
+  /** JWT payload */
   jwt?: CognitoJWTPayload;
-  /** ユーザーID */
+  /** User ID */
   userId?: string;
-  /** リクエストID（ログ追跡用） */
+  /** Request ID (for log tracking) */
   requestId?: string;
 }
 
 /**
- * 認証エラーレスポンスの型定義
+ * Authentication error response type definition
  */
 interface AuthErrorResponse {
   error: string;
@@ -32,14 +32,14 @@ interface AuthErrorResponse {
 }
 
 /**
- * リクエストIDを生成
+ * Generate request ID
  */
 function generateRequestId(): string {
   return `req_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 }
 
 /**
- * 認証エラーレスポンスを生成
+ * Generate authentication error response
  */
 function createAuthErrorResponse(
   code: string,
@@ -56,8 +56,8 @@ function createAuthErrorResponse(
 }
 
 /**
- * JWT認証ミドルウェア
- * Authorization ヘッダーの JWT を検証し、リクエストに認証情報を追加
+ * JWT authentication middleware
+ * Verify JWT in Authorization header and add authentication information to request
  */
 export function jwtAuthMiddleware(
   req: AuthenticatedRequest,
@@ -67,17 +67,17 @@ export function jwtAuthMiddleware(
   const requestId = generateRequestId();
   req.requestId = requestId;
 
-  console.log(`🔐 JWT認証開始 (${requestId}):`, {
+  console.log(`🔐 JWT authentication started (${requestId}):`, {
     method: req.method,
     path: req.path,
     userAgent: req.get('User-Agent')?.substring(0, 50),
   });
 
-  // Authorization ヘッダーを取得
+  // Get Authorization header
   const authHeader = req.get('Authorization');
 
   if (!authHeader) {
-    console.warn(`❌ Authorization ヘッダーが未設定 (${requestId})`);
+    console.warn(`❌ Authorization header not set (${requestId})`);
     res
       .status(401)
       .json(
@@ -90,12 +90,12 @@ export function jwtAuthMiddleware(
     return;
   }
 
-  // JWT トークンを抽出
+  // Extract JWT token
   const token = extractJWTFromHeader(authHeader);
 
   if (!token) {
     console.warn(
-      `❌ 無効なAuthorization ヘッダー形式 (${requestId}):`,
+      `❌ Invalid Authorization header format (${requestId}):`,
       authHeader.substring(0, 50)
     );
     res
@@ -110,13 +110,13 @@ export function jwtAuthMiddleware(
     return;
   }
 
-  // 本番環境では JWKS 検証、開発環境では設定に応じて処理を分岐
+  // In production: JWKS verification, in development: branch based on configuration
   if (config.isProduction || config.jwks.uri) {
-    // JWKS検証を実行
+    // Execute JWKS verification
     verifyJWT(token)
       .then((result) => {
         if (!result.valid) {
-          console.warn(`❌ JWT検証失敗 (${requestId}):`, result.error);
+          console.warn(`❌ JWT verification failed (${requestId}):`, result.error);
           res
             .status(401)
             .json(
@@ -129,11 +129,11 @@ export function jwtAuthMiddleware(
           return;
         }
 
-        // 検証成功: リクエストに認証情報を追加
+        // Verification successful: Add authentication information to request
         req.jwt = result.payload;
         req.userId = result.payload?.sub || result.payload?.['cognito:username'];
 
-        console.log(`✅ JWT認証成功 (${requestId}):`, {
+        console.log(`✅ JWT authentication successful (${requestId}):`, {
           userId: req.userId,
           username: result.payload?.['cognito:username'] || result.payload?.username,
           tokenUse: result.payload?.token_use,
@@ -142,7 +142,7 @@ export function jwtAuthMiddleware(
         next();
       })
       .catch((error) => {
-        console.error(`💥 JWT検証エラー (${requestId}):`, error);
+        console.error(`💥 JWT verification error (${requestId}):`, error);
         res
           .status(500)
           .json(
@@ -154,11 +154,13 @@ export function jwtAuthMiddleware(
           );
       });
   } else {
-    // 開発環境でJWKS未設定の場合は、デコードのみ実行（検証なし）
-    console.warn(`⚠️  開発環境: JWKS未設定のため検証をスキップ (${requestId})`);
+    // In development environment with JWKS not configured: decode only (no verification)
+    console.warn(
+      `⚠️  Development environment: Skipping verification due to JWKS not configured (${requestId})`
+    );
 
     try {
-      // JWT を Base64 デコード（検証なし）
+      // Base64 decode JWT (no verification)
       const parts = token.split('.');
       if (parts.length !== 3) {
         res
@@ -171,7 +173,7 @@ export function jwtAuthMiddleware(
       req.jwt = payload as CognitoJWTPayload;
       req.userId = payload.sub || payload['cognito:username'];
 
-      console.log(`🔧 JWT デコード成功（検証なし） (${requestId}):`, {
+      console.log(`🔧 JWT decode successful (no verification) (${requestId}):`, {
         userId: req.userId,
         username: payload['cognito:username'],
         tokenUse: payload.token_use,
@@ -179,7 +181,7 @@ export function jwtAuthMiddleware(
 
       next();
     } catch (error) {
-      console.error(`❌ JWT デコードエラー (${requestId}):`, error);
+      console.error(`❌ JWT decode error (${requestId}):`, error);
       res
         .status(401)
         .json(createAuthErrorResponse('JWT_DECODE_ERROR', 'Failed to decode JWT', requestId));
@@ -189,8 +191,8 @@ export function jwtAuthMiddleware(
 }
 
 /**
- * オプショナル認証ミドルウェア
- * JWT が存在する場合のみ検証し、存在しない場合はスルー
+ * Optional authentication middleware
+ * Verify only if JWT exists, pass through if it doesn't
  */
 export function optionalJwtAuthMiddleware(
   req: AuthenticatedRequest,
@@ -200,16 +202,16 @@ export function optionalJwtAuthMiddleware(
   const authHeader = req.get('Authorization');
 
   if (!authHeader) {
-    // 認証ヘッダーが存在しない場合はスルー
+    // Pass through if authentication header doesn't exist
     return next();
   }
 
-  // 認証ヘッダーが存在する場合は通常の認証を実行
+  // Execute normal authentication if authentication header exists
   return jwtAuthMiddleware(req, res, next);
 }
 
 /**
- * 認証情報の型定義
+ * Authentication information type definition
  */
 export interface AuthInfo {
   authenticated: boolean;
@@ -222,7 +224,7 @@ export interface AuthInfo {
 }
 
 /**
- * 現在の認証情報を取得するヘルパー関数
+ * Helper function to get current authentication information
  */
 export function getCurrentAuth(req: AuthenticatedRequest): AuthInfo {
   return {

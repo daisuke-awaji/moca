@@ -1,12 +1,12 @@
 /**
  * AgentCore Gateway MCP Client Service
- * AgentCore Gateway の MCP エンドポイントとの通信を担当
+ * Handles communication with AgentCore Gateway MCP endpoint
  */
 
 import { config } from '../config/index.js';
 
 /**
- * MCP ツールの型定義
+ * MCP tool type definition
  */
 export interface MCPTool {
   name: string;
@@ -19,7 +19,7 @@ export interface MCPTool {
 }
 
 /**
- * MCP レスポンスの型定義
+ * MCP response type definition
  */
 interface MCPResponse<T = unknown> {
   jsonrpc: '2.0';
@@ -33,7 +33,7 @@ interface MCPResponse<T = unknown> {
 }
 
 /**
- * Tools/List レスポンスの型定義
+ * Tools/List response type definition
  */
 interface ToolsListResult {
   tools: MCPTool[];
@@ -41,7 +41,7 @@ interface ToolsListResult {
 }
 
 /**
- * Tools/Call (search) レスポンスの型定義
+ * Tools/Call (search) response type definition
  */
 interface ToolsCallResult {
   content: Array<{
@@ -53,7 +53,7 @@ interface ToolsCallResult {
 }
 
 /**
- * AgentCore Gateway MCP クライアント
+ * AgentCore Gateway MCP client
  */
 export class AgentCoreGatewayService {
   private readonly gatewayEndpoint: string;
@@ -61,14 +61,14 @@ export class AgentCoreGatewayService {
   constructor() {
     if (!config.gateway.endpoint) {
       throw new Error(
-        'AgentCore Gateway エンドポイントが設定されていません。AGENTCORE_GATEWAY_ENDPOINT 環境変数を設定してください。'
+        'AgentCore Gateway endpoint is not configured. Please set AGENTCORE_GATEWAY_ENDPOINT environment variable.'
       );
     }
     this.gatewayEndpoint = config.gateway.endpoint;
   }
 
   /**
-   * MCP リクエストを送信する共通メソッド
+   * Common method to send MCP requests
    */
   private async sendMCPRequest<T = unknown>(
     method: string,
@@ -91,7 +91,7 @@ export class AgentCoreGatewayService {
       requestBody.params = params;
     }
 
-    console.log(`🔗 Gateway MCP リクエスト送信:`, {
+    console.log(`🔗 Sending Gateway MCP request:`, {
       endpoint: this.gatewayEndpoint,
       method,
       requestId,
@@ -117,21 +117,21 @@ export class AgentCoreGatewayService {
       if (!response.ok) {
         const errorText = await response.text().catch(() => 'Unknown error');
         throw new Error(
-          `Gateway API エラー: ${response.status} ${response.statusText} - ${errorText}`
+          `Gateway API error: ${response.status} ${response.statusText} - ${errorText}`
         );
       }
 
       const data: MCPResponse<T> = await response.json();
 
       if (data.error) {
-        throw new Error(`Gateway MCP エラー: ${data.error.message} (${data.error.code})`);
+        throw new Error(`Gateway MCP error: ${data.error.message} (${data.error.code})`);
       }
 
       if (!data.result) {
-        throw new Error('Gateway からの応答に result が含まれていません');
+        throw new Error('Response from Gateway does not contain result');
       }
 
-      console.log(`✅ Gateway MCP リクエスト成功:`, {
+      console.log(`✅ Gateway MCP request successful:`, {
         requestId,
         method,
         resultType: typeof data.result,
@@ -139,16 +139,16 @@ export class AgentCoreGatewayService {
 
       return data.result;
     } catch (error) {
-      console.error(`💥 Gateway MCP リクエストエラー (${method}):`, error);
+      console.error(`💥 Gateway MCP request error (${method}):`, error);
       throw error;
     }
   }
 
   /**
-   * 利用可能なツール一覧を取得（ページネーション対応）
-   * @param authToken JWT認証トークン（オプショナル）
-   * @param cursor ページネーション用のカーソル（オプショナル）
-   * @returns ツール一覧とnextCursor
+   * Get list of available tools (with pagination support)
+   * @param authToken JWT authentication token (optional)
+   * @param cursor Cursor for pagination (optional)
+   * @returns Tool list and nextCursor
    */
   async listTools(
     authToken?: string,
@@ -158,7 +158,7 @@ export class AgentCoreGatewayService {
     nextCursor?: string;
   }> {
     try {
-      console.log('📋 Gateway からツール一覧を取得中...', cursor ? { cursor } : {});
+      console.log('📋 Retrieving tool list from Gateway...', cursor ? { cursor } : {});
 
       const params = cursor ? { cursor } : {};
       const result = await this.sendMCPRequest<ToolsListResult>('tools/list', params, authToken);
@@ -167,8 +167,8 @@ export class AgentCoreGatewayService {
       const nextCursor = result.nextCursor;
 
       console.log(
-        `✅ ツール一覧取得完了: ${tools.length}件`,
-        nextCursor ? { nextCursor: 'あり' } : { nextCursor: 'なし' }
+        `✅ Tool list retrieval completed: ${tools.length} items`,
+        nextCursor ? { nextCursor: 'present' } : { nextCursor: 'none' }
       );
 
       return {
@@ -176,26 +176,26 @@ export class AgentCoreGatewayService {
         nextCursor,
       };
     } catch (error) {
-      console.error('💥 ツール一覧取得エラー:', error);
+      console.error('💥 Tool list retrieval error:', error);
       throw new Error(
-        `ツール一覧の取得に失敗しました: ${error instanceof Error ? error.message : 'Unknown error'}`
+        `Failed to retrieve tool list: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
     }
   }
 
   /**
-   * セマンティック検索でツールを検索
-   * @param query 検索クエリ
-   * @param authToken JWT認証トークン
-   * @returns 検索結果のツール一覧
+   * Search tools with semantic search
+   * @param query Search query
+   * @param authToken JWT authentication token
+   * @returns List of search result tools
    */
   async searchTools(query: string, authToken: string): Promise<MCPTool[]> {
     if (!query || query.trim().length === 0) {
-      throw new Error('検索クエリが必要です');
+      throw new Error('Search query is required');
     }
 
     try {
-      console.log(`🔍 Gateway でツールを検索中: "${query}"`);
+      console.log(`🔍 Searching tools on Gateway: "${query}"`);
 
       const result = await this.sendMCPRequest<ToolsCallResult>(
         'tools/call',
@@ -208,71 +208,71 @@ export class AgentCoreGatewayService {
         authToken
       );
 
-      // レスポンスの内容を解析
+      // Parse response content
       if (result.isError) {
-        throw new Error('検索中にエラーが発生しました');
+        throw new Error('Error occurred during search');
       }
 
-      // content から検索結果を抽出
+      // Extract search results from content
       const tools: MCPTool[] = [];
       if (result.content && Array.isArray(result.content)) {
         for (const item of result.content) {
           if (item.type === 'text' && item.text) {
             try {
-              // JSON形式のツール情報を解析
+              // Parse JSON format tool information
               const toolData = JSON.parse(item.text);
               if (toolData.tools && Array.isArray(toolData.tools)) {
                 tools.push(...toolData.tools);
               }
             } catch (parseError) {
-              // テキスト形式の場合はそのまま使用
-              console.warn('検索結果のパースに失敗、テキストとして処理:', parseError);
+              // Use as-is if text format
+              console.warn('Failed to parse search results, processing as text:', parseError);
             }
           } else if (item.data && typeof item.data === 'object' && item.data !== null) {
-            // data フィールドに直接ツール情報が含まれている場合
+            // If tool information is directly in data field
             const data = item.data as Record<string, unknown>;
             if (data.tools && Array.isArray(data.tools)) {
               tools.push(...(data.tools as MCPTool[]));
             } else if (data.name && typeof data.name === 'string') {
-              // 単一ツールの場合
+              // For single tool
               tools.push(data as unknown as MCPTool);
             }
           }
         }
       }
 
-      console.log(`✅ ツール検索完了: ${tools.length}件 (クエリ: "${query}")`);
+      console.log(`✅ Tool search completed: ${tools.length} items (query: "${query}")`);
       return tools;
     } catch (error) {
-      console.error(`💥 ツール検索エラー (クエリ: "${query}"):`, error);
+      console.error(`💥 Tool search error (query: "${query}"):`, error);
       throw new Error(
-        `ツール検索に失敗しました: ${error instanceof Error ? error.message : 'Unknown error'}`
+        `Tool search failed: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
     }
   }
 
   /**
-   * Gateway の接続状態を確認
-   * @param authToken JWT認証トークン
-   * @returns 接続が成功した場合は true
+   * Check Gateway connection status
+   * @param authToken JWT authentication token
+   * @returns true if connection successful
    */
   async checkConnection(authToken: string): Promise<boolean> {
     try {
-      console.log('🔗 Gateway 接続確認中...');
+      console.log('🔗 Checking Gateway connection...');
 
-      // tools/list で接続確認
+      // Check connection with tools/list
       await this.listTools(authToken);
 
-      console.log('✅ Gateway 接続確認成功');
+      console.log('✅ Gateway connection check successful');
       return true;
     } catch (error) {
-      console.error('💥 Gateway 接続確認失敗:', error);
+      console.error('💥 Gateway connection check failed:', error);
       return false;
     }
   }
 }
 
 /**
- * シングルトンインスタンス
+ * Singleton instance
  */
 export const gatewayService = new AgentCoreGatewayService();

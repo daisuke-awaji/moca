@@ -1,5 +1,5 @@
 /**
- * mcp.json 設定ファイルの読み込みと検証
+ * Load and validate mcp.json configuration file
  */
 
 import { readFileSync, existsSync } from 'fs';
@@ -9,7 +9,7 @@ import type { MCPConfig, MCPServerConfig } from './types.js';
 import { MCPConfigError } from './types.js';
 
 /**
- * ロガー関数の型定義
+ * Logger function type definition
  */
 interface Logger {
   info: (message: string, ...args: unknown[]) => void;
@@ -19,7 +19,7 @@ interface Logger {
 }
 
 /**
- * デフォルトロガー（console を使用）
+ * Default logger (using console)
  */
 const defaultLogger: Logger = {
   info: console.log,
@@ -29,7 +29,7 @@ const defaultLogger: Logger = {
 };
 
 /**
- * Zod スキーマ定義
+ * Zod schema definition
  */
 const MCPServerBaseSchema = z.object({
   enabled: z.boolean().optional().default(true),
@@ -39,7 +39,7 @@ const MCPServerBaseSchema = z.object({
 const StdioMCPServerSchema = z
   .object({
     transport: z.literal('stdio'),
-    command: z.string().min(1, 'command は必須です'),
+    command: z.string().min(1, 'command is required'),
     args: z.array(z.string()).optional(),
     env: z.record(z.string(), z.string()).optional(),
   })
@@ -48,7 +48,7 @@ const StdioMCPServerSchema = z
 const HttpMCPServerSchema = z
   .object({
     transport: z.literal('http'),
-    url: z.string().url('url は有効なURLである必要があります'),
+    url: z.string().url('url must be a valid URL'),
     headers: z.record(z.string(), z.string()).optional(),
   })
   .merge(MCPServerBaseSchema);
@@ -56,7 +56,7 @@ const HttpMCPServerSchema = z
 const SseMCPServerSchema = z
   .object({
     transport: z.literal('sse'),
-    url: z.string().url('url は有効なURLである必要があります'),
+    url: z.string().url('url must be a valid URL'),
     headers: z.record(z.string(), z.string()).optional(),
   })
   .merge(MCPServerBaseSchema);
@@ -72,22 +72,22 @@ const MCPConfigSchema = z.object({
 });
 
 /**
- * 環境変数を展開
- * ${VAR_NAME} 形式の文字列を process.env.VAR_NAME に置換
+ * Expand environment variables
+ * Replace ${VAR_NAME} format strings with process.env.VAR_NAME
  */
 function expandEnvVars(value: string, logger: Logger = defaultLogger): string {
   return value.replace(/\$\{([^}]+)\}/g, (match, varName) => {
     const envValue = process.env[varName];
     if (envValue === undefined) {
-      logger.warn(`環境変数 ${varName} が定義されていません: ${match}`);
-      return match; // 置換せずに元の文字列を返す
+      logger.warn(`Environment variable ${varName} is not defined: ${match}`);
+      return match; // Return original string without replacement
     }
     return envValue;
   });
 }
 
 /**
- * オブジェクト内の全ての文字列値に対して環境変数を展開
+ * Expand environment variables for all string values in object
  */
 function expandEnvVarsInObject<T>(obj: T, logger: Logger = defaultLogger): T {
   if (typeof obj === 'string') {
@@ -107,63 +107,63 @@ function expandEnvVarsInObject<T>(obj: T, logger: Logger = defaultLogger): T {
 }
 
 /**
- * MCPサーバー設定にtransportフィールドを自動推測して追加
- * - commandがあれば stdio
- * - urlがあれば http (デフォルト)
+ * Auto-infer and add transport field to MCP server configuration
+ * - stdio if command exists
+ * - http if url exists (default)
  */
 function inferTransport(serverConfig: Record<string, unknown>): Record<string, unknown> {
-  // 既にtransportが指定されている場合はそのまま
+  // Return as-is if transport already specified
   if (serverConfig.transport) {
     return serverConfig;
   }
 
-  // commandがあればstdio
+  // stdio if command exists
   if (serverConfig.command) {
-    console.debug('transport を自動推測: stdio (command フィールドが存在)');
+    console.debug('Auto-inferring transport: stdio (command field exists)');
     return { ...serverConfig, transport: 'stdio' };
   }
 
-  // urlがあればhttp (デフォルト、将来的にSSE判定を追加可能)
+  // http if url exists (default, SSE detection can be added in future)
   if (serverConfig.url) {
-    console.debug('transport を自動推測: http (url フィールドが存在)');
+    console.debug('Auto-inferring transport: http (url field exists)');
     return { ...serverConfig, transport: 'http' };
   }
 
-  // どちらもない場合はそのまま（Zodバリデーションでエラーになる）
+  // Return as-is if neither exists (will error in Zod validation)
   return serverConfig;
 }
 
 /**
- * mcp.json 設定ファイルを読み込み
+ * Load mcp.json configuration file
  *
- * @param configPath 設定ファイルのパス (省略時は環境変数 MCP_CONFIG_PATH または ./mcp.json)
- * @param logger ロガー（省略時はコンソール）
- * @returns MCPConfig オブジェクト、またはファイルが存在しない場合は null
+ * @param configPath Configuration file path (defaults to MCP_CONFIG_PATH env var or ./mcp.json if omitted)
+ * @param logger Logger (defaults to console if omitted)
+ * @returns MCPConfig object, or null if file doesn't exist
  */
 export function loadMCPConfig(
   configPath?: string,
   logger: Logger = defaultLogger
 ): MCPConfig | null {
-  // 設定ファイルパスの決定
+  // Determine configuration file path
   const path = configPath || process.env.MCP_CONFIG_PATH || resolve(process.cwd(), 'mcp.json');
 
-  // ファイルの存在チェック
+  // Check file existence
   if (!existsSync(path)) {
-    logger.info(`MCP設定ファイルが見つかりません: ${path}`);
+    logger.info(`MCP configuration file not found: ${path}`);
     return null;
   }
 
   try {
-    logger.info(`MCP設定ファイルを読み込み中: ${path}`);
+    logger.info(`Loading MCP configuration file: ${path}`);
 
-    // ファイル読み込み
+    // Read file
     const content = readFileSync(path, 'utf-8');
     const rawConfig = JSON.parse(content);
 
-    // 環境変数を展開
+    // Expand environment variables
     const expandedConfig = expandEnvVarsInObject(rawConfig, logger);
 
-    // transport を自動推測
+    // Auto-infer transport
     if (expandedConfig.mcpServers) {
       for (const [serverName, serverConfig] of Object.entries(expandedConfig.mcpServers)) {
         expandedConfig.mcpServers[serverName] = inferTransport(
@@ -172,39 +172,39 @@ export function loadMCPConfig(
       }
     }
 
-    // Zod でバリデーション
+    // Validate with Zod
     const validatedConfig = MCPConfigSchema.parse(expandedConfig) as MCPConfig;
 
-    // 有効なサーバー数を確認
+    // Check number of enabled servers
     const enabledServers = Object.entries(validatedConfig.mcpServers).filter(
       ([, serverConfig]) => serverConfig.enabled !== false
     );
 
     logger.info(
-      `✅ MCP設定を読み込みました: ${Object.keys(validatedConfig.mcpServers).length}個のサーバー定義 (有効: ${enabledServers.length}個)`
+      `✅ MCP configuration loaded: ${Object.keys(validatedConfig.mcpServers).length} server definitions (enabled: ${enabledServers.length})`
     );
 
     return validatedConfig;
   } catch (error) {
     if (error instanceof z.ZodError) {
       const issues = error.issues.map((issue) => `  - ${issue.path.join('.')}: ${issue.message}`);
-      throw new MCPConfigError(`MCP設定のバリデーションエラー:\n${issues.join('\n')}`, error);
+      throw new MCPConfigError(`MCP configuration validation error:\n${issues.join('\n')}`, error);
     }
 
     if (error instanceof SyntaxError) {
-      throw new MCPConfigError(`MCP設定のJSON解析エラー: ${error.message}`, error);
+      throw new MCPConfigError(`MCP configuration JSON parse error: ${error.message}`, error);
     }
 
     throw new MCPConfigError(
-      `MCP設定の読み込みに失敗: ${error instanceof Error ? error.message : String(error)}`,
+      `Failed to load MCP configuration: ${error instanceof Error ? error.message : String(error)}`,
       error instanceof Error ? error : undefined
     );
   }
 }
 
 /**
- * 有効なMCPサーバー設定のみを抽出
- * transport が未指定の場合は自動推測を適用
+ * Extract only enabled MCP server configurations
+ * Apply auto-inference if transport is not specified
  */
 export function getEnabledMCPServers(config: MCPConfig): Array<{
   name: string;

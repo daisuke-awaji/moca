@@ -1,5 +1,5 @@
 /**
- * Tavily Crawl ツール - グラフベースのWebサイト探索
+ * Tavily Crawl Tool - Graph-based website exploration
  */
 
 import { tool } from '@strands-agents/sdk';
@@ -8,7 +8,7 @@ import { logger } from '../config/index.js';
 import { getTavilyApiKey } from './tavily-common.js';
 
 /**
- * Tavily Crawl API のレスポンス型
+ * Tavily Crawl API response type
  */
 interface TavilyCrawlResponse {
   base_url: string;
@@ -29,7 +29,7 @@ interface TavilyCrawlResponse {
 }
 
 /**
- * Tavily API エラー型
+ * Tavily API error type
  */
 interface TavilyError {
   error: string;
@@ -38,7 +38,7 @@ interface TavilyError {
 }
 
 /**
- * コンテンツを安全なサイズに切り詰め
+ * Truncate content to safe size
  */
 function truncateContent(content: string, maxLength: number = 2500): string {
   if (content.length <= maxLength) {
@@ -46,11 +46,11 @@ function truncateContent(content: string, maxLength: number = 2500): string {
   }
 
   const truncated = content.substring(0, maxLength);
-  return `${truncated}... (内容が長すぎるため切り詰められました。元の長さ: ${content.length}文字)`;
+  return `${truncated}... (Content truncated due to length. Original length: ${content.length} characters)`;
 }
 
 /**
- * Tavily Crawl API を呼び出す
+ * Call Tavily Crawl API
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function callTavilyCrawlAPI(params: Record<string, any>): Promise<TavilyCrawlResponse> {
@@ -66,13 +66,13 @@ async function callTavilyCrawlAPI(params: Record<string, any>): Promise<TavilyCr
   });
 
   if (!response.ok) {
-    let errorMessage = `Tavily Crawl API エラー: ${response.status} ${response.statusText}`;
+    let errorMessage = `Tavily Crawl API error: ${response.status} ${response.statusText}`;
 
     try {
       const errorData = (await response.json()) as TavilyError;
-      errorMessage = `Tavily Crawl API エラー: ${errorData.error} - ${errorData.message}`;
+      errorMessage = `Tavily Crawl API error: ${errorData.error} - ${errorData.message}`;
     } catch {
-      // JSON パースエラーの場合はデフォルトのエラーメッセージを使用
+      // Use default error message for JSON parse errors
     }
 
     throw new Error(errorMessage);
@@ -83,33 +83,33 @@ async function callTavilyCrawlAPI(params: Record<string, any>): Promise<TavilyCr
 }
 
 /**
- * クロール結果をフォーマット
+ * Format crawl results
  */
 function formatCrawlResults(response: TavilyCrawlResponse): string {
   const { base_url, results, response_time, usage } = response;
 
-  let output = `🕷️ Tavily Crawl 結果\n`;
-  output += `ベースURL: ${base_url}\n`;
-  output += `処理時間: ${response_time}秒\n`;
-  output += `発見したページ数: ${results.length}件\n`;
+  let output = `🕷️ Tavily Crawl Results\n`;
+  output += `Base URL: ${base_url}\n`;
+  output += `Processing Time: ${response_time}s\n`;
+  output += `Pages Discovered: ${results.length} items\n`;
 
   if (usage?.credits) {
-    output += `使用クレジット: ${usage.credits}\n`;
+    output += `Credits Used: ${usage.credits}\n`;
   }
 
   output += `\n`;
 
-  // クロール結果
+  // Crawl results
   if (results.length > 0) {
-    output += `📄 クロールされたページ:\n\n`;
+    output += `📄 Crawled Pages:\n\n`;
 
     results.forEach((result, index) => {
       output += `${index + 1}. **${result.url}**\n`;
-      output += `内容:\n${truncateContent(result.raw_content, 1500)}\n`;
+      output += `Content:\n${truncateContent(result.raw_content, 1500)}\n`;
 
-      // 画像がある場合
+      // If images exist
       if (result.images && result.images.length > 0) {
-        output += `🖼️ 画像 (${result.images.length}件):\n`;
+        output += `🖼️ Images (${result.images.length} items):\n`;
         result.images.slice(0, 2).forEach((image, imgIndex) => {
           output += `  ${imgIndex + 1}. ${image.url}`;
           if (image.description) {
@@ -127,59 +127,68 @@ function formatCrawlResults(response: TavilyCrawlResponse): string {
 }
 
 /**
- * Tavily Crawl ツール
+ * Tavily Crawl Tool
  */
 export const tavilyCrawlTool = tool({
   name: 'tavily_crawl',
   description:
-    'Tavily APIを使用してWebサイトを包括的にクロールします。指定されたルートURLから始まり、関連するページを自動的に発見・抽出します。',
+    'Comprehensively crawl websites using Tavily API. Starting from specified root URL, automatically discovers and extracts related pages.',
   inputSchema: z.object({
-    url: z.string().describe('クロール開始URL'),
+    url: z.string().describe('Starting URL for crawl'),
     instructions: z
       .string()
       .optional()
-      .describe('クロールの指示（自然言語）。指定すると使用コストが2倍になります'),
+      .describe('Crawl instructions (natural language). Specifying doubles the usage cost'),
     maxDepth: z
       .number()
       .min(1)
       .max(5)
       .default(1)
-      .describe('最大探索深度（1-5、ベースURLからどこまで離れるか）'),
-    maxBreadth: z.number().min(1).default(20).describe('ページごとの最大リンク数（1以上）'),
-    limit: z.number().min(1).default(50).describe('処理する最大リンク数（1以上）'),
+      .describe('Maximum exploration depth (1-5, how far from base URL)'),
+    maxBreadth: z
+      .number()
+      .min(1)
+      .default(20)
+      .describe('Maximum number of links per page (1 or more)'),
+    limit: z.number().min(1).default(50).describe('Maximum number of links to process (1 or more)'),
     selectPaths: z
       .array(z.string())
       .optional()
-      .describe('含めるパスの正規表現パターン（例: ["/docs/.*", "/api/v1.*"]）'),
+      .describe('Regex patterns for paths to include (e.g., ["/docs/.*", "/api/v1.*"])'),
     selectDomains: z
       .array(z.string())
       .optional()
-      .describe('含めるドメインの正規表現パターン（例: ["^docs\\.example\\.com$"]）'),
+      .describe('Regex patterns for domains to include (e.g., ["^docs\\.example\\.com$"])'),
     excludePaths: z
       .array(z.string())
       .optional()
-      .describe('除外するパスの正規表現パターン（例: ["/private/.*", "/admin/.*"]）'),
+      .describe('Regex patterns for paths to exclude (e.g., ["/private/.*", "/admin/.*"])'),
     excludeDomains: z
       .array(z.string())
       .optional()
-      .describe('除外するドメインの正規表現パターン（例: ["^private\\.example\\.com$"]）'),
-    allowExternal: z.boolean().default(true).describe('外部ドメインリンクを結果に含めるかどうか'),
+      .describe('Regex patterns for domains to exclude (e.g., ["^private\\.example\\.com$"])'),
+    allowExternal: z
+      .boolean()
+      .default(true)
+      .describe('Whether to include external domain links in results'),
     extractDepth: z
       .enum(['basic', 'advanced'])
       .default('basic')
-      .describe('抽出深度。basicは1クレジット/5抽出、advancedは2クレジット/5抽出'),
+      .describe(
+        'Extraction depth. basic: 1 credit/5 extractions, advanced: 2 credits/5 extractions'
+      ),
     format: z
       .enum(['markdown', 'text'])
       .default('markdown')
-      .describe('出力フォーマット。markdownまたはtext'),
-    includeImages: z.boolean().default(false).describe('画像情報を含めるかどうか'),
+      .describe('Output format. markdown or text'),
+    includeImages: z.boolean().default(false).describe('Whether to include image information'),
     chunksPerSource: z
       .number()
       .min(1)
       .max(5)
       .default(3)
-      .describe('ソースあたりのチャンク数（1-5、instructionsが指定された場合のみ有効）'),
-    timeout: z.number().min(10).max(150).default(150).describe('タイムアウト（秒、10-150）'),
+      .describe('Number of chunks per source (1-5, only effective when instructions is specified)'),
+    timeout: z.number().min(10).max(150).default(150).describe('Timeout in seconds (10-150)'),
   }),
   callback: async (input) => {
     const {
@@ -200,10 +209,10 @@ export const tavilyCrawlTool = tool({
       timeout,
     } = input;
 
-    logger.info(`🕷️ Tavilyクロール開始: ${url}`);
+    logger.info(`🕷️ Tavily crawl started: ${url}`);
 
     try {
-      // API パラメータの構築
+      // Build API parameters
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const apiParams: Record<string, any> = {
         url,
@@ -217,7 +226,7 @@ export const tavilyCrawlTool = tool({
         timeout,
       };
 
-      // オプショナルパラメータの設定
+      // Set optional parameters
       if (instructions) {
         apiParams.instructions = instructions;
         apiParams.chunks_per_source = chunksPerSource;
@@ -239,31 +248,33 @@ export const tavilyCrawlTool = tool({
         apiParams.exclude_domains = excludeDomains;
       }
 
-      // Tavily Crawl API 呼び出し
+      // Call Tavily Crawl API
       const startTime = Date.now();
       const response = await callTavilyCrawlAPI(apiParams);
       const duration = Date.now() - startTime;
 
-      // 結果のフォーマット
+      // Format results
       const formattedResult = formatCrawlResults(response);
 
-      logger.info(`✅ Tavilyクロール完了: ${response.results.length}ページ発見 (${duration}ms)`);
+      logger.info(
+        `✅ Tavily crawl completed: ${response.results.length} pages discovered (${duration}ms)`
+      );
 
       return formattedResult;
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      logger.error(`❌ Tavilyクロールエラー: ${url}`, errorMessage);
+      logger.error(`❌ Tavily crawl error: ${url}`, errorMessage);
 
-      return `❌ Tavilyクロールでエラーが発生しました
-対象URL: ${url}
-エラー: ${errorMessage}
+      return `❌ An error occurred during Tavily crawl
+Target URL: ${url}
+Error: ${errorMessage}
 
-問題の解決方法:
-1. TAVILY_API_KEY 環境変数が正しく設定されているか確認
-2. インターネット接続を確認
-3. URLが有効かどうか確認
-4. クロール設定（深度、制限数）が適切か確認
-5. API使用量制限に達していないか確認`;
+Troubleshooting:
+1. Verify that TAVILY_API_KEY environment variable is correctly set
+2. Check internet connection
+3. Verify URL is valid
+4. Verify crawl settings (depth, limits) are appropriate
+5. Check if API usage limit has been reached`;
     }
   },
 });

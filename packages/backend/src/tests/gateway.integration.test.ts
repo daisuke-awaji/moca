@@ -1,21 +1,21 @@
 /**
- * AgentCore Gateway 統合テスト
- * 実際のAWS環境に接続してツール一覧取得・検索機能をテスト
+ * AgentCore Gateway Integration Tests
+ * Test tool list retrieval and search functionality with actual AWS environment connection
  */
 
 import { gatewayService } from '../services/agentcore-gateway.js';
 import { CognitoAuthHelper } from './cognito-helper.js';
 
-// テスト用の環境変数
+// Environment variables for testing
 const TEST_USER = 'testuser';
 const TEST_PASSWORD = 'TestPassword123!';
 
-describe('AgentCore Gateway 統合テスト', () => {
+describe('AgentCore Gateway Integration Tests', () => {
   let cognitoHelper: CognitoAuthHelper;
   let authToken: string;
 
   beforeAll(async () => {
-    // 環境変数チェック
+    // Check environment variables
     const requiredEnvs = [
       'AGENTCORE_GATEWAY_ENDPOINT',
       'COGNITO_USER_POOL_ID',
@@ -25,32 +25,32 @@ describe('AgentCore Gateway 統合テスト', () => {
 
     const missingEnvs = requiredEnvs.filter((env) => !process.env[env]);
     if (missingEnvs.length > 0) {
-      throw new Error(`必要な環境変数が設定されていません: ${missingEnvs.join(', ')}`);
+      throw new Error(`Required environment variables are not set: ${missingEnvs.join(', ')}`);
     }
 
-    // Cognito認証ヘルパー初期化
+    // Initialize Cognito authentication helper
     cognitoHelper = new CognitoAuthHelper({
       userPoolId: process.env.COGNITO_USER_POOL_ID!,
       clientId: process.env.COGNITO_CLIENT_ID!,
       region: process.env.COGNITO_REGION!,
     });
 
-    console.log('🔧 Cognito認証ヘルパー初期化完了');
+    console.log('🔧 Cognito authentication helper initialization completed');
   });
 
-  describe('認証ありでのツール一覧取得', () => {
+  describe('Tool list retrieval with authentication', () => {
     beforeAll(async () => {
-      // Cognito認証を実行
-      console.log('🔐 Cognito認証実行中...');
+      // Execute Cognito authentication
+      console.log('🔐 Executing Cognito authentication...');
       const authResult = await cognitoHelper.login(TEST_USER, TEST_PASSWORD);
 
-      // Access Token を使用（Gateway 認証用）
+      // Use Access Token (for Gateway authentication)
       authToken = authResult.accessToken;
 
-      // Access Token の情報をログ出力
+      // Log Access Token information
       const payload = cognitoHelper.decodeJWT(authToken);
       if (payload) {
-        console.log('✅ Access Token 取得成功:', {
+        console.log('✅ Access Token retrieved successfully:', {
           sub: payload.sub,
           username: payload.username,
           token_use: payload.token_use,
@@ -67,19 +67,19 @@ describe('AgentCore Gateway 統合テスト', () => {
       }
     });
 
-    it('listTools() - 認証ありでツール一覧を取得できる', async () => {
-      console.log('📋 ツール一覧取得テスト開始 (認証あり)');
+    it('listTools() - Can retrieve tool list with authentication', async () => {
+      console.log('📋 Tool list retrieval test started (with authentication)');
 
-      // 認証ありでツール一覧を取得
+      // Retrieve tool list with authentication
       const result = await gatewayService.listTools(authToken);
 
-      // アサーション
+      // Assertions
       expect(result).toBeDefined();
       expect(result.tools).toBeDefined();
       expect(Array.isArray(result.tools)).toBe(true);
       expect(result.tools.length).toBeGreaterThan(0);
 
-      // 各ツールが必要なプロパティを持っているか確認
+      // Verify each tool has required properties
       result.tools.forEach((tool) => {
         expect(tool.name).toBeDefined();
         expect(typeof tool.name).toBe('string');
@@ -87,37 +87,37 @@ describe('AgentCore Gateway 統合テスト', () => {
         expect(typeof tool.inputSchema).toBe('object');
       });
 
-      console.log(`✅ ツール一覧取得成功: ${result.tools.length}件のツールを取得`);
-      console.log('🔧 取得したツール名:', result.tools.map((t) => t.name).slice(0, 5));
+      console.log(`✅ Tool list retrieval successful: Retrieved ${result.tools.length} tools`);
+      console.log('🔧 Retrieved tool names:', result.tools.map((t) => t.name).slice(0, 5));
       if (result.nextCursor) {
-        console.log('📄 次のページあり: nextCursor が存在します');
+        console.log('📄 Next page available: nextCursor exists');
       } else {
-        console.log('📄 全件取得完了: nextCursor はありません');
+        console.log('📄 All items retrieved: No nextCursor');
       }
     }, 30000);
 
-    it('listTools() - 認証なしではエラーになる', async () => {
-      console.log('🔒 認証なしテスト開始');
+    it('listTools() - Error occurs without authentication', async () => {
+      console.log('🔒 No authentication test started');
 
       await expect(gatewayService.listTools()).rejects.toThrow();
 
-      console.log('✅ 認証なしで正しくエラーが発生');
+      console.log('✅ Error correctly occurred without authentication');
     });
   });
 
-  describe('認証ありでのセマンティック検索', () => {
-    it('searchTools() - セマンティック検索でツールを検索できる', async () => {
-      console.log('🔍 セマンティック検索テスト開始');
+  describe('Semantic search with authentication', () => {
+    it('searchTools() - Can search tools with semantic search', async () => {
+      console.log('🔍 Semantic search test started');
 
-      const query = '検索';
+      const query = 'search';
       const searchResults = await gatewayService.searchTools(query, authToken);
 
-      // アサーション
+      // Assertions
       expect(searchResults).toBeDefined();
       expect(Array.isArray(searchResults)).toBe(true);
 
       if (searchResults.length > 0) {
-        // 検索結果があればプロパティを確認
+        // Verify properties if search results exist
         searchResults.forEach((tool) => {
           expect(tool.name).toBeDefined();
           expect(typeof tool.name).toBe('string');
@@ -125,72 +125,72 @@ describe('AgentCore Gateway 統合テスト', () => {
           expect(typeof tool.inputSchema).toBe('object');
         });
 
-        console.log(`✅ セマンティック検索成功: ${searchResults.length}件の結果`);
+        console.log(`✅ Semantic search successful: ${searchResults.length} results`);
         console.log(
-          '🔧 検索結果のツール名:',
+          '🔧 Tool names in search results:',
           searchResults.map((t) => t.name)
         );
       } else {
-        console.log('⚠️  セマンティック検索結果は0件でした');
+        console.log('⚠️  Semantic search returned 0 results');
       }
     }, 30000);
 
-    it('searchTools() - 異なるクエリでの検索テスト', async () => {
-      console.log('🔍 追加の検索テスト開始');
+    it('searchTools() - Search test with different queries', async () => {
+      console.log('🔍 Additional search test started');
 
-      const queries = ['weather', 'test', 'api', 'データ'];
+      const queries = ['weather', 'test', 'api', 'data'];
 
       for (const query of queries) {
-        console.log(`🔍 クエリ "${query}" で検索中...`);
+        console.log(`🔍 Searching with query "${query}"...`);
         const searchResults = await gatewayService.searchTools(query, authToken);
 
         expect(searchResults).toBeDefined();
         expect(Array.isArray(searchResults)).toBe(true);
 
-        console.log(`   結果: ${searchResults.length}件`);
+        console.log(`   Results: ${searchResults.length} items`);
         if (searchResults.length > 0) {
-          console.log(`   ツール例: ${searchResults[0].name}`);
+          console.log(`   Example tool: ${searchResults[0].name}`);
         }
       }
     }, 60000);
   });
 
-  describe('エラーハンドリング', () => {
-    it('searchTools() - 無効なトークンで認証エラーになる', async () => {
-      console.log('🔒 無効トークンテスト開始');
+  describe('Error handling', () => {
+    it('searchTools() - Authentication error occurs with invalid token', async () => {
+      console.log('🔒 Invalid token test started');
 
       const invalidToken = 'invalid.jwt.token';
       const query = 'test';
 
       await expect(gatewayService.searchTools(query, invalidToken)).rejects.toThrow();
 
-      console.log('✅ 無効トークンで正しくエラーが発生');
+      console.log('✅ Error correctly occurred with invalid token');
     });
 
-    it('searchTools() - 空のクエリでバリデーションエラーになる', async () => {
-      console.log('📝 空クエリテスト開始');
+    it('searchTools() - Validation error occurs with empty query', async () => {
+      console.log('📝 Empty query test started');
 
       await expect(gatewayService.searchTools('', authToken)).rejects.toThrow(
-        '検索クエリが必要です'
+        'Search query is required'
       );
 
       await expect(gatewayService.searchTools('   ', authToken)).rejects.toThrow(
-        '検索クエリが必要です'
+        'Search query is required'
       );
 
-      console.log('✅ 空クエリで正しくバリデーションエラーが発生');
+      console.log('✅ Validation error correctly occurred with empty query');
     });
   });
 
-  describe('Gateway接続確認', () => {
-    it('checkConnection() - Gateway接続が正常', async () => {
-      console.log('🔗 Gateway接続確認テスト開始');
+  describe('Gateway connection check', () => {
+    it('checkConnection() - Gateway connection is normal', async () => {
+      console.log('🔗 Gateway connection check test started');
 
       const isConnected = await gatewayService.checkConnection(authToken);
 
       expect(isConnected).toBe(true);
 
-      console.log('✅ Gateway接続確認成功');
+      console.log('✅ Gateway connection check successful');
     });
   });
 });

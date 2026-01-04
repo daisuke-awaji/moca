@@ -1,5 +1,5 @@
 /**
- * Tavily API 共通ユーティリティ
+ * Tavily API common utilities
  */
 import { SecretsManagerClient, GetSecretValueCommand } from '@aws-sdk/client-secrets-manager';
 import { logger } from '../config/index.js';
@@ -7,25 +7,25 @@ import { logger } from '../config/index.js';
 let cachedApiKey: string | null = null;
 
 /**
- * Tavily API キーを取得
- * 1. キャッシュがあればそれを返す
- * 2. TAVILY_API_KEY 環境変数があればそれを使用（ローカル開発用）
- * 3. TAVILY_API_KEY_SECRET_NAME があれば Secrets Manager から取得
+ * Get Tavily API key
+ * 1. Return cached key if available
+ * 2. Use TAVILY_API_KEY environment variable if available (for local development)
+ * 3. Retrieve from Secrets Manager if TAVILY_API_KEY_SECRET_NAME is available
  */
 export async function getTavilyApiKey(): Promise<string> {
-  // キャッシュがあればそれを返す
+  // Return cached key if available
   if (cachedApiKey) {
     return cachedApiKey;
   }
 
-  // 環境変数から直接取得（ローカル開発用）
+  // Get directly from environment variable (for local development)
   if (process.env.TAVILY_API_KEY) {
     cachedApiKey = process.env.TAVILY_API_KEY;
     logger.debug('Tavily API Key loaded from TAVILY_API_KEY environment variable');
     return cachedApiKey;
   }
 
-  // Secrets Manager から取得（本番環境用）
+  // Get from Secrets Manager (for production)
   const secretName = process.env.TAVILY_API_KEY_SECRET_NAME;
   if (secretName) {
     try {
@@ -39,9 +39,9 @@ export async function getTavilyApiKey(): Promise<string> {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       logger.error(`Failed to retrieve Tavily API Key from Secrets Manager: ${errorMessage}`);
-      throw new Error(`Secrets Manager からの API キー取得に失敗しました: ${errorMessage}`);
+      throw new Error(`Failed to retrieve API key from Secrets Manager: ${errorMessage}`);
     }
   }
 
-  throw new Error('TAVILY_API_KEY または TAVILY_API_KEY_SECRET_NAME 環境変数が設定されていません');
+  throw new Error('TAVILY_API_KEY or TAVILY_API_KEY_SECRET_NAME environment variable is not set');
 }

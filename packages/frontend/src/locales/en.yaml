@@ -133,6 +133,7 @@ agent:
   scenarioLabel: Scenario
   selectAgent: Select Agent
   createAgent: Create Agent
+  createNewAgent: Create New Agent
   editAgent: Edit Agent
   deleteAgent: Delete Agent
   noAgentsTitle: No Agents Available
@@ -208,6 +209,15 @@ agentDirectory:
   itemsDisplayed: items displayed
   hasMore: more available
   allLoaded: all loaded
+  addToMyAgents: Add to My Agents
+  addingToMyAgents: Adding to My Agents...
+  unshare: Unshare
+  unsharing: Unsharing...
+  addSuccess: Agent added to My Agents!
+  addFailed: Failed to add agent
+  unshareSuccess: Agent unshared
+  unshareFailed: Failed to unshare agent
+  userIdNotFound: Agent user ID not found
 
 # Tools
 tool:

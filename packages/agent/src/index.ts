@@ -1,6 +1,6 @@
 /**
  * AgentCore Runtime HTTP Server
- * AgentCore Runtime で動作する HTTP サーバー
+ * HTTP server running on AgentCore Runtime
  */
 
 import express, { Request, Response, NextFunction } from 'express';
@@ -15,15 +15,15 @@ import { WorkspaceSync } from './services/workspace-sync.js';
 import { logger } from './config/index.js';
 
 /**
- * Strands Agents ストリーミングイベントを安全にシリアライズ
- * 循環参照を含むオブジェクトから必要なプロパティのみを抽出
+ * Safely serialize Strands Agents streaming events
+ * Extract only necessary properties from objects containing circular references
  */
 function serializeStreamEvent(event: unknown): object {
   const eventObj = event as { type?: string; [key: string]: unknown };
   const baseEvent = { type: eventObj.type };
 
   switch (eventObj.type) {
-    // テキスト生成イベント
+    // Text generation events
     case 'modelContentBlockDeltaEvent':
       return {
         ...baseEvent,
@@ -42,7 +42,7 @@ function serializeStreamEvent(event: unknown): object {
         stop: eventObj.stop,
       };
 
-    // メッセージライフサイクルイベント
+    // Message lifecycle events
     case 'modelMessageStartEvent':
       return {
         ...baseEvent,
@@ -76,7 +76,7 @@ function serializeStreamEvent(event: unknown): object {
           : undefined,
       };
 
-    // メタデータ・結果イベント
+    // Metadata and result events
     case 'modelMetadataEvent':
       return {
         ...baseEvent,
@@ -89,21 +89,21 @@ function serializeStreamEvent(event: unknown): object {
         result: eventObj.result,
       };
 
-    // テキストブロックイベント
+    // Text block events
     case 'textBlock':
       return {
         ...baseEvent,
         text: eventObj.text,
       };
 
-    // ストリームフックイベント（頻繁に発生するため軽量化）
+    // Stream hook events (lightweight due to frequent occurrence)
     case 'modelStreamEventHook':
       return {
         ...baseEvent,
-        // フック情報は基本的に不要なので type のみ
+        // Hook information generally unnecessary, only type
       };
 
-    // 既存のライフサイクルイベント
+    // Existing lifecycle events
     case 'beforeInvocationEvent':
     case 'afterInvocationEvent':
     case 'afterToolsEvent':
@@ -133,8 +133,8 @@ function serializeStreamEvent(event: unknown): object {
       };
 
     default:
-      // 真に未知のイベントタイプの場合のみ警告を表示
-      logger.warn('新しい未知のストリーミングイベント:', { type: eventObj.type });
+      // Show warning only for truly unknown event types
+      logger.warn('New unknown streaming event:', { type: eventObj.type });
       return baseEvent;
   }
 }
@@ -142,16 +142,16 @@ function serializeStreamEvent(event: unknown): object {
 const PORT = process.env.PORT || 8080;
 const app = express();
 
-// CORS 設定
+// CORS configuration
 const corsOptions = {
-  // 許可するオリジン（環境変数から設定、デフォルトは全て許可）
+  // Allowed origins (set from environment variable, default allows all)
   origin: (
     origin: string | undefined,
     callback: (err: Error | null, allowed?: boolean) => void
   ) => {
     const allowedOrigins = process.env.CORS_ALLOWED_ORIGINS?.split(',') || ['*'];
 
-    // ローカル開発時は localhost を許可
+    // Allow localhost for local development
     const developmentOrigins = [
       'http://localhost:5173', // Vite dev server
       'http://127.0.0.1:5173',
@@ -159,12 +159,12 @@ const corsOptions = {
       'http://127.0.0.1:3000',
     ];
 
-    // オリジンがない場合（Postmanなどのツールからのリクエスト）は許可
+    // Allow if no origin (requests from tools like Postman)
     if (!origin) {
       return callback(null, true);
     }
 
-    // 設定されたオリジンまたは開発用オリジンの場合は許可
+    // Allow if configured origin or development origin
     if (
       allowedOrigins.includes('*') ||
       allowedOrigins.includes(origin) ||
@@ -184,24 +184,24 @@ const corsOptions = {
     'X-Actor-Id',
   ],
   credentials: true,
-  maxAge: 86400, // preflight キャッシュ 24時間
+  maxAge: 86400, // Preflight cache 24 hours
 };
 
-// CORS ミドルウェアを適用
+// Apply CORS middleware
 app.use(cors(corsOptions));
 
-// セッションストレージの初期化（環境変数に基づく切り替え）
+// Initialize session storage (switch based on environment variables)
 const sessionStorage = createSessionStorage();
 
-// リクエストボディを JSON として受け取る設定
+// Configure to receive request body as JSON
 app.use(express.json());
 
-// リクエストコンテキストミドルウェアを適用（認証が必要なエンドポイント）
+// Apply request context middleware (endpoints requiring authentication)
 app.use('/invocations', requestContextMiddleware);
 
 /**
- * ヘルスチェックエンドポイント
- * AgentCore Runtime が正常に動作していることを確認するためのエンドポイント
+ * Health check endpoint
+ * Endpoint to verify that AgentCore Runtime is operating normally
  */
 app.get('/ping', (req: Request, res: Response) => {
   res.json({
@@ -211,26 +211,26 @@ app.get('/ping', (req: Request, res: Response) => {
 });
 
 /**
- * Agent 呼び出しリクエストの型定義
+ * Agent invocation request type definition
  */
 interface InvocationRequest {
-  prompt: string; // 必須: ユーザーの入力
-  modelId?: string; // 任意: 使用するモデルID（デフォルト: 環境変数）
-  enabledTools?: string[]; // 任意: 有効化するツール名の配列（undefined=全て、[]=なし）
-  systemPrompt?: string; // 任意: カスタムシステムプロンプト
-  storagePath?: string; // 任意: ユーザーが選択しているS3ディレクトリパス
-  memoryEnabled?: boolean; // 任意: 長期記憶を有効化するか（デフォルト: false）
-  memoryTopK?: number; // 任意: 取得する長期記憶の件数（デフォルト: 10）
-  mcpConfig?: Record<string, unknown>; // 任意: ユーザー定義の MCP サーバー設定
+  prompt: string; // Required: User input
+  modelId?: string; // Optional: Model ID to use (default: environment variable)
+  enabledTools?: string[]; // Optional: Array of tool names to enable (undefined=all, []=none)
+  systemPrompt?: string; // Optional: Custom system prompt
+  storagePath?: string; // Optional: S3 directory path selected by user
+  memoryEnabled?: boolean; // Optional: Whether to enable long-term memory (default: false)
+  memoryTopK?: number; // Optional: Number of long-term memories to retrieve (default: 10)
+  mcpConfig?: Record<string, unknown>; // Optional: User-defined MCP server configuration
 }
 
 /**
- * Agent 呼び出しエンドポイント（ストリーミング対応）
- * セッションごとに Agent を作成し、履歴の永続化を行う
+ * Agent invocation endpoint (with streaming support)
+ * Create Agent for each session and persist history
  */
 app.post('/invocations', async (req: Request, res: Response) => {
   try {
-    // リクエストボディから各パラメータを取得
+    // Get each parameter from request body
     const {
       prompt,
       modelId,
@@ -248,50 +248,50 @@ app.post('/invocations', async (req: Request, res: Response) => {
       });
     }
 
-    // storagePathをコンテキストに設定
+    // Set storagePath in context
     const context = getCurrentContext();
     if (context) {
       context.storagePath = storagePath || '/';
     }
 
-    // セッションID をヘッダーから取得（オプショナル）
+    // Get session ID from header (optional)
     const sessionId = req.headers['x-amzn-bedrock-agentcore-runtime-session-id'] as
       | string
       | undefined;
 
-    // RequestContext から userId を取得
+    // Get userId from RequestContext
     const contextMeta = getContextMetadata();
     const actorId = contextMeta.userId || 'anonymous';
 
-    logger.info('📝 リクエスト受信:', {
+    logger.info('📝 Request received:', {
       requestId: contextMeta.requestId,
       prompt,
       actorId,
-      sessionId: sessionId || 'なし（セッションなしモード）',
+      sessionId: sessionId || 'none (sessionless mode)',
     });
 
-    // ワークスペース同期を初期化（storagePathが指定されている場合）
+    // Initialize workspace sync (if storagePath is specified)
     let workspaceSync: WorkspaceSync | null = null;
     let workspaceSyncHook: WorkspaceSyncHook | null = null;
 
     if (storagePath && actorId !== 'anonymous') {
       workspaceSync = new WorkspaceSync(actorId, storagePath);
 
-      // 非同期で初期同期を開始（await しない）
+      // Start initial sync asynchronously (don't await)
       workspaceSync.startInitialSync();
 
-      // コンテキストに WorkspaceSync を設定（ツールからアクセス可能に）
+      // Set WorkspaceSync in context (accessible from tools)
       if (context) {
         context.workspaceSync = workspaceSync;
       }
 
-      // WorkspaceSyncHook を作成
+      // Create WorkspaceSyncHook
       workspaceSyncHook = new WorkspaceSyncHook(workspaceSync);
 
-      logger.info('🔄 ワークスペース同期を初期化:', { actorId, storagePath });
+      logger.info('🔄 Initialized workspace sync:', { actorId, storagePath });
     }
 
-    // セッション設定とフック（sessionIdがある場合のみ）
+    // Session configuration and hook (only if sessionId exists)
     let sessionConfig: SessionConfig | undefined;
     let sessionHook: SessionPersistenceHook | undefined;
 
@@ -300,69 +300,69 @@ app.post('/invocations', async (req: Request, res: Response) => {
       sessionHook = new SessionPersistenceHook(sessionStorage, sessionConfig);
     }
 
-    // Agent作成オプション
+    // Agent creation options
     const agentOptions = {
       modelId,
       enabledTools,
       systemPrompt,
       ...(sessionId && { sessionStorage, sessionConfig }),
-      // 長期記憶パラメータ（JWT の userId を actorId として使用）
+      // Long-term memory parameters (use JWT userId as actorId)
       memoryEnabled,
       memoryContext: memoryEnabled ? prompt : undefined,
       actorId: memoryEnabled ? actorId : undefined,
       memoryTopK,
-      // ユーザー定義 MCP サーバー設定
+      // User-defined MCP server configuration
       mcpConfig,
     };
 
-    // Agent を作成（全てのフックを登録）
+    // Create Agent (register all hooks)
     const hooks = [sessionHook, workspaceSyncHook].filter(
       (hook): hook is SessionPersistenceHook | WorkspaceSyncHook =>
         hook !== null && hook !== undefined
     );
     const { agent, metadata } = await createAgent(hooks, agentOptions);
 
-    // Agent作成完了のログ出力
-    logger.info('📊 Agent作成完了:', {
+    // Log Agent creation completion
+    logger.info('📊 Agent creation completed:', {
       requestId: contextMeta.requestId,
       loadedMessages: metadata.loadedMessagesCount,
       longTermMemories: metadata.longTermMemoriesCount,
       tools: metadata.toolsCount,
     });
 
-    // ストリーミングレスポンス用のヘッダー設定
+    // Set headers for streaming response
     res.setHeader('Content-Type', 'text/plain; charset=utf-8');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
-    res.setHeader('X-Accel-Buffering', 'no'); // nginx のバッファリング無効
+    res.setHeader('X-Accel-Buffering', 'no'); // Disable nginx buffering
 
     try {
-      logger.info('🔄 Agent ストリーミング開始:', { requestId: contextMeta.requestId });
+      logger.info('🔄 Agent streaming started:', { requestId: contextMeta.requestId });
 
-      // ストリーミングイベントを NDJSON として送信
+      // Send streaming events as NDJSON
       for await (const event of agent.stream(prompt)) {
-        // messageAddedEvent の場合はリアルタイムで保存（sessionIdがある場合のみ）
+        // For messageAddedEvent, save in real-time (only if sessionId exists)
         if (event.type === 'messageAddedEvent' && event.message && sessionConfig) {
           try {
             await sessionStorage.appendMessage(sessionConfig, event.message);
-            logger.info('💾 メッセージをリアルタイム保存:', {
+            logger.info('💾 Message saved in real-time:', {
               role: event.message.role,
               contentBlocks: event.message.content.length,
             });
           } catch (saveError) {
-            logger.error('⚠️ メッセージ保存に失敗 (ストリーミング継続):', saveError);
-            // 保存エラーでもストリーミングは継続する
+            logger.error('⚠️ Message save failed (streaming continues):', saveError);
+            // Continue streaming even if save error occurs
           }
         }
 
-        // 循環参照を回避してイベントをシリアライズ
+        // Serialize event avoiding circular references
         const safeEvent = serializeStreamEvent(event);
         res.write(`${JSON.stringify(safeEvent)}\n`);
       }
 
-      logger.info('✅ Agent ストリーミング完了:', { requestId: contextMeta.requestId });
+      logger.info('✅ Agent streaming completed:', { requestId: contextMeta.requestId });
 
-      // 完了メタデータを送信
+      // Send completion metadata
       const completionEvent = {
         type: 'serverCompletionEvent',
         metadata: {
@@ -371,7 +371,7 @@ app.post('/invocations', async (req: Request, res: Response) => {
           sessionId: sessionId,
           actorId: actorId,
           conversationLength: agent.messages.length,
-          // Agent作成時のメタデータも含める
+          // Include metadata from Agent creation
           agentMetadata: metadata,
         },
       };
@@ -379,12 +379,12 @@ app.post('/invocations', async (req: Request, res: Response) => {
 
       res.end();
     } catch (streamError) {
-      logger.error('❌ Agent ストリーミングエラー:', {
+      logger.error('❌ Agent streaming error:', {
         requestId: contextMeta.requestId,
         error: streamError,
       });
 
-      // エラーイベントを送信
+      // Send error event
       const errorEvent = {
         type: 'serverErrorEvent',
         error: {
@@ -402,7 +402,7 @@ app.post('/invocations', async (req: Request, res: Response) => {
       error,
     });
 
-    // 初期エラーの場合は JSON レスポンス
+    // JSON response for initial error
     if (!res.headersSent) {
       return res.status(500).json({
         error: 'Internal server error',
@@ -414,7 +414,7 @@ app.post('/invocations', async (req: Request, res: Response) => {
 });
 
 /**
- * ルートエンドポイント（情報表示用）
+ * Root endpoint (for information display)
  */
 app.get('/', (req: Request, res: Response) => {
   res.json({
@@ -429,7 +429,7 @@ app.get('/', (req: Request, res: Response) => {
 });
 
 /**
- * 404 ハンドラー
+ * 404 handler
  */
 app.use('*', (req: Request, res: Response) => {
   res.status(404).json({
@@ -440,7 +440,7 @@ app.use('*', (req: Request, res: Response) => {
 });
 
 /**
- * エラーハンドラー
+ * Error handler
  */
 app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
   logger.error('💥 Unhandled error:', { error: err, path: req.path, method: req.method });
@@ -451,29 +451,29 @@ app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
 });
 
 /**
- * アプリケーション開始
+ * Start application
  */
 async function startServer(): Promise<void> {
   try {
-    // HTTPサーバー開始（Agent初期化は最初のリクエスト時に実行）
+    // Start HTTP server (Agent initialization executed on first request)
     app.listen(PORT, () => {
-      logger.info('🚀 AgentCore Runtime server 起動:', {
+      logger.info('🚀 AgentCore Runtime server started:', {
         port: PORT,
         healthCheck: `http://localhost:${PORT}/ping`,
         agentEndpoint: `POST http://localhost:${PORT}/invocations`,
-        note: 'Agent は最初のリクエスト時に初期化されます',
+        note: 'Agent is initialized on first request',
       });
     });
   } catch (error) {
-    logger.error('💥 サーバー開始に失敗:', { error });
+    logger.error('💥 Server start failed:', { error });
     process.exit(1);
   }
 }
 
-// サーバー開始
+// Start server
 startServer();
 
-// Graceful shutdown の処理
+// Graceful shutdown handling
 process.on('SIGTERM', () => {
   logger.info('🛑 Received SIGTERM, shutting down gracefully');
   process.exit(0);

@@ -5,33 +5,33 @@ import { mcpClient, MCPToolResult } from '../mcp/client.js';
 import { logger } from '../config/index.js';
 
 /**
- * MCP ツールを Strands ツールに変換
+ * Convert MCP tools to Strands tools
  */
 export function createStrandsToolFromMCP(mcpTool: MCPToolDefinition) {
   const { schema, keyMapping } = convertToZodSchema(mcpTool.inputSchema);
 
   return tool({
     name: mcpTool.name,
-    description: mcpTool.description || `AgentCore Gateway ツール: ${mcpTool.name}`,
+    description: mcpTool.description || `AgentCore Gateway tool: ${mcpTool.name}`,
     inputSchema: schema,
     callback: async (input: ToolInput): Promise<string> => {
       try {
-        // サニタイズされたキーを元のキーに変換
+        // Convert sanitized keys to original keys
         const originalInput: Record<string, unknown> = {};
         for (const [sanitizedKey, value] of Object.entries(input)) {
           const originalKey = keyMapping[sanitizedKey] || sanitizedKey;
           originalInput[originalKey] = value;
         }
 
-        logger.debug(`ツール呼び出し: ${mcpTool.name}`, originalInput);
+        logger.debug(`Tool call: ${mcpTool.name}`, originalInput);
         const result: MCPToolResult = await mcpClient.callTool(mcpTool.name, originalInput);
 
         if (result.isError) {
-          logger.error(`ツール実行エラー: ${mcpTool.name}`, result);
-          return `ツール実行エラー: ${result.content[0]?.text || '不明なエラー'}`;
+          logger.error(`Tool execution error: ${mcpTool.name}`, result);
+          return `Tool execution error: ${result.content[0]?.text || 'Unknown error'}`;
         }
 
-        // 結果を文字列として返す
+        // Return result as string
         const contentText = result.content
           .map((item) => {
             if (item.text) return item.text;
@@ -41,26 +41,26 @@ export function createStrandsToolFromMCP(mcpTool: MCPToolDefinition) {
           .filter(Boolean)
           .join('\n');
 
-        return contentText || 'ツールの実行が完了しました。';
+        return contentText || 'Tool execution completed.';
       } catch (error) {
-        logger.error(`ツール呼び出し中にエラー: ${mcpTool.name}`, error);
-        return `ツール呼び出し中にエラーが発生しました: ${error}`;
+        logger.error(`Error during tool call: ${mcpTool.name}`, error);
+        return `An error occurred during tool call: ${error}`;
       }
     },
   });
 }
 
 /**
- * MCP ツール一覧を Strands ツールに一括変換
- * @param mcpTools 既に取得済みのMCPツール一覧
+ * Batch convert MCP tool list to Strands tools
+ * @param mcpTools Already retrieved list of MCP tools
  */
 export function convertMCPToolsToStrands(
   mcpTools: MCPToolDefinition[]
 ): Array<ReturnType<typeof tool>> {
-  logger.info(`✅ ${mcpTools.length}個のMCPツールを変換しています`);
+  logger.info(`✅ Converting ${mcpTools.length} MCP tools`);
 
   return mcpTools.map((mcpTool) => {
-    logger.debug(`ツール変換中: ${mcpTool.name}`);
+    logger.debug(`Converting tool: ${mcpTool.name}`);
     return createStrandsToolFromMCP(mcpTool);
   });
 }

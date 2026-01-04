@@ -1,5 +1,5 @@
 /**
- * Tavily Extract ツール - 指定URLからコンテンツを抽出
+ * Tavily Extract Tool - Extract content from specified URLs
  */
 
 import { tool } from '@strands-agents/sdk';
@@ -8,7 +8,7 @@ import { logger } from '../config/index.js';
 import { getTavilyApiKey } from './tavily-common.js';
 
 /**
- * Tavily Extract API のレスポンス型
+ * Tavily Extract API response type
  */
 interface TavilyExtractResponse {
   results: Array<{
@@ -32,7 +32,7 @@ interface TavilyExtractResponse {
 }
 
 /**
- * Tavily API エラー型
+ * Tavily API error type
  */
 interface TavilyError {
   error: string;
@@ -41,7 +41,7 @@ interface TavilyError {
 }
 
 /**
- * コンテンツを安全なサイズに切り詰め
+ * Truncate content to safe size
  */
 function truncateContent(content: string, maxLength: number = 3000): string {
   if (content.length <= maxLength) {
@@ -49,11 +49,11 @@ function truncateContent(content: string, maxLength: number = 3000): string {
   }
 
   const truncated = content.substring(0, maxLength);
-  return `${truncated}... (内容が長すぎるため切り詰められました。元の長さ: ${content.length}文字)`;
+  return `${truncated}... (Content truncated due to length. Original length: ${content.length} characters)`;
 }
 
 /**
- * Tavily Extract API を呼び出す
+ * Call Tavily Extract API
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function callTavilyExtractAPI(params: Record<string, any>): Promise<TavilyExtractResponse> {
@@ -69,13 +69,13 @@ async function callTavilyExtractAPI(params: Record<string, any>): Promise<Tavily
   });
 
   if (!response.ok) {
-    let errorMessage = `Tavily Extract API エラー: ${response.status} ${response.statusText}`;
+    let errorMessage = `Tavily Extract API error: ${response.status} ${response.statusText}`;
 
     try {
       const errorData = (await response.json()) as TavilyError;
-      errorMessage = `Tavily Extract API エラー: ${errorData.error} - ${errorData.message}`;
+      errorMessage = `Tavily Extract API error: ${errorData.error} - ${errorData.message}`;
     } catch {
-      // JSON パースエラーの場合はデフォルトのエラーメッセージを使用
+      // Use default error message for JSON parse errors
     }
 
     throw new Error(errorMessage);
@@ -86,31 +86,31 @@ async function callTavilyExtractAPI(params: Record<string, any>): Promise<Tavily
 }
 
 /**
- * 抽出結果をフォーマット
+ * Format extraction results
  */
 function formatExtractResults(response: TavilyExtractResponse): string {
   const { results, failed_results, response_time, usage } = response;
 
-  let output = `🔍 Tavily Extract 結果\n`;
-  output += `処理時間: ${response_time}秒\n`;
+  let output = `🔍 Tavily Extract Results\n`;
+  output += `Processing Time: ${response_time}s\n`;
 
   if (usage?.credits) {
-    output += `使用クレジット: ${usage.credits}\n`;
+    output += `Credits Used: ${usage.credits}\n`;
   }
 
-  output += `成功: ${results.length}件、失敗: ${failed_results.length}件\n\n`;
+  output += `Success: ${results.length} items, Failed: ${failed_results.length} items\n\n`;
 
-  // 成功した結果
+  // Successful results
   if (results.length > 0) {
-    output += `📄 抽出されたコンテンツ:\n\n`;
+    output += `📄 Extracted Content:\n\n`;
 
     results.forEach((result, index) => {
       output += `${index + 1}. **${result.url}**\n`;
-      output += `内容:\n${truncateContent(result.raw_content, 2000)}\n`;
+      output += `Content:\n${truncateContent(result.raw_content, 2000)}\n`;
 
-      // 画像がある場合
+      // If images exist
       if (result.images && result.images.length > 0) {
-        output += `🖼️ 画像 (${result.images.length}件):\n`;
+        output += `🖼️ Images (${result.images.length} items):\n`;
         result.images.slice(0, 3).forEach((image, imgIndex) => {
           output += `  ${imgIndex + 1}. ${image.url}`;
           if (image.description) {
@@ -124,13 +124,13 @@ function formatExtractResults(response: TavilyExtractResponse): string {
     });
   }
 
-  // 失敗した結果
+  // Failed results
   if (failed_results.length > 0) {
-    output += `❌ 抽出に失敗したURL:\n\n`;
+    output += `❌ URLs that failed extraction:\n\n`;
 
     failed_results.forEach((failed, index) => {
       output += `${index + 1}. ${failed.url}\n`;
-      output += `   理由: ${failed.reason}\n\n`;
+      output += `   Reason: ${failed.reason}\n\n`;
     });
   }
 
@@ -138,47 +138,47 @@ function formatExtractResults(response: TavilyExtractResponse): string {
 }
 
 /**
- * Tavily Extract ツール
+ * Tavily Extract Tool
  */
 export const tavilyExtractTool = tool({
   name: 'tavily_extract',
   description:
-    'Tavily APIを使用して指定されたURLからコンテンツを抽出します。Webページの内容を構造化されたテキストとして取得できます。',
+    'Extract content from specified URLs using Tavily API. Get webpage content as structured text.',
   inputSchema: z.object({
     urls: z
       .union([z.string(), z.array(z.string())])
-      .describe('抽出対象のURL（単一URLまたはURL配列）'),
+      .describe('URL(s) to extract from (single URL or array of URLs)'),
     query: z
       .string()
       .optional()
-      .describe('リランキング用クエリ。指定すると関連性の高いコンテンツが優先されます'),
+      .describe('Query for reranking. When specified, prioritizes more relevant content'),
     extractDepth: z
       .enum(['basic', 'advanced'])
       .default('basic')
-      .describe('抽出深度。basicは1クレジット/5URL、advancedは2クレジット/5URL'),
+      .describe('Extraction depth. basic: 1 credit/5 URLs, advanced: 2 credits/5 URLs'),
     format: z
       .enum(['markdown', 'text'])
       .default('markdown')
-      .describe('出力フォーマット。markdownまたはtext'),
+      .describe('Output format. markdown or text'),
     chunksPerSource: z
       .number()
       .min(1)
       .max(5)
       .default(3)
-      .describe('ソースあたりのチャンク数（1-5、queryが指定された場合のみ有効）'),
-    includeImages: z.boolean().default(false).describe('画像情報を含めるかどうか'),
-    timeout: z.number().min(1).max(60).default(30).describe('タイムアウト（秒、1-60）'),
+      .describe('Number of chunks per source (1-5, only effective when query is specified)'),
+    includeImages: z.boolean().default(false).describe('Whether to include image information'),
+    timeout: z.number().min(1).max(60).default(30).describe('Timeout in seconds (1-60)'),
   }),
   callback: async (input) => {
     const { urls, query, extractDepth, format, chunksPerSource, includeImages, timeout } = input;
 
-    // URLsを配列に変換
+    // Convert URLs to array
     const urlArray = Array.isArray(urls) ? urls : [urls];
 
-    logger.info(`🔍 Tavily抽出開始: ${urlArray.length}件のURL`);
+    logger.info(`🔍 Tavily extraction started: ${urlArray.length} URLs`);
 
     try {
-      // API パラメータの構築
+      // Build API parameters
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const apiParams: Record<string, any> = {
         urls: urlArray,
@@ -188,38 +188,38 @@ export const tavilyExtractTool = tool({
         timeout,
       };
 
-      // オプショナルパラメータの設定
+      // Set optional parameters
       if (query) {
         apiParams.query = query;
         apiParams.chunks_per_source = chunksPerSource;
       }
 
-      // Tavily Extract API 呼び出し
+      // Call Tavily Extract API
       const startTime = Date.now();
       const response = await callTavilyExtractAPI(apiParams);
       const duration = Date.now() - startTime;
 
-      // 結果のフォーマット
+      // Format results
       const formattedResult = formatExtractResults(response);
 
       logger.info(
-        `✅ Tavily抽出完了: ${response.results.length}件成功, ${response.failed_results.length}件失敗 (${duration}ms)`
+        `✅ Tavily extraction completed: ${response.results.length} succeeded, ${response.failed_results.length} failed (${duration}ms)`
       );
 
       return formattedResult;
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      logger.error(`❌ Tavily抽出エラー: ${urlArray.join(', ')}`, errorMessage);
+      logger.error(`❌ Tavily extraction error: ${urlArray.join(', ')}`, errorMessage);
 
-      return `❌ Tavily抽出でエラーが発生しました
-対象URL: ${urlArray.join(', ')}
-エラー: ${errorMessage}
+      return `❌ An error occurred during Tavily extraction
+Target URLs: ${urlArray.join(', ')}
+Error: ${errorMessage}
 
-問題の解決方法:
-1. TAVILY_API_KEY 環境変数が正しく設定されているか確認
-2. インターネット接続を確認
-3. URLが有効かどうか確認
-4. API使用量制限に達していないか確認`;
+Troubleshooting:
+1. Verify that TAVILY_API_KEY environment variable is correctly set
+2. Check internet connection
+3. Verify URLs are valid
+4. Check if API usage limit has been reached`;
     }
   },
 });

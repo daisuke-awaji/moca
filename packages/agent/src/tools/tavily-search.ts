@@ -1,5 +1,5 @@
 /**
- * Tavily Search ツール - 高品質なWeb検索を実行
+ * Tavily Search Tool - Execute high-quality web searches
  */
 
 import { tool } from '@strands-agents/sdk';
@@ -8,7 +8,7 @@ import { logger } from '../config/index.js';
 import { getTavilyApiKey } from './tavily-common.js';
 
 /**
- * Tavily API のレスポンス型
+ * Tavily API response type
  */
 interface TavilySearchResponse {
   query: string;
@@ -37,7 +37,7 @@ interface TavilySearchResponse {
 }
 
 /**
- * Tavily API エラー型
+ * Tavily API error type
  */
 interface TavilyError {
   error: string;
@@ -46,7 +46,7 @@ interface TavilyError {
 }
 
 /**
- * 検索結果の安全なサイズ制限
+ * Safe size limit for search results
  */
 function truncateContent(content: string, maxLength: number = 2000): string {
   if (content.length <= maxLength) {
@@ -54,11 +54,11 @@ function truncateContent(content: string, maxLength: number = 2000): string {
   }
 
   const truncated = content.substring(0, maxLength);
-  return `${truncated}... (内容が長すぎるため切り詰められました。元の長さ: ${content.length}文字)`;
+  return `${truncated}... (Content truncated due to length. Original length: ${content.length} characters)`;
 }
 
 /**
- * Tavily API を呼び出す
+ * Call Tavily API
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function callTavilyAPI(params: Record<string, any>): Promise<TavilySearchResponse> {
@@ -74,13 +74,13 @@ async function callTavilyAPI(params: Record<string, any>): Promise<TavilySearchR
   });
 
   if (!response.ok) {
-    let errorMessage = `Tavily API エラー: ${response.status} ${response.statusText}`;
+    let errorMessage = `Tavily API error: ${response.status} ${response.statusText}`;
 
     try {
       const errorData = (await response.json()) as TavilyError;
-      errorMessage = `Tavily API エラー: ${errorData.error} - ${errorData.message}`;
+      errorMessage = `Tavily API error: ${errorData.error} - ${errorData.message}`;
     } catch {
-      // JSON パースエラーの場合はデフォルトのエラーメッセージを使用
+      // Use default error message for JSON parse errors
     }
 
     throw new Error(errorMessage);
@@ -91,43 +91,43 @@ async function callTavilyAPI(params: Record<string, any>): Promise<TavilySearchR
 }
 
 /**
- * 検索結果をフォーマット
+ * Format search results
  */
 function formatSearchResults(response: TavilySearchResponse): string {
   const { query, answer, results, response_time, usage } = response;
 
-  let output = `🔍 Tavily Search 結果\n`;
-  output += `検索クエリ: ${query}\n`;
-  output += `実行時間: ${response_time}秒\n`;
+  let output = `🔍 Tavily Search Results\n`;
+  output += `Search Query: ${query}\n`;
+  output += `Execution Time: ${response_time}s\n`;
 
   if (usage?.credits) {
-    output += `使用クレジット: ${usage.credits}\n`;
+    output += `Credits Used: ${usage.credits}\n`;
   }
 
   output += `\n`;
 
-  // LLM生成の回答がある場合
+  // If LLM-generated answer exists
   if (answer) {
-    output += `📝 AI要約回答:\n${truncateContent(answer, 1500)}\n\n`;
+    output += `📝 AI Summary Answer:\n${truncateContent(answer, 1500)}\n\n`;
   }
 
-  // 検索結果
-  output += `📋 検索結果 (${results.length}件):\n\n`;
+  // Search results
+  output += `📋 Search Results (${results.length} items):\n\n`;
 
   results.forEach((result, index) => {
     output += `${index + 1}. **${result.title}**\n`;
     output += `   URL: ${result.url}\n`;
-    output += `   関連度: ${(result.score * 100).toFixed(1)}%\n`;
-    output += `   内容: ${truncateContent(result.content, 800)}\n\n`;
+    output += `   Relevance: ${(result.score * 100).toFixed(1)}%\n`;
+    output += `   Content: ${truncateContent(result.content, 800)}\n\n`;
   });
 
-  // 画像結果がある場合
+  // If image results exist
   if (response.images && response.images.length > 0) {
-    output += `🖼️ 関連画像 (${response.images.length}件):\n`;
+    output += `🖼️ Related Images (${response.images.length} items):\n`;
     response.images.forEach((image, index) => {
       output += `${index + 1}. ${image.url}\n`;
       if (image.description) {
-        output += `   説明: ${image.description}\n`;
+        output += `   Description: ${image.description}\n`;
       }
     });
     output += `\n`;
@@ -137,32 +137,43 @@ function formatSearchResults(response: TavilySearchResponse): string {
 }
 
 /**
- * Tavily Search ツール
+ * Tavily Search Tool
  */
 export const tavilySearchTool = tool({
   name: 'tavily_search',
   description:
-    'Tavily APIを使用して高品質なWeb検索を実行します。最新の情報、ニュース、一般的な話題について包括的な検索結果を取得できます。',
+    'Execute high-quality web searches using Tavily API. Retrieve comprehensive search results for latest information, news, and general topics.',
   inputSchema: z.object({
-    query: z.string().describe('検索クエリ（必須）'),
+    query: z.string().describe('Search query (required)'),
     searchDepth: z
       .enum(['basic', 'advanced'])
       .default('basic')
-      .describe('検索深度。basicは1クレジット、advancedは2クレジット使用'),
+      .describe('Search depth. basic uses 1 credit, advanced uses 2 credits'),
     topic: z
-      .enum(['general', 'news', 'finance'])
+      .enum(['general', 'news'])
       .default('general')
-      .describe('検索カテゴリ。newsは最新情報、generalは一般検索'),
-    maxResults: z.number().min(1).max(20).default(5).describe('取得する最大検索結果数（1-20）'),
-    includeAnswer: z.boolean().default(true).describe('LLM生成の要約回答を含める'),
+      .describe('Search category. news for latest information, general for general search'),
+    maxResults: z
+      .number()
+      .min(1)
+      .max(20)
+      .default(5)
+      .describe('Maximum number of search results to retrieve (1-20)'),
+    includeAnswer: z.boolean().default(true).describe('Include LLM-generated summary answer'),
     timeRange: z
       .enum(['day', 'week', 'month', 'year', 'd', 'w', 'm', 'y'])
       .optional()
-      .describe('時間範囲フィルター（過去の期間で絞り込み）'),
-    includeDomains: z.array(z.string()).optional().describe('検索対象に含めるドメインのリスト'),
-    excludeDomains: z.array(z.string()).optional().describe('検索対象から除外するドメインのリスト'),
-    includeImages: z.boolean().default(false).describe('関連画像も取得する'),
-    country: z.string().optional().describe('特定の国の結果を優先（例: japan, united states）'),
+      .describe('Time range filter (filter by past period)'),
+    includeDomains: z.array(z.string()).optional().describe('List of domains to include in search'),
+    excludeDomains: z
+      .array(z.string())
+      .optional()
+      .describe('List of domains to exclude from search'),
+    includeImages: z.boolean().default(false).describe('Retrieve related images'),
+    country: z
+      .string()
+      .optional()
+      .describe('Prioritize results from specific country (e.g., japan, united states)'),
   }),
   callback: async (input) => {
     const {
@@ -178,10 +189,10 @@ export const tavilySearchTool = tool({
       country,
     } = input;
 
-    logger.info(`🔍 Tavily検索開始: ${query}`);
+    logger.info(`🔍 Tavily search started: ${query}`);
 
     try {
-      // API パラメータの構築
+      // Build API parameters
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const apiParams: Record<string, any> = {
         query,
@@ -190,10 +201,10 @@ export const tavilySearchTool = tool({
         max_results: maxResults,
         include_answer: includeAnswer,
         include_images: includeImages,
-        include_favicon: true, // ファビコンも含める
+        include_favicon: true, // Include favicon
       };
 
-      // オプショナルパラメータの設定
+      // Set optional parameters
       if (timeRange) {
         apiParams.time_range = timeRange;
       }
@@ -207,36 +218,36 @@ export const tavilySearchTool = tool({
       }
 
       if (country && topic === 'general') {
-        // country パラメータは general topic でのみ利用可能
+        // country parameter is only available for general topic
         apiParams.country = country;
       }
 
-      // Tavily API 呼び出し
+      // Call Tavily API
       const startTime = Date.now();
       const response = await callTavilyAPI(apiParams);
       const duration = Date.now() - startTime;
 
-      // 結果のフォーマット
+      // Format results
       const formattedResult = formatSearchResults(response);
 
       logger.info(
-        `✅ Tavily検索完了: ${query} (${duration}ms, ${response.results.length}件の結果)`
+        `✅ Tavily search completed: ${query} (${duration}ms, ${response.results.length} results)`
       );
 
       return formattedResult;
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      logger.error(`❌ Tavily検索エラー: ${query}`, errorMessage);
+      logger.error(`❌ Tavily search error: ${query}`, errorMessage);
 
-      return `❌ Tavily検索でエラーが発生しました
-検索クエリ: ${query}
-エラー: ${errorMessage}
+      return `❌ An error occurred during Tavily search
+Search Query: ${query}
+Error: ${errorMessage}
 
-問題の解決方法:
-1. TAVILY_API_KEY 環境変数が正しく設定されているか確認
-2. インターネット接続を確認
-3. 検索クエリが適切かどうか確認
-4. API使用量制限に達していないか確認`;
+Troubleshooting:
+1. Verify that TAVILY_API_KEY environment variable is correctly set
+2. Check internet connection
+3. Verify search query is appropriate
+4. Check if API usage limit has been reached`;
     }
   },
 });

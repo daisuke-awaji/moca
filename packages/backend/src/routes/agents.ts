@@ -1,6 +1,6 @@
 /**
- * Agent管理API エンドポイント
- * ユーザーのAgentをDynamoDBで管理するAPI
+ * Agent management API endpoints
+ * API for managing user Agents in DynamoDB
  */
 
 import { Router, Response } from 'express';
@@ -15,22 +15,22 @@ import {
 const router = Router();
 
 /**
- * Backend AgentをFrontend Agentに変換
- * agentId -> id にマッピング
- * includeUserId が true の場合は userId も含める（共有エージェント用）
+ * Convert Backend Agent to Frontend Agent
+ * Map agentId -> id
+ * Include userId if includeUserId is true (for shared agents)
  */
 function toFrontendAgent(agent: BackendAgent, includeUserId: boolean = false) {
   const { userId, agentId, ...rest } = agent;
   return {
     id: agentId,
-    ...(includeUserId && { userId }), // 共有エージェントの場合は userId も含める
+    ...(includeUserId && { userId }), // Include userId for shared agents
     ...rest,
   };
 }
 
 /**
- * デフォルトAgent定義
- * 翻訳キー形式で定義し、フロントエンドで翻訳を適用
+ * Default Agent definitions
+ * Defined in translation key format, translation applied in frontend
  */
 const DEFAULT_AGENTS: CreateAgentInput[] = [
   {
@@ -75,9 +75,9 @@ Please keep the following in mind:
 ];
 
 /**
- * Agent一覧取得エンドポイント
+ * Agent list retrieval endpoint
  * GET /agents
- * JWT認証必須
+ * JWT authentication required
  */
 router.get('/', jwtAuthMiddleware, async (req: AuthenticatedRequest, res: Response) => {
   try {
@@ -87,12 +87,12 @@ router.get('/', jwtAuthMiddleware, async (req: AuthenticatedRequest, res: Respon
     if (!userId) {
       return res.status(400).json({
         error: 'Invalid authentication',
-        message: 'ユーザーIDが取得できませんでした',
+        message: 'Failed to retrieve user ID',
         requestId: auth.requestId,
       });
     }
 
-    console.log(`📋 Agent一覧取得開始 (${auth.requestId}):`, {
+    console.log(`📋 Agent list retrieval started (${auth.requestId}):`, {
       userId,
       username: auth.username,
     });
@@ -100,7 +100,7 @@ router.get('/', jwtAuthMiddleware, async (req: AuthenticatedRequest, res: Respon
     const agentsService = createAgentsService();
     const agents = await agentsService.listAgents(userId);
 
-    console.log(`✅ Agent一覧取得完了 (${auth.requestId}): ${agents.length}件`);
+    console.log(`✅ Agent list retrieval completed (${auth.requestId}): ${agents.length} items`);
 
     res.status(200).json({
       agents: agents.map((agent) => toFrontendAgent(agent)),
@@ -113,20 +113,20 @@ router.get('/', jwtAuthMiddleware, async (req: AuthenticatedRequest, res: Respon
     });
   } catch (error) {
     const auth = getCurrentAuth(req);
-    console.error(`💥 Agent一覧取得エラー (${auth.requestId}):`, error);
+    console.error(`💥 Agent list retrieval error (${auth.requestId}):`, error);
 
     res.status(500).json({
       error: 'Internal Server Error',
-      message: error instanceof Error ? error.message : 'Agent一覧の取得に失敗しました',
+      message: error instanceof Error ? error.message : 'Failed to retrieve Agent list',
       requestId: auth.requestId,
     });
   }
 });
 
 /**
- * 特定のAgent取得エンドポイント
+ * Specific Agent retrieval endpoint
  * GET /agents/:agentId
- * JWT認証必須
+ * JWT authentication required
  */
 router.get('/:agentId', jwtAuthMiddleware, async (req: AuthenticatedRequest, res: Response) => {
   try {
@@ -137,7 +137,7 @@ router.get('/:agentId', jwtAuthMiddleware, async (req: AuthenticatedRequest, res
     if (!userId) {
       return res.status(400).json({
         error: 'Invalid authentication',
-        message: 'ユーザーIDが取得できませんでした',
+        message: 'Failed to retrieve user ID',
         requestId: auth.requestId,
       });
     }
@@ -145,12 +145,12 @@ router.get('/:agentId', jwtAuthMiddleware, async (req: AuthenticatedRequest, res
     if (!agentId) {
       return res.status(400).json({
         error: 'Invalid request',
-        message: 'AgentIDが指定されていません',
+        message: 'Agent ID is not specified',
         requestId: auth.requestId,
       });
     }
 
-    console.log(`🔍 Agent取得開始 (${auth.requestId}):`, {
+    console.log(`🔍 Agent retrieval started (${auth.requestId}):`, {
       userId,
       username: auth.username,
       agentId,
@@ -162,12 +162,12 @@ router.get('/:agentId', jwtAuthMiddleware, async (req: AuthenticatedRequest, res
     if (!agent) {
       return res.status(404).json({
         error: 'Not Found',
-        message: 'Agentが見つかりませんでした',
+        message: 'Agent not found',
         requestId: auth.requestId,
       });
     }
 
-    console.log(`✅ Agent取得完了 (${auth.requestId}): ${agent.name}`);
+    console.log(`✅ Agent retrieval completed (${auth.requestId}): ${agent.name}`);
 
     res.status(200).json({
       agent: toFrontendAgent(agent),
@@ -179,20 +179,20 @@ router.get('/:agentId', jwtAuthMiddleware, async (req: AuthenticatedRequest, res
     });
   } catch (error) {
     const auth = getCurrentAuth(req);
-    console.error(`💥 Agent取得エラー (${auth.requestId}):`, error);
+    console.error(`💥 Agent retrieval error (${auth.requestId}):`, error);
 
     res.status(500).json({
       error: 'Internal Server Error',
-      message: error instanceof Error ? error.message : 'Agentの取得に失敗しました',
+      message: error instanceof Error ? error.message : 'Failed to retrieve Agent',
       requestId: auth.requestId,
     });
   }
 });
 
 /**
- * Agent作成エンドポイント
+ * Agent creation endpoint
  * POST /agents
- * JWT認証必須
+ * JWT authentication required
  */
 router.post('/', jwtAuthMiddleware, async (req: AuthenticatedRequest, res: Response) => {
   try {
@@ -203,21 +203,21 @@ router.post('/', jwtAuthMiddleware, async (req: AuthenticatedRequest, res: Respo
     if (!userId) {
       return res.status(400).json({
         error: 'Invalid authentication',
-        message: 'ユーザーIDが取得できませんでした',
+        message: 'Failed to retrieve user ID',
         requestId: auth.requestId,
       });
     }
 
-    // バリデーション
+    // Validation
     if (!input.name || !input.description || !input.systemPrompt || !input.enabledTools) {
       return res.status(400).json({
         error: 'Invalid request',
-        message: '必須項目が不足しています',
+        message: 'Required fields are missing',
         requestId: auth.requestId,
       });
     }
 
-    console.log(`➕ Agent作成開始 (${auth.requestId}):`, {
+    console.log(`➕ Agent creation started (${auth.requestId}):`, {
       userId,
       username: auth.username,
       agentName: input.name,
@@ -226,7 +226,7 @@ router.post('/', jwtAuthMiddleware, async (req: AuthenticatedRequest, res: Respo
     const agentsService = createAgentsService();
     const agent = await agentsService.createAgent(userId, input, auth.username);
 
-    console.log(`✅ Agent作成完了 (${auth.requestId}): ${agent.agentId}`);
+    console.log(`✅ Agent creation completed (${auth.requestId}): ${agent.agentId}`);
 
     res.status(201).json({
       agent: toFrontendAgent(agent),
@@ -238,20 +238,20 @@ router.post('/', jwtAuthMiddleware, async (req: AuthenticatedRequest, res: Respo
     });
   } catch (error) {
     const auth = getCurrentAuth(req);
-    console.error(`💥 Agent作成エラー (${auth.requestId}):`, error);
+    console.error(`💥 Agent creation error (${auth.requestId}):`, error);
 
     res.status(500).json({
       error: 'Internal Server Error',
-      message: error instanceof Error ? error.message : 'Agentの作成に失敗しました',
+      message: error instanceof Error ? error.message : 'Failed to create Agent',
       requestId: auth.requestId,
     });
   }
 });
 
 /**
- * Agent更新エンドポイント
+ * Agent update endpoint
  * PUT /agents/:agentId
- * JWT認証必須
+ * JWT authentication required
  */
 router.put('/:agentId', jwtAuthMiddleware, async (req: AuthenticatedRequest, res: Response) => {
   try {
@@ -263,7 +263,7 @@ router.put('/:agentId', jwtAuthMiddleware, async (req: AuthenticatedRequest, res
     if (!userId) {
       return res.status(400).json({
         error: 'Invalid authentication',
-        message: 'ユーザーIDが取得できませんでした',
+        message: 'Failed to retrieve user ID',
         requestId: auth.requestId,
       });
     }
@@ -271,12 +271,12 @@ router.put('/:agentId', jwtAuthMiddleware, async (req: AuthenticatedRequest, res
     if (!agentId) {
       return res.status(400).json({
         error: 'Invalid request',
-        message: 'AgentIDが指定されていません',
+        message: 'Agent ID is not specified',
         requestId: auth.requestId,
       });
     }
 
-    console.log(`📝 Agent更新開始 (${auth.requestId}):`, {
+    console.log(`📝 Agent update started (${auth.requestId}):`, {
       userId,
       username: auth.username,
       agentId,
@@ -289,7 +289,7 @@ router.put('/:agentId', jwtAuthMiddleware, async (req: AuthenticatedRequest, res
     };
     const agent = await agentsService.updateAgent(userId, updateInput);
 
-    console.log(`✅ Agent更新完了 (${auth.requestId}): ${agent.name}`);
+    console.log(`✅ Agent update completed (${auth.requestId}): ${agent.name}`);
 
     res.status(200).json({
       agent: toFrontendAgent(agent),
@@ -301,28 +301,28 @@ router.put('/:agentId', jwtAuthMiddleware, async (req: AuthenticatedRequest, res
     });
   } catch (error) {
     const auth = getCurrentAuth(req);
-    console.error(`💥 Agent更新エラー (${auth.requestId}):`, error);
+    console.error(`💥 Agent update error (${auth.requestId}):`, error);
 
     if (error instanceof Error && error.message === 'Agent not found') {
       return res.status(404).json({
         error: 'Not Found',
-        message: 'Agentが見つかりませんでした',
+        message: 'Agent not found',
         requestId: auth.requestId,
       });
     }
 
     res.status(500).json({
       error: 'Internal Server Error',
-      message: error instanceof Error ? error.message : 'Agentの更新に失敗しました',
+      message: error instanceof Error ? error.message : 'Failed to update Agent',
       requestId: auth.requestId,
     });
   }
 });
 
 /**
- * Agent削除エンドポイント
+ * Agent deletion endpoint
  * DELETE /agents/:agentId
- * JWT認証必須
+ * JWT authentication required
  */
 router.delete('/:agentId', jwtAuthMiddleware, async (req: AuthenticatedRequest, res: Response) => {
   try {
@@ -333,7 +333,7 @@ router.delete('/:agentId', jwtAuthMiddleware, async (req: AuthenticatedRequest, 
     if (!userId) {
       return res.status(400).json({
         error: 'Invalid authentication',
-        message: 'ユーザーIDが取得できませんでした',
+        message: 'Failed to retrieve user ID',
         requestId: auth.requestId,
       });
     }
@@ -341,12 +341,12 @@ router.delete('/:agentId', jwtAuthMiddleware, async (req: AuthenticatedRequest, 
     if (!agentId) {
       return res.status(400).json({
         error: 'Invalid request',
-        message: 'AgentIDが指定されていません',
+        message: 'Agent ID is not specified',
         requestId: auth.requestId,
       });
     }
 
-    console.log(`🗑️  Agent削除開始 (${auth.requestId}):`, {
+    console.log(`🗑️  Agent deletion started (${auth.requestId}):`, {
       userId,
       username: auth.username,
       agentId,
@@ -355,7 +355,7 @@ router.delete('/:agentId', jwtAuthMiddleware, async (req: AuthenticatedRequest, 
     const agentsService = createAgentsService();
     await agentsService.deleteAgent(userId, agentId);
 
-    console.log(`✅ Agent削除完了 (${auth.requestId}): ${agentId}`);
+    console.log(`✅ Agent deletion completed (${auth.requestId}): ${agentId}`);
 
     res.status(200).json({
       success: true,
@@ -367,20 +367,20 @@ router.delete('/:agentId', jwtAuthMiddleware, async (req: AuthenticatedRequest, 
     });
   } catch (error) {
     const auth = getCurrentAuth(req);
-    console.error(`💥 Agent削除エラー (${auth.requestId}):`, error);
+    console.error(`💥 Agent deletion error (${auth.requestId}):`, error);
 
     res.status(500).json({
       error: 'Internal Server Error',
-      message: error instanceof Error ? error.message : 'Agentの削除に失敗しました',
+      message: error instanceof Error ? error.message : 'Failed to delete Agent',
       requestId: auth.requestId,
     });
   }
 });
 
 /**
- * Agent共有状態トグルエンドポイント
+ * Agent share status toggle endpoint
  * PUT /agents/:agentId/share
- * JWT認証必須
+ * JWT authentication required
  */
 router.put(
   '/:agentId/share',
@@ -394,7 +394,7 @@ router.put(
       if (!userId) {
         return res.status(400).json({
           error: 'Invalid authentication',
-          message: 'ユーザーIDが取得できませんでした',
+          message: 'Failed to retrieve user ID',
           requestId: auth.requestId,
         });
       }
@@ -402,12 +402,12 @@ router.put(
       if (!agentId) {
         return res.status(400).json({
           error: 'Invalid request',
-          message: 'AgentIDが指定されていません',
+          message: 'Agent ID is not specified',
           requestId: auth.requestId,
         });
       }
 
-      console.log(`🔄 Agent共有状態トグル開始 (${auth.requestId}):`, {
+      console.log(`🔄 Agent share status toggle started (${auth.requestId}):`, {
         userId,
         username: auth.username,
         agentId,
@@ -416,7 +416,9 @@ router.put(
       const agentsService = createAgentsService();
       const agent = await agentsService.toggleShare(userId, agentId);
 
-      console.log(`✅ Agent共有状態トグル完了 (${auth.requestId}): isShared=${agent.isShared}`);
+      console.log(
+        `✅ Agent share status toggle completed (${auth.requestId}): isShared=${agent.isShared}`
+      );
 
       res.status(200).json({
         agent: toFrontendAgent(agent),
@@ -428,19 +430,19 @@ router.put(
       });
     } catch (error) {
       const auth = getCurrentAuth(req);
-      console.error(`💥 Agent共有状態トグルエラー (${auth.requestId}):`, error);
+      console.error(`💥 Agent share status toggle error (${auth.requestId}):`, error);
 
       if (error instanceof Error && error.message === 'Agent not found') {
         return res.status(404).json({
           error: 'Not Found',
-          message: 'Agentが見つかりませんでした',
+          message: 'Agent not found',
           requestId: auth.requestId,
         });
       }
 
       res.status(500).json({
         error: 'Internal Server Error',
-        message: error instanceof Error ? error.message : 'Agent共有状態の変更に失敗しました',
+        message: error instanceof Error ? error.message : 'Failed to change Agent share status',
         requestId: auth.requestId,
       });
     }
@@ -448,10 +450,10 @@ router.put(
 );
 
 /**
- * デフォルトAgent初期化エンドポイント
+ * Default Agent initialization endpoint
  * POST /agents/initialize
- * JWT認証必須
- * 初回ログイン時にデフォルトAgentを作成
+ * JWT authentication required
+ * Create default Agents on first login
  */
 router.post('/initialize', jwtAuthMiddleware, async (req: AuthenticatedRequest, res: Response) => {
   try {
@@ -461,27 +463,27 @@ router.post('/initialize', jwtAuthMiddleware, async (req: AuthenticatedRequest, 
     if (!userId) {
       return res.status(400).json({
         error: 'Invalid authentication',
-        message: 'ユーザーIDが取得できませんでした',
+        message: 'Failed to retrieve user ID',
         requestId: auth.requestId,
       });
     }
 
-    console.log(`🔧 デフォルトAgent初期化開始 (${auth.requestId}):`, {
+    console.log(`🔧 Default Agent initialization started (${auth.requestId}):`, {
       userId,
       username: auth.username,
     });
 
     const agentsService = createAgentsService();
 
-    // 既存のAgentがあるか確認
+    // Check if existing Agents exist
     const existingAgents = await agentsService.listAgents(userId);
 
     if (existingAgents.length > 0) {
-      console.log(`ℹ️  既存のAgentが存在するため初期化をスキップ (${auth.requestId})`);
+      console.log(`ℹ️  Skipping initialization because existing Agents exist (${auth.requestId})`);
       return res.status(200).json({
         agents: existingAgents.map((agent) => toFrontendAgent(agent)),
         skipped: true,
-        message: '既存のAgentが存在するため、初期化をスキップしました',
+        message: 'Initialization skipped because existing Agents exist',
         metadata: {
           requestId: auth.requestId,
           timestamp: new Date().toISOString(),
@@ -491,14 +493,16 @@ router.post('/initialize', jwtAuthMiddleware, async (req: AuthenticatedRequest, 
       });
     }
 
-    // デフォルトAgentを作成
+    // Create default Agents
     const agents = await agentsService.initializeDefaultAgents(
       userId,
       DEFAULT_AGENTS,
       auth.username
     );
 
-    console.log(`✅ デフォルトAgent初期化完了 (${auth.requestId}): ${agents.length}件`);
+    console.log(
+      `✅ Default Agent initialization completed (${auth.requestId}): ${agents.length} items`
+    );
 
     res.status(201).json({
       agents: agents.map((agent) => toFrontendAgent(agent)),
@@ -512,24 +516,24 @@ router.post('/initialize', jwtAuthMiddleware, async (req: AuthenticatedRequest, 
     });
   } catch (error) {
     const auth = getCurrentAuth(req);
-    console.error(`💥 デフォルトAgent初期化エラー (${auth.requestId}):`, error);
+    console.error(`💥 Default Agent initialization error (${auth.requestId}):`, error);
 
     res.status(500).json({
       error: 'Internal Server Error',
-      message: error instanceof Error ? error.message : 'デフォルトAgentの初期化に失敗しました',
+      message: error instanceof Error ? error.message : 'Failed to initialize default Agents',
       requestId: auth.requestId,
     });
   }
 });
 
 /**
- * 共有Agent一覧取得エンドポイント（ページネーション対応）
+ * Shared Agent list retrieval endpoint (with pagination support)
  * GET /shared-agents/list
  * Query parameters:
- *   - q: 検索クエリ（オプション）
- *   - limit: 取得件数（デフォルト: 20）
- *   - cursor: ページネーションカーソル（オプション）
- * JWT認証必須
+ *   - q: Search query (optional)
+ *   - limit: Number of items to retrieve (default: 20)
+ *   - cursor: Pagination cursor (optional)
+ * JWT authentication required
  */
 router.get(
   '/shared-agents/list',
@@ -539,7 +543,7 @@ router.get(
       const auth = getCurrentAuth(req);
       const { q: searchQuery, limit, cursor } = req.query;
 
-      console.log(`📋 共有Agent一覧取得開始 (${auth.requestId}):`, {
+      console.log(`📋 Shared Agent list retrieval started (${auth.requestId}):`, {
         searchQuery,
         limit,
         hasCursor: !!cursor,
@@ -552,7 +556,9 @@ router.get(
         cursor as string | undefined
       );
 
-      console.log(`✅ 共有Agent一覧取得完了 (${auth.requestId}): ${result.items.length}件`);
+      console.log(
+        `✅ Shared Agent list retrieval completed (${auth.requestId}): ${result.items.length} items`
+      );
 
       res.status(200).json({
         agents: result.items.map((agent) => toFrontendAgent(agent, true)),
@@ -566,11 +572,11 @@ router.get(
       });
     } catch (error) {
       const auth = getCurrentAuth(req);
-      console.error(`💥 共有Agent一覧取得エラー (${auth.requestId}):`, error);
+      console.error(`💥 Shared Agent list retrieval error (${auth.requestId}):`, error);
 
       res.status(500).json({
         error: 'Internal Server Error',
-        message: error instanceof Error ? error.message : '共有Agent一覧の取得に失敗しました',
+        message: error instanceof Error ? error.message : 'Failed to retrieve shared Agent list',
         requestId: auth.requestId,
       });
     }
@@ -578,9 +584,9 @@ router.get(
 );
 
 /**
- * 共有Agent詳細取得エンドポイント
+ * Shared Agent detail retrieval endpoint
  * GET /shared-agents/:userId/:agentId
- * JWT認証必須
+ * JWT authentication required
  */
 router.get(
   '/shared-agents/:userId/:agentId',
@@ -593,12 +599,12 @@ router.get(
       if (!userId || !agentId) {
         return res.status(400).json({
           error: 'Invalid request',
-          message: 'UserIDまたはAgentIDが指定されていません',
+          message: 'User ID or Agent ID is not specified',
           requestId: auth.requestId,
         });
       }
 
-      console.log(`🔍 共有Agent詳細取得開始 (${auth.requestId}):`, {
+      console.log(`🔍 Shared Agent detail retrieval started (${auth.requestId}):`, {
         userId,
         agentId,
       });
@@ -609,12 +615,12 @@ router.get(
       if (!agent) {
         return res.status(404).json({
           error: 'Not Found',
-          message: '共有Agentが見つかりませんでした',
+          message: 'Shared Agent not found',
           requestId: auth.requestId,
         });
       }
 
-      console.log(`✅ 共有Agent詳細取得完了 (${auth.requestId}): ${agent.name}`);
+      console.log(`✅ Shared Agent detail retrieval completed (${auth.requestId}): ${agent.name}`);
 
       res.status(200).json({
         agent: toFrontendAgent(agent, true),
@@ -625,11 +631,11 @@ router.get(
       });
     } catch (error) {
       const auth = getCurrentAuth(req);
-      console.error(`💥 共有Agent詳細取得エラー (${auth.requestId}):`, error);
+      console.error(`💥 Shared Agent detail retrieval error (${auth.requestId}):`, error);
 
       res.status(500).json({
         error: 'Internal Server Error',
-        message: error instanceof Error ? error.message : '共有Agent詳細の取得に失敗しました',
+        message: error instanceof Error ? error.message : 'Failed to retrieve shared Agent details',
         requestId: auth.requestId,
       });
     }
@@ -637,9 +643,9 @@ router.get(
 );
 
 /**
- * 共有Agentクローンエンドポイント
+ * Shared Agent clone endpoint
  * POST /shared-agents/:userId/:agentId/clone
- * JWT認証必須
+ * JWT authentication required
  */
 router.post(
   '/shared-agents/:userId/:agentId/clone',
@@ -653,7 +659,7 @@ router.post(
       if (!targetUserId) {
         return res.status(400).json({
           error: 'Invalid authentication',
-          message: 'ユーザーIDが取得できませんでした',
+          message: 'Failed to retrieve user ID',
           requestId: auth.requestId,
         });
       }
@@ -661,12 +667,12 @@ router.post(
       if (!sourceUserId || !sourceAgentId) {
         return res.status(400).json({
           error: 'Invalid request',
-          message: 'ソースUserIDまたはAgentIDが指定されていません',
+          message: 'Source User ID or Agent ID is not specified',
           requestId: auth.requestId,
         });
       }
 
-      console.log(`📥 共有Agentクローン開始 (${auth.requestId}):`, {
+      console.log(`📥 Shared Agent clone started (${auth.requestId}):`, {
         targetUserId,
         targetUsername: auth.username,
         sourceUserId,
@@ -681,7 +687,7 @@ router.post(
         auth.username
       );
 
-      console.log(`✅ 共有Agentクローン完了 (${auth.requestId}): ${clonedAgent.agentId}`);
+      console.log(`✅ Shared Agent clone completed (${auth.requestId}): ${clonedAgent.agentId}`);
 
       res.status(201).json({
         agent: toFrontendAgent(clonedAgent),
@@ -693,19 +699,19 @@ router.post(
       });
     } catch (error) {
       const auth = getCurrentAuth(req);
-      console.error(`💥 共有Agentクローンエラー (${auth.requestId}):`, error);
+      console.error(`💥 Shared Agent clone error (${auth.requestId}):`, error);
 
       if (error instanceof Error && error.message === 'Shared agent not found') {
         return res.status(404).json({
           error: 'Not Found',
-          message: '共有Agentが見つかりませんでした',
+          message: 'Shared Agent not found',
           requestId: auth.requestId,
         });
       }
 
       res.status(500).json({
         error: 'Internal Server Error',
-        message: error instanceof Error ? error.message : '共有Agentのクローンに失敗しました',
+        message: error instanceof Error ? error.message : 'Failed to clone shared Agent',
         requestId: auth.requestId,
       });
     }

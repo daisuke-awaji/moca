@@ -42,6 +42,26 @@ export default tseslint.config(
       ],
     },
   },
+  // Agent と Backend パッケージ: 日本語文字列を検出
+  {
+    files: ['packages/agent/**/*.ts', 'packages/backend/**/*.ts'],
+    rules: {
+      'no-restricted-syntax': [
+        'warn',
+        {
+          selector: 'Literal[value=/[\\u3040-\\u309F\\u30A0-\\u30FF\\u4E00-\\u9FAF]/]',
+          message:
+            'Japanese characters detected in string literal. Backend code should use English only.',
+        },
+        {
+          selector:
+            'TemplateLiteral[quasis] > TemplateElement[value.raw=/[\\u3040-\\u309F\\u30A0-\\u30FF\\u4E00-\\u9FAF]/]',
+          message:
+            'Japanese characters detected in template literal. Backend code should use English only.',
+        },
+      ],
+    },
+  },
   // Frontend パッケージ専用設定: React関連のルールを適用
   {
     files: ['packages/frontend/**/*.{ts,tsx}'],

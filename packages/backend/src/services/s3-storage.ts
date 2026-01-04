@@ -462,13 +462,13 @@ export async function getFolderTree(userId: string): Promise<FolderNode[]> {
     }
   }
 
-  // ディレクトリパスをソート
+  // Sort directory paths
   const sortedDirPaths = Array.from(dirPaths).sort();
 
-  // ツリー構造を構築
+  // Build tree structure
   const root: FolderNode = {
     path: '/',
-    name: 'ルート',
+    name: 'Root',
     children: [],
   };
 

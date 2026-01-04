@@ -1,8 +1,8 @@
 /**
  * WorkspaceSync Integration Tests
- * 実際のS3に接続してファイル同期をテスト
+ * Test file synchronization with actual S3 connection
  *
- * 実行方法:
+ * How to run:
  * cd packages/agent
  * npx jest --testMatch="glob-pattern-for-integration-tests"
  */
@@ -18,7 +18,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 
-// 環境変数チェック
+// Check environment variables
 const BUCKET_NAME = process.env.USER_STORAGE_BUCKET_NAME;
 const AWS_REGION = process.env.AWS_REGION || 'us-west-2';
 const TEST_USER_ID = 'test-user-' + Date.now();
@@ -47,30 +47,30 @@ describe('WorkspaceSync Integration Tests', () => {
   });
 
   beforeEach(() => {
-    // テスト用の一時ワークスペースディレクトリを作成
+    // Create temporary workspace directory for testing
     testWorkspaceDir = fs.mkdtempSync(path.join(os.tmpdir(), 'workspace-sync-test-'));
 
-    // WorkspaceSyncインスタンスを作成
+    // Create WorkspaceSync instance
     workspaceSync = new WorkspaceSync(TEST_USER_ID, TEST_STORAGE_PATH);
 
-    // ワークスペースディレクトリを上書き（テスト用）
+    // Override workspace directory (for testing)
     (workspaceSync as any).workspaceDir = testWorkspaceDir;
 
     console.log(`📁 Test workspace: ${testWorkspaceDir}`);
   });
 
   afterEach(async () => {
-    // ローカルのテストディレクトリをクリーンアップ
+    // Cleanup local test directory
     if (fs.existsSync(testWorkspaceDir)) {
       fs.rmSync(testWorkspaceDir, { recursive: true, force: true });
     }
 
-    // S3のテストファイルをクリーンアップ
+    // Cleanup S3 test files
     await cleanupS3TestFiles();
   });
 
   /**
-   * S3のテストファイルを削除
+   * Delete S3 test files
    */
   async function cleanupS3TestFiles(): Promise<void> {
     try {
@@ -99,7 +99,7 @@ describe('WorkspaceSync Integration Tests', () => {
   }
 
   /**
-   * S3にテストファイルをアップロード
+   * Upload test file to S3
    */
   async function uploadTestFileToS3(fileName: string, content: string): Promise<void> {
     const command = new PutObjectCommand({
@@ -112,7 +112,7 @@ describe('WorkspaceSync Integration Tests', () => {
   }
 
   /**
-   * S3にファイルが存在するかチェック
+   * Check if file exists in S3
    */
   async function fileExistsInS3(fileName: string): Promise<boolean> {
     const listCommand = new ListObjectsV2Command({
@@ -124,18 +124,18 @@ describe('WorkspaceSync Integration Tests', () => {
     return (response.Contents?.length ?? 0) > 0;
   }
 
-  describe('初期同期 (S3 → ローカル)', () => {
-    test('S3からファイルをダウンロードできる', async () => {
-      // S3にテストファイルを配置
+  describe('Initial sync (S3 → Local)', () => {
+    test('Can download files from S3', async () => {
+      // Place test file in S3
       const testFileName = 'test-download.txt';
       const testContent = 'Hello from S3!';
       await uploadTestFileToS3(testFileName, testContent);
 
-      // 初期同期を実行
+      // Execute initial sync
       workspaceSync.startInitialSync();
       await workspaceSync.waitForInitialSync();
 
-      // ローカルにファイルがダウンロードされたことを確認
+      // Verify file was downloaded locally
       const localFilePath = path.join(testWorkspaceDir, testFileName);
       expect(fs.existsSync(localFilePath)).toBe(true);
 
@@ -145,8 +145,8 @@ describe('WorkspaceSync Integration Tests', () => {
       console.log('✅ File downloaded successfully from S3');
     }, 30000);
 
-    test('複数ファイルを一度にダウンロードできる', async () => {
-      // 複数のテストファイルを配置
+    test('Can download multiple files at once', async () => {
+      // Place multiple test files
       const files = [
         { name: 'file1.txt', content: 'Content 1' },
         { name: 'file2.txt', content: 'Content 2' },
@@ -157,11 +157,11 @@ describe('WorkspaceSync Integration Tests', () => {
         await uploadTestFileToS3(file.name, file.content);
       }
 
-      // 初期同期を実行
+      // Execute initial sync
       workspaceSync.startInitialSync();
       await workspaceSync.waitForInitialSync();
 
-      // 全てのファイルがダウンロードされたことを確認
+      // Verify all files were downloaded
       for (const file of files) {
         const localFilePath = path.join(testWorkspaceDir, file.name);
         expect(fs.existsSync(localFilePath)).toBe(true);
@@ -173,12 +173,12 @@ describe('WorkspaceSync Integration Tests', () => {
       console.log('✅ Multiple files downloaded successfully');
     }, 30000);
 
-    test('空のS3でもエラーなく同期完了する', async () => {
-      // S3にファイルがない状態で初期同期
+    test('Sync completes without error even with empty S3', async () => {
+      // Initial sync with no files in S3
       workspaceSync.startInitialSync();
       await workspaceSync.waitForInitialSync();
 
-      // エラーなく完了することを確認
+      // Verify completion without error
       const files = fs.readdirSync(testWorkspaceDir);
       expect(files.length).toBe(0);
 
@@ -186,61 +186,61 @@ describe('WorkspaceSync Integration Tests', () => {
     }, 30000);
   });
 
-  describe('変更同期 (ローカル → S3)', () => {
-    test('新規ファイルをS3にアップロードできる', async () => {
-      // 初期同期を完了
+  describe('Change sync (Local → S3)', () => {
+    test('Can upload new files to S3', async () => {
+      // Complete initial sync
       workspaceSync.startInitialSync();
       await workspaceSync.waitForInitialSync();
 
-      // ローカルに新規ファイルを作成
+      // Create new file locally
       const testFileName = 'test-upload.txt';
       const testContent = 'Hello from local!';
       const localFilePath = path.join(testWorkspaceDir, testFileName);
       fs.writeFileSync(localFilePath, testContent);
 
-      // S3へ同期
+      // Sync to S3
       const result = await workspaceSync.syncToS3();
 
-      // 同期が成功したことを確認
+      // Verify sync was successful
       expect(result.success).toBe(true);
       expect(result.uploadedFiles).toBe(1);
 
-      // S3にファイルが存在することを確認
+      // Verify file exists in S3
       const existsInS3 = await fileExistsInS3(testFileName);
       expect(existsInS3).toBe(true);
 
       console.log('✅ File uploaded successfully to S3');
     }, 30000);
 
-    test('変更されたファイルのみアップロードする', async () => {
-      // S3に2つのファイルを配置
+    test('Upload only changed files', async () => {
+      // Place two files in S3
       await uploadTestFileToS3('unchanged.txt', 'Original content');
       await uploadTestFileToS3('to-change.txt', 'Original content');
 
-      // 初期同期を実行
+      // Execute initial sync
       workspaceSync.startInitialSync();
       await workspaceSync.waitForInitialSync();
 
-      // 1つのファイルだけを変更
+      // Change only one file
       const changedFilePath = path.join(testWorkspaceDir, 'to-change.txt');
       fs.writeFileSync(changedFilePath, 'Modified content');
 
-      // S3へ同期
+      // Sync to S3
       const result = await workspaceSync.syncToS3();
 
-      // 変更されたファイルのみがアップロードされたことを確認
+      // Verify only changed file was uploaded
       expect(result.success).toBe(true);
       expect(result.uploadedFiles).toBe(1);
 
       console.log('✅ Only changed file was uploaded');
     }, 30000);
 
-    test('複数のファイルを一度にアップロードできる', async () => {
-      // 初期同期を完了
+    test('Can upload multiple files at once', async () => {
+      // Complete initial sync
       workspaceSync.startInitialSync();
       await workspaceSync.waitForInitialSync();
 
-      // 複数のファイルを作成
+      // Create multiple files
       const files = [
         { name: 'upload1.txt', content: 'Upload 1' },
         { name: 'upload2.txt', content: 'Upload 2' },
@@ -256,14 +256,14 @@ describe('WorkspaceSync Integration Tests', () => {
         fs.writeFileSync(filePath, file.content);
       }
 
-      // S3へ同期
+      // Sync to S3
       const result = await workspaceSync.syncToS3();
 
-      // 全てのファイルがアップロードされたことを確認
+      // Verify all files were uploaded
       expect(result.success).toBe(true);
       expect(result.uploadedFiles).toBe(3);
 
-      // S3に全てのファイルが存在することを確認
+      // Verify all files exist in S3
       for (const file of files) {
         const exists = await fileExistsInS3(file.name);
         expect(exists).toBe(true);
@@ -273,24 +273,24 @@ describe('WorkspaceSync Integration Tests', () => {
     }, 30000);
   });
 
-  describe('双方向同期', () => {
-    test('S3からダウンロード後、変更してアップロードできる', async () => {
-      // S3にファイルを配置
+  describe('Bidirectional sync', () => {
+    test('Can download from S3, modify, and upload', async () => {
+      // Place file in S3
       const fileName = 'roundtrip.txt';
       await uploadTestFileToS3(fileName, 'Original from S3');
 
-      // 初期同期でダウンロード
+      // Download with initial sync
       workspaceSync.startInitialSync();
       await workspaceSync.waitForInitialSync();
 
-      // ファイルを変更
+      // Modify file
       const filePath = path.join(testWorkspaceDir, fileName);
       const originalContent = fs.readFileSync(filePath, 'utf-8');
       expect(originalContent).toBe('Original from S3');
 
       fs.writeFileSync(filePath, 'Modified locally');
 
-      // S3へアップロード
+      // Upload to S3
       const result = await workspaceSync.syncToS3();
       expect(result.success).toBe(true);
       expect(result.uploadedFiles).toBe(1);
@@ -299,19 +299,19 @@ describe('WorkspaceSync Integration Tests', () => {
     }, 30000);
   });
 
-  describe('エラーハンドリング', () => {
-    test('バケット名が未設定の場合はスキップする', () => {
-      // 環境変数を一時的に削除
+  describe('Error handling', () => {
+    test('Skip if bucket name is not set', () => {
+      // Temporarily remove environment variable
       const originalBucket = process.env.USER_STORAGE_BUCKET_NAME;
       delete process.env.USER_STORAGE_BUCKET_NAME;
 
       const sync = new WorkspaceSync(TEST_USER_ID, TEST_STORAGE_PATH);
       sync.startInitialSync();
 
-      // エラーにならずに完了することを確認
+      // Verify completion without error
       expect(() => sync.waitForInitialSync()).not.toThrow();
 
-      // 環境変数を復元
+      // Restore environment variable
       process.env.USER_STORAGE_BUCKET_NAME = originalBucket;
 
       console.log('✅ Handled missing bucket name gracefully');

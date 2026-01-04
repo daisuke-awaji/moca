@@ -227,6 +227,15 @@ agentDirectory:
   itemsDisplayed: 件表示
   hasMore: 続きあり
   allLoaded: 全件表示完了
+  addToMyAgents: マイエージェントに追加
+  addingToMyAgents: マイエージェントに追加中...
+  unshare: 共有を解除する
+  unsharing: 共有を解除中...
+  addSuccess: エージェントをマイエージェントに追加しました！
+  addFailed: エージェントの追加に失敗しました
+  unshareSuccess: 共有を解除しました
+  unshareFailed: 共有解除に失敗しました
+  userIdNotFound: エージェントのユーザーIDが見つかりません
 
 # ツール
 tool:

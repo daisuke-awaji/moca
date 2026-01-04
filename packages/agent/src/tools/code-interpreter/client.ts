@@ -1,5 +1,5 @@
 /**
- * AgentCore CodeInterpreter クライアント実装
+ * AgentCore CodeInterpreter client implementation
  */
 
 import {
@@ -29,11 +29,11 @@ import type {
   DownloadedFile,
 } from './types.js';
 
-// モジュールレベルのセッションキャッシュ - オブジェクト間で永続化
+// Module-level session cache - persists across objects
 const sessionMapping: Map<string, string> = new Map();
 
 /**
- * AgentCore CodeInterpreter クライアント
+ * AgentCore CodeInterpreter client
  */
 export class AgentCoreCodeInterpreterClient {
   private region: string;
@@ -67,14 +67,14 @@ export class AgentCoreCodeInterpreterClient {
   }
 
   /**
-   * セッションを初期化
+   * Initialize session
    */
   async initSession(action: InitSessionAction): Promise<ToolResult> {
     logger.info(`Initializing Bedrock AgentCore sandbox session: ${action.description}`);
 
     const sessionName = action.sessionName;
 
-    // インスタンスキャッシュに既に存在するかチェック
+    // Check if already exists in instance cache
     if (this.sessions.has(sessionName)) {
       return {
         status: 'error',
@@ -82,7 +82,7 @@ export class AgentCoreCodeInterpreterClient {
       };
     }
 
-    // モジュールレベルキャッシュで既に使用されているかチェック
+    // Check if already in use by module-level cache
     if (sessionMapping.has(sessionName)) {
       const errorMsg =
         `Session '${sessionName}' is already in use by another instance. ` +
@@ -96,20 +96,20 @@ export class AgentCoreCodeInterpreterClient {
     }
 
     try {
-      // セッション開始
+      // Start session
       const command = new StartCodeInterpreterSessionCommand({
         codeInterpreterIdentifier: this.identifier,
         name: sessionName,
-        sessionTimeoutSeconds: 900, // 15分
+        sessionTimeoutSeconds: 900, // 15 minutes
       });
 
       const response = await this.client.send(command);
       const awsSessionId = response.sessionId!;
 
-      // モジュールレベルキャッシュに保存
+      // Save to module-level cache
       sessionMapping.set(sessionName, awsSessionId);
 
-      // ローカルセッション情報を保存
+      // Save local session information
       this.sessions.set(sessionName, {
         sessionId: sessionName,
         description: action.description,
@@ -141,7 +141,7 @@ export class AgentCoreCodeInterpreterClient {
   }
 
   /**
-   * セッション一覧を取得
+   * Get list of sessions
    */
   listLocalSessions(): ToolResult {
     const sessionsInfo = Array.from(this.sessions.values()).map((info) => ({
@@ -164,27 +164,27 @@ export class AgentCoreCodeInterpreterClient {
   }
 
   /**
-   * セッションの存在確認・作成
+   * Check session existence and create if needed
    */
   private async ensureSession(sessionName?: string): Promise<[string, ToolResult | null]> {
     const targetSession = sessionName || this.defaultSession;
 
     logger.debug(`Ensuring session: ${targetSession}`);
 
-    // ローカルキャッシュを確認
+    // Check local cache
     if (this.sessions.has(targetSession)) {
       logger.debug(`Using cached session: ${targetSession}`);
       return [targetSession, null];
     }
 
-    // モジュールレベルキャッシュを確認
+    // Check module-level cache
     const awsSessionId = sessionMapping.get(targetSession);
 
     if (awsSessionId) {
       logger.debug(`Found session in module cache: ${targetSession} -> ${awsSessionId}`);
 
       try {
-        // セッションの状態を確認
+        // Check session status
         const command = new GetCodeInterpreterSessionCommand({
           codeInterpreterIdentifier: this.identifier,
           sessionId: awsSessionId,
@@ -193,7 +193,7 @@ export class AgentCoreCodeInterpreterClient {
         const sessionInfo = await this.client.send(command);
 
         if (sessionInfo.status === 'READY') {
-          // セッションは準備完了 - 再接続
+          // Session is ready - reconnect
           this.sessions.set(targetSession, {
             sessionId: targetSession,
             description: 'Reconnected via module cache',
@@ -203,18 +203,18 @@ export class AgentCoreCodeInterpreterClient {
           logger.info(`Reconnected to existing session: ${targetSession}`);
           return [targetSession, null];
         } else {
-          // セッションが準備完了でない - キャッシュから削除
+          // Session not ready - remove from cache
           logger.warn(`Session ${targetSession} not READY, removing from cache`);
           sessionMapping.delete(targetSession);
         }
       } catch (error) {
-        // セッションが存在しないかエラー - キャッシュから削除
+        // Session doesn't exist or error - remove from cache
         logger.debug(`Session reconnection failed: ${error}`);
         sessionMapping.delete(targetSession);
       }
     }
 
-    // セッションが見つからない場合
+    // If session not found
     if (this.autoCreate) {
       logger.info(`Auto-creating session: ${targetSession}`);
 
@@ -234,13 +234,13 @@ export class AgentCoreCodeInterpreterClient {
       return [targetSession, null];
     }
 
-    // autoCreate=false でセッションが存在しない
+    // Session doesn't exist with autoCreate=false
     logger.debug(`Session '${targetSession}' not found (auto_create disabled)`);
     throw new Error(`Session '${targetSession}' not found. Create it first using initSession.`);
   }
 
   /**
-   * コードを実行
+   * Execute code
    */
   async executeCode(action: ExecuteCodeAction): Promise<ToolResult> {
     const [sessionName, error] = await this.ensureSession(action.sessionName);
@@ -275,7 +275,7 @@ export class AgentCoreCodeInterpreterClient {
   }
 
   /**
-   * コマンドを実行
+   * Execute command
    */
   async executeCommand(action: ExecuteCommandAction): Promise<ToolResult> {
     const [sessionName, error] = await this.ensureSession(action.sessionName);
@@ -308,7 +308,7 @@ export class AgentCoreCodeInterpreterClient {
   }
 
   /**
-   * ファイルを読み取り
+   * Read files
    */
   async readFiles(action: ReadFilesAction): Promise<ToolResult> {
     const [sessionName, error] = await this.ensureSession(action.sessionName);
@@ -341,7 +341,7 @@ export class AgentCoreCodeInterpreterClient {
   }
 
   /**
-   * ファイル一覧を取得
+   * List files
    */
   async listFiles(action: ListFilesAction): Promise<ToolResult> {
     const [sessionName, error] = await this.ensureSession(action.sessionName);
@@ -374,7 +374,7 @@ export class AgentCoreCodeInterpreterClient {
   }
 
   /**
-   * ファイルを削除
+   * Remove files
    */
   async removeFiles(action: RemoveFilesAction): Promise<ToolResult> {
     const [sessionName, error] = await this.ensureSession(action.sessionName);
@@ -407,7 +407,7 @@ export class AgentCoreCodeInterpreterClient {
   }
 
   /**
-   * ファイルを書き込み
+   * Write files
    */
   async writeFiles(action: WriteFilesAction): Promise<ToolResult> {
     const [sessionName, error] = await this.ensureSession(action.sessionName);
@@ -445,7 +445,7 @@ export class AgentCoreCodeInterpreterClient {
   }
 
   /**
-   * ファイルをダウンロード
+   * Download files
    */
   async downloadFiles(action: DownloadFilesAction): Promise<ToolResult> {
     const [sessionName, error] = await this.ensureSession(action.sessionName);
@@ -454,7 +454,7 @@ export class AgentCoreCodeInterpreterClient {
     logger.debug(`Downloading ${action.sourcePaths.length} files from session '${sessionName}'`);
 
     try {
-      // 宛先ディレクトリの検証・作成
+      // Validate and create destination directory
       if (!path.isAbsolute(action.destinationDir)) {
         return {
           status: 'error',
@@ -464,10 +464,10 @@ export class AgentCoreCodeInterpreterClient {
         };
       }
 
-      // 宛先ディレクトリを作成（存在しない場合）
+      // Create destination directory (if it doesn't exist)
       fs.mkdirSync(action.destinationDir, { recursive: true });
 
-      // サンドボックス内でファイルをbase64エンコードするPythonコードを生成
+      // Generate Python code to base64 encode files in sandbox
       const sourcePathsJson = JSON.stringify(action.sourcePaths);
       const encodeCode = `
 import base64
@@ -480,7 +480,7 @@ cwd = os.getcwd()
 
 for path in source_paths:
     try:
-        # 相対パスの場合、作業ディレクトリからの相対パスとして解釈
+        # For relative paths, interpret as relative from working directory
         full_path = path if os.path.isabs(path) else os.path.join(cwd, path)
         
         if not os.path.exists(full_path):
@@ -496,16 +496,16 @@ for path in source_paths:
     except Exception as e:
         results[path] = {"error": str(e)}
 
-# 結果をファイルに保存（cwdを使用）
+# Save results to file (using cwd)
 result_file = "__download_results__.json"
 with open(result_file, 'w') as f:
     json.dump(results, f)
 
-# ファイルパスのみを出力
+# Output only the file path
 print(result_file)
 `;
 
-      // エンコードコードをサンドボックスで実行
+      // Execute encoding code in sandbox
       const sessionInfo = this.sessions.get(sessionName)!;
 
       const command = new InvokeCodeInterpreterCommand({
@@ -533,12 +533,12 @@ print(result_file)
         };
       }
 
-      // 実行結果からJSONファイルのパスを取得
+      // Get JSON file path from execution result
       const content = executionResult.content[0];
       let resultFilePath: string;
 
       if (content.text) {
-        // content.textがJSON配列の場合、パースしてtextフィールドを抽出
+        // If content.text is JSON array, parse and extract text field
         const outputText = content.text.trim();
         try {
           const parsed = JSON.parse(outputText);
@@ -548,7 +548,7 @@ print(result_file)
             resultFilePath = outputText;
           }
         } catch {
-          // JSONでない場合はそのまま使用
+          // Use as-is if not JSON
           resultFilePath = outputText;
         }
       } else {
@@ -560,7 +560,7 @@ print(result_file)
 
       logger.debug(`Result file path: ${resultFilePath}`);
 
-      // readFiles APIを使ってJSONファイルを読み取る
+      // Read JSON file using readFiles API
       const readAction: ReadFilesAction = {
         action: 'readFiles',
         sessionName: sessionName,
@@ -580,17 +580,17 @@ print(result_file)
         };
       }
 
-      // JSONファイルの内容を取得
+      // Get JSON file content
       const fileContent = readResult.content[0];
       let resultsJson: string;
 
       if (fileContent.text) {
-        // textがJSON配列文字列の場合、パースして実際のテキストを抽出
+        // If text is JSON array string, parse and extract actual text
         try {
           const parsed = JSON.parse(fileContent.text);
           if (Array.isArray(parsed) && parsed.length > 0) {
             const firstItem = parsed[0];
-            // resource型の場合、resource.textからデータを取得
+            // For resource type, get data from resource.text
             if (firstItem.type === 'resource' && firstItem.resource?.text) {
               resultsJson = firstItem.resource.text;
             } else if (firstItem.text) {
@@ -602,7 +602,7 @@ print(result_file)
             resultsJson = fileContent.text;
           }
         } catch {
-          // JSONパースに失敗した場合はそのまま使用
+          // Use as-is if JSON parse fails
           resultsJson = fileContent.text;
         }
       } else {
@@ -614,7 +614,7 @@ print(result_file)
 
       logger.debug(`Read JSON content (length: ${resultsJson.length})`);
 
-      // JSONをパース
+      // Parse JSON
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let fileResults: Record<string, any>;
       try {
@@ -631,7 +631,7 @@ print(result_file)
         };
       }
 
-      // 一時ファイルを削除
+      // Remove temporary file
       try {
         await this.removeFiles({
           action: 'removeFiles',
@@ -643,7 +643,7 @@ print(result_file)
         logger.warn(`Failed to cleanup temporary file ${resultFilePath}: ${cleanupError}`);
       }
 
-      // 各ファイル結果を処理
+      // Process each file result
       const downloadedFiles: DownloadedFile[] = [];
       const errors: string[] = [];
 
@@ -654,14 +654,14 @@ print(result_file)
         }
 
         try {
-          // base64データをデコード
+          // Decode base64 data
           const fileData = Buffer.from(result.data, 'base64');
 
-          // ローカルファイルパスを決定
+          // Determine local file path
           const sourceFilename = path.basename(sourcePath);
           let localPath = path.join(action.destinationDir, sourceFilename);
 
-          // ファイル名の重複を処理
+          // Handle filename duplicates
           let counter = 1;
           const baseName = sourceFilename;
           while (fs.existsSync(localPath)) {
@@ -676,7 +676,7 @@ print(result_file)
             counter++;
           }
 
-          // ファイルをローカルファイルシステムに書き込み
+          // Write file to local filesystem
           fs.writeFileSync(localPath, fileData);
 
           downloadedFiles.push({
@@ -691,7 +691,7 @@ print(result_file)
         }
       }
 
-      // レスポンスを準備
+      // Prepare response
       if (errors.length > 0 && downloadedFiles.length === 0) {
         return {
           status: 'error',
@@ -724,39 +724,39 @@ print(result_file)
   }
 
   /**
-   * ストリーミングレスポンスからツール結果を作成
+   * Create tool result from streaming response
    */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private async createToolResult(response: any): Promise<ToolResult> {
     logger.debug(`Processing response: ${JSON.stringify(response, null, 2)}`);
 
     if (response.stream) {
-      // ストリーミングレスポンスを処理
+      // Process streaming response
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const results: any[] = [];
 
       try {
-        // AWS SDK v3 のストリーミングレスポンスを処理
+        // Process AWS SDK v3 streaming response
         for await (const event of response.stream) {
           logger.debug(`Stream event: ${JSON.stringify(event)}`);
 
           if (event.result) {
             results.push(event.result);
           } else if (event.chunk) {
-            // チャンク形式の場合
+            // If chunk format
             results.push(event.chunk);
           } else {
-            // その他のイベント形式
+            // Other event formats
             results.push(event);
           }
         }
 
         if (results.length > 0) {
-          // 最後の結果を使用
+          // Use last result
           const lastResult = results[results.length - 1];
           const isError = response.isError || false;
 
-          // 結果の内容に応じてフォーマット
+          // Format according to result content
           const content = lastResult.content || lastResult;
           if (typeof content === 'string') {
             return {
@@ -784,12 +784,12 @@ print(result_file)
       }
     }
 
-    // ストリーミングではないレスポンス
+    // Non-streaming response
     return response;
   }
 
   /**
-   * クリーンアップ処理
+   * Cleanup processing
    */
   async cleanup(): Promise<void> {
     if (!this.persistSessions) {

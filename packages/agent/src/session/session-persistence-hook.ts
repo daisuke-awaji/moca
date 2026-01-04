@@ -1,6 +1,6 @@
 /**
- * セッション永続化フック
- * Agent の実行前後で会話履歴を自動保存する HookProvider
+ * Session persistence hook
+ * HookProvider that automatically saves conversation history before and after Agent execution
  */
 
 import { HookProvider, HookRegistry, AfterInvocationEvent } from '@strands-agents/sdk';
@@ -8,9 +8,9 @@ import { SessionConfig, SessionStorage } from './types.js';
 import { logger } from '../config/index.js';
 
 /**
- * Agent のライフサイクルイベントに応答してセッション履歴を永続化するフック
+ * Hook that persists session history in response to Agent lifecycle events
  *
- * 使用方法:
+ * Usage:
  * const hook = new SessionPersistenceHook(storage, { actorId: "user123", sessionId: "session456" });
  * const agent = new Agent({ hooks: [hook] });
  */
@@ -21,17 +21,17 @@ export class SessionPersistenceHook implements HookProvider {
   ) {}
 
   /**
-   * フックコールバックをレジストリに登録
+   * Register hook callbacks to registry
    */
   registerCallbacks(registry: HookRegistry): void {
-    // Agent 実行完了後に履歴を保存
+    // Save history after Agent execution completes
     registry.addCallback(AfterInvocationEvent, (event) => this.onAfterInvocation(event));
   }
 
   /**
-   * Agent 実行完了後のイベントハンドラ
-   * 会話履歴をストレージに保存する
-   * リアルタイム保存されていない場合のフォールバック
+   * Event handler after Agent execution completes
+   * Save conversation history to storage
+   * Fallback for when real-time saving is not performed
    */
   private async onAfterInvocation(event: AfterInvocationEvent): Promise<void> {
     try {
@@ -42,16 +42,16 @@ export class SessionPersistenceHook implements HookProvider {
         `🔍 AfterInvocation: Agent messages=${messages.length}, checking for unsaved messages`
       );
 
-      // 会話履歴をストレージに保存（既に保存済みの場合は重複を避ける）
+      // Save conversation history to storage (avoid duplicates if already saved)
       await this.storage.saveMessages(this.sessionConfig, messages);
 
       logger.debug(
-        `💾 セッション履歴を自動保存完了 (フォールバック): ${actorId}/${sessionId} (${messages.length}件)`
+        `💾 Session history auto-save completed (fallback): ${actorId}/${sessionId} (${messages.length} items)`
       );
     } catch (error) {
-      // エラーが発生しても Agent の実行を止めないように警告レベルでログ
+      // Log at warning level to not stop Agent execution even if error occurs
       logger.warn(
-        `⚠️  セッション履歴の自動保存に失敗: ${this.sessionConfig.actorId}/${this.sessionConfig.sessionId}`,
+        `⚠️  Session history auto-save failed: ${this.sessionConfig.actorId}/${this.sessionConfig.sessionId}`,
         error
       );
     }

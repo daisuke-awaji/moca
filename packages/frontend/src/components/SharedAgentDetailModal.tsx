@@ -60,18 +60,18 @@ export const SharedAgentDetailModal: React.FC<SharedAgentDetailModalProps> = ({
       } else {
         // 共有エージェントの場合はクローン
         if (!agent.userId) {
-          toast.error('エージェントのユーザーIDが見つかりません');
+          toast.error(t('agentDirectory.userIdNotFound'));
           return;
         }
         await cloneAgent(agent.userId, agent.id);
       }
 
       await refreshAgents();
-      toast.success('エージェントをマイエージェントに追加しました！');
+      toast.success(t('agentDirectory.addSuccess'));
       onClose();
     } catch (error) {
       console.error('エージェントの追加に失敗:', error);
-      toast.error('エージェントの追加に失敗しました');
+      toast.error(t('agentDirectory.addFailed'));
     } finally {
       setIsCloning(false);
     }
@@ -83,11 +83,11 @@ export const SharedAgentDetailModal: React.FC<SharedAgentDetailModalProps> = ({
     try {
       await toggleShareAgent(agent.id);
       await fetchSharedAgents(); // 共有エージェント一覧を更新
-      toast.success('共有を解除しました');
+      toast.success(t('agentDirectory.unshareSuccess'));
       onClose();
     } catch (error) {
       console.error('共有解除に失敗:', error);
-      toast.error('共有解除に失敗しました');
+      toast.error(t('agentDirectory.unshareFailed'));
     } finally {
       setIsUnsharing(false);
     }
@@ -206,7 +206,7 @@ export const SharedAgentDetailModal: React.FC<SharedAgentDetailModalProps> = ({
                 disabled={isUnsharing}
                 className="px-4 py-2 text-sm text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                {isUnsharing ? '共有を解除中...' : '共有を解除する'}
+                {isUnsharing ? t('agentDirectory.unsharing') : t('agentDirectory.unshare')}
               </button>
             ) : (
               <button
@@ -214,7 +214,9 @@ export const SharedAgentDetailModal: React.FC<SharedAgentDetailModalProps> = ({
                 disabled={isCloning}
                 className="px-4 py-2 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                {isCloning ? 'マイエージェントに追加中...' : 'マイエージェントに追加'}
+                {isCloning
+                  ? t('agentDirectory.addingToMyAgents')
+                  : t('agentDirectory.addToMyAgents')}
               </button>
             )}
           </div>

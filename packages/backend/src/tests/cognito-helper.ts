@@ -1,5 +1,5 @@
 /**
- * Cognito 認証ヘルパー（テスト用）
+ * Cognito Authentication Helper (for testing)
  */
 
 import { AuthenticationDetails, CognitoUser, CognitoUserPool } from 'amazon-cognito-identity-js';
@@ -17,7 +17,7 @@ export interface AuthResult {
 }
 
 /**
- * Cognito認証のヘルパークラス
+ * Cognito authentication helper class
  */
 export class CognitoAuthHelper {
   private userPool: CognitoUserPool;
@@ -30,7 +30,7 @@ export class CognitoAuthHelper {
   }
 
   /**
-   * ユーザーログイン
+   * User login
    */
   async login(username: string, password: string): Promise<AuthResult> {
     return new Promise((resolve, reject) => {
@@ -50,7 +50,7 @@ export class CognitoAuthHelper {
           const accessToken = result.getAccessToken().getJwtToken();
           const refreshToken = result.getRefreshToken().getToken();
 
-          console.log('✅ Cognito 認証成功:', {
+          console.log('✅ Cognito authentication successful:', {
             username,
             idTokenLength: idToken.length,
             accessTokenLength: accessToken.length,
@@ -63,22 +63,22 @@ export class CognitoAuthHelper {
           });
         },
         onFailure: (err) => {
-          console.error('❌ Cognito 認証失敗:', err);
+          console.error('❌ Cognito authentication failed:', err);
           reject(err);
         },
         newPasswordRequired: (userAttributes, requiredAttributes) => {
-          console.log('🔐 新しいパスワードが必要:', {
+          console.log('🔐 New password required:', {
             userAttributes,
             requiredAttributes,
           });
-          reject(new Error('新しいパスワードが必要です'));
+          reject(new Error('New password is required'));
         },
       });
     });
   }
 
   /**
-   * JWT トークンのデコード（デバッグ用）
+   * JWT token decoding (for debugging)
    */
   decodeJWT(token: string): Record<string, unknown> | null {
     try {
@@ -86,13 +86,13 @@ export class CognitoAuthHelper {
       const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString());
       return payload;
     } catch (error) {
-      console.error('JWT デコードエラー:', error);
+      console.error('JWT decoding error:', error);
       return null;
     }
   }
 
   /**
-   * JWT トークンの有効期限チェック
+   * JWT token expiration check
    */
   isTokenExpired(token: string): boolean {
     const payload = this.decodeJWT(token);

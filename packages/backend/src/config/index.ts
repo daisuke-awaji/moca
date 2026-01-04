@@ -1,56 +1,56 @@
 /**
  * Backend API Configuration
- * 環境変数とアプリケーション設定を管理
+ * Manage environment variables and application settings
  */
 
 import { config as loadEnv } from 'dotenv';
 import { z } from 'zod';
 
-// 環境変数を読み込み
+// Load environment variables
 loadEnv();
 
 /**
- * 環境変数スキーマ定義
+ * Environment variable schema definition
  */
 const envSchema = z.object({
-  // サーバー設定
+  // Server configuration
   PORT: z.string().default('3000').transform(Number),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
 
-  // Cognito/JWKS 設定
+  // Cognito/JWKS configuration
   COGNITO_USER_POOL_ID: z.string().optional(),
   COGNITO_REGION: z.string().optional(),
   JWKS_URI: z.string().url().optional(),
 
-  // CORS 設定
+  // CORS configuration
   CORS_ALLOWED_ORIGINS: z.string().default('*'),
 
-  // JWT 設定
+  // JWT configuration
   JWT_ISSUER: z.string().optional(),
   JWT_AUDIENCE: z.string().optional(),
 
-  // AgentCore Memory 設定
+  // AgentCore Memory configuration
   AGENTCORE_MEMORY_ID: z.string().optional(),
   AWS_REGION: z.string().default('us-east-1'),
 
-  // AgentCore Gateway 設定
+  // AgentCore Gateway configuration
   AGENTCORE_GATEWAY_ENDPOINT: z.string().url().optional(),
 
-  // User Storage 設定
+  // User Storage configuration
   USER_STORAGE_BUCKET_NAME: z.string().optional(),
 
-  // Agents Table 設定
+  // Agents Table configuration
   AGENTS_TABLE_NAME: z.string().optional(),
 });
 
 /**
- * 環境変数を検証してパース
+ * Validate and parse environment variables
  */
 function parseEnv() {
   try {
     return envSchema.parse(process.env);
   } catch (error) {
-    console.error('❌ 無効な環境変数設定:', error);
+    console.error('❌ Invalid environment variable configuration:', error);
     process.exit(1);
   }
 }
@@ -58,26 +58,26 @@ function parseEnv() {
 const env = parseEnv();
 
 /**
- * アプリケーション設定
+ * Application configuration
  */
 export const config = {
-  // サーバー設定
+  // Server configuration
   port: env.PORT,
   nodeEnv: env.NODE_ENV,
   isDevelopment: env.NODE_ENV === 'development',
   isProduction: env.NODE_ENV === 'production',
 
-  // JWKS 設定を構築
+  // Build JWKS configuration
   jwks: {
     uri:
       env.JWKS_URI ||
       (env.COGNITO_USER_POOL_ID && env.COGNITO_REGION
         ? `https://cognito-idp.${env.COGNITO_REGION}.amazonaws.com/${env.COGNITO_USER_POOL_ID}/.well-known/jwks.json`
         : undefined),
-    cacheDuration: 10 * 60 * 1000, // 10分間キャッシュ
+    cacheDuration: 10 * 60 * 1000, // Cache for 10 minutes
   },
 
-  // JWT 設定
+  // JWT configuration
   jwt: {
     issuer:
       env.JWT_ISSUER ||
@@ -88,64 +88,64 @@ export const config = {
     algorithms: ['RS256'] as const,
   },
 
-  // CORS 設定
+  // CORS configuration
   cors: {
     allowedOrigins: env.CORS_ALLOWED_ORIGINS.split(',').map((origin) => origin.trim()),
   },
 
-  // AgentCore Memory 設定
+  // AgentCore Memory configuration
   agentcore: {
     memoryId: env.AGENTCORE_MEMORY_ID,
     region: env.AWS_REGION,
   },
 
-  // AgentCore Gateway 設定
+  // AgentCore Gateway configuration
   gateway: {
     endpoint: env.AGENTCORE_GATEWAY_ENDPOINT,
   },
 
-  // User Storage 設定
+  // User Storage configuration
   userStorageBucketName: env.USER_STORAGE_BUCKET_NAME,
 
-  // Agents Table 設定
+  // Agents Table configuration
   agentsTableName: env.AGENTS_TABLE_NAME,
 } as const;
 
 /**
- * 設定検証
+ * Validate configuration
  */
 export function validateConfig() {
   const issues: string[] = [];
 
   if (!config.jwks.uri) {
     issues.push(
-      'JWKS URI が設定されていません (JWKS_URI または COGNITO_USER_POOL_ID + COGNITO_REGION が必要)'
+      'JWKS URI is not configured (JWKS_URI or COGNITO_USER_POOL_ID + COGNITO_REGION required)'
     );
   }
 
   if (!config.jwt.issuer) {
     issues.push(
-      'JWT Issuer が設定されていません (JWT_ISSUER または COGNITO_USER_POOL_ID + COGNITO_REGION が必要)'
+      'JWT Issuer is not configured (JWT_ISSUER or COGNITO_USER_POOL_ID + COGNITO_REGION required)'
     );
   }
 
   if (issues.length > 0) {
-    console.warn('⚠️  設定に問題があります:');
+    console.warn('⚠️  Configuration issues found:');
     issues.forEach((issue) => console.warn(`  - ${issue}`));
 
     if (config.isProduction) {
-      console.error('❌ 本番環境では全ての設定が必要です');
+      console.error('❌ All configurations are required in production environment');
       process.exit(1);
     } else {
-      console.warn('🔧 開発環境では警告として継続します');
+      console.warn('🔧 Continuing with warnings in development environment');
     }
   }
 }
 
-// 初期化時に設定を検証
+// Validate configuration on initialization
 validateConfig();
 
-console.log('⚙️  Backend API 設定が読み込まれました:', {
+console.log('⚙️  Backend API configuration loaded:', {
   port: config.port,
   nodeEnv: config.nodeEnv,
   hasJwksUri: !!config.jwks.uri,

@@ -1,5 +1,5 @@
 /**
- * CodeInterpreter Strands ツール定義
+ * CodeInterpreter Strands tool definition
  */
 
 import { tool } from '@strands-agents/sdk';
@@ -18,7 +18,7 @@ import type {
 } from './types.js';
 
 /**
- * ファイルコンテンツのスキーマ
+ * File content schema
  */
 const fileContentSchema = z.object({
   path: z.string().describe('File path'),
@@ -26,11 +26,11 @@ const fileContentSchema = z.object({
 });
 
 /**
- * CodeInterpreter ツールのスキーマ定義
- * Bedrock API互換のためz.object()形式を使用
+ * CodeInterpreter tool schema definition
+ * Using z.object() format for Bedrock API compatibility
  */
 const codeInterpreterSchema = z.object({
-  // アクション種別（必須）
+  // Action type (required)
   action: z
     .enum([
       'initSession',
@@ -47,14 +47,14 @@ const codeInterpreterSchema = z.object({
       'The operation type to perform. Must be one of: initSession (create new session), executeCode (run code), executeCommand (run shell command), readFiles (read file contents), listFiles (list directory), removeFiles (delete files), writeFiles (create/update files), downloadFiles (download to local), listLocalSessions (list all sessions)'
     ),
 
-  // 共通パラメータ
+  // Common parameters
   sessionName: z
     .string()
     .describe(
       'Session name for the code execution environment. REQUIRED for all operations except listLocalSessions. Use initSession first to create a session, then specify that session name for subsequent operations to maintain context and file persistence.'
     ),
 
-  // initSession 専用
+  // For initSession only
   description: z
     .string()
     .optional()
@@ -62,7 +62,7 @@ const codeInterpreterSchema = z.object({
       'Session description (REQUIRED for initSession action). Describes the purpose of this code execution session.'
     ),
 
-  // executeCode 専用
+  // For executeCode only
   language: z
     .enum(['python', 'javascript', 'typescript'])
     .optional()
@@ -83,7 +83,7 @@ const codeInterpreterSchema = z.object({
       'Clear session context before execution (optional for executeCode). Set to true to start with fresh environment, false to preserve variables and state.'
     ),
 
-  // executeCommand 専用
+  // For executeCommand only
   command: z
     .string()
     .optional()
@@ -91,7 +91,7 @@ const codeInterpreterSchema = z.object({
       'Shell command to execute (REQUIRED for executeCommand action). Can include pipes, redirects, and command chaining.'
     ),
 
-  // readFiles / removeFiles 共通
+  // Common for readFiles / removeFiles
   paths: z
     .array(z.string())
     .optional()
@@ -99,7 +99,7 @@ const codeInterpreterSchema = z.object({
       'Array of file paths (REQUIRED for readFiles and removeFiles actions). Paths are relative to session working directory.'
     ),
 
-  // listFiles 専用
+  // For listFiles only
   path: z
     .string()
     .optional()
@@ -107,7 +107,7 @@ const codeInterpreterSchema = z.object({
       'Directory path to list (REQUIRED for listFiles action). Use "/" for root of sandbox, or relative paths.'
     ),
 
-  // writeFiles 専用
+  // For writeFiles only
   content: z
     .array(fileContentSchema)
     .optional()
@@ -115,7 +115,7 @@ const codeInterpreterSchema = z.object({
       'Array of file objects with path and text properties (REQUIRED for writeFiles action). Each object must have {path: string, text: string}. Creates or overwrites files.'
     ),
 
-  // downloadFiles 専用
+  // For downloadFiles only
   sourcePaths: z
     .array(z.string())
     .optional()
@@ -456,16 +456,16 @@ TIPS FOR BEST RESULTS:
 7. Use shell commands for system operations (pip install, etc.)`,
   inputSchema: codeInterpreterSchema,
   callback: async (input: z.infer<typeof codeInterpreterSchema>) => {
-    logger.info(`🧮 CodeInterpreter実行開始: ${input.action}`);
+    logger.info(`🧮 CodeInterpreter execution started: ${input.action}`);
 
     try {
-      // クライアントを作成（デフォルト設定）
+      // Create client (with default settings)
       const client = new AgentCoreCodeInterpreterClient({
         autoCreate: true,
         persistSessions: true,
       });
 
-      // アクション別に処理を分岐
+      // Branch processing by action
       let result;
       switch (input.action) {
         case 'initSession': {
@@ -514,34 +514,34 @@ TIPS FOR BEST RESULTS:
         }
 
         default: {
-          // TypeScriptの網羅性チェック
+          // TypeScript exhaustiveness check
           const exhaustiveCheck: never = input.action;
           throw new Error(`Unknown action: ${exhaustiveCheck}`);
         }
       }
 
-      // 結果をフォーマット
+      // Format result
       if (result.status === 'success') {
-        logger.info(`✅ CodeInterpreter実行成功: ${input.action}`);
+        logger.info(`✅ CodeInterpreter execution successful: ${input.action}`);
 
-        // コンテンツを適切にフォーマット
+        // Format content appropriately
         const content = result.content[0];
         if (content.json) {
-          return `実行結果:\n操作: ${input.action}\n結果: ${JSON.stringify(content.json, null, 2)}`;
+          return `Execution Result:\nOperation: ${input.action}\nResult: ${JSON.stringify(content.json, null, 2)}`;
         } else if (content.text) {
-          return `実行結果:\n操作: ${input.action}\n出力:\n${content.text}`;
+          return `Execution Result:\nOperation: ${input.action}\nOutput:\n${content.text}`;
         } else {
-          return `実行結果:\n操作: ${input.action}\n結果: ${JSON.stringify(content)}`;
+          return `Execution Result:\nOperation: ${input.action}\nResult: ${JSON.stringify(content)}`;
         }
       } else {
-        logger.error(`❌ CodeInterpreter実行エラー: ${input.action}`);
+        logger.error(`❌ CodeInterpreter execution error: ${input.action}`);
         const errorText = result.content[0]?.text || JSON.stringify(result.content);
-        return `実行エラー:\n操作: ${input.action}\nエラー: ${errorText}`;
+        return `Execution Error:\nOperation: ${input.action}\nError: ${errorText}`;
       }
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      logger.error(`❌ CodeInterpreter予期しないエラー: ${input.action}`, errorMessage);
-      return `予期しないエラーが発生しました:\n操作: ${input.action}\nエラー: ${errorMessage}`;
+      logger.error(`❌ CodeInterpreter unexpected error: ${input.action}`, errorMessage);
+      return `An unexpected error occurred:\nOperation: ${input.action}\nError: ${errorMessage}`;
     }
   },
 });

@@ -1,6 +1,6 @@
 /**
- * セッション管理API エンドポイント
- * AgentCore Memory のセッションとイベントを管理するAPI
+ * Session management API endpoints
+ * API for managing AgentCore Memory sessions and events
  */
 
 import { Router, Response } from 'express';
@@ -11,9 +11,9 @@ import { config } from '../config/index.js';
 const router = Router();
 
 /**
- * セッション一覧取得エンドポイント
+ * Session list retrieval endpoint
  * GET /sessions
- * JWT認証必須 - ユーザーIDをactorIdとして使用
+ * JWT authentication required - Use user ID as actorId
  */
 router.get('/', jwtAuthMiddleware, async (req: AuthenticatedRequest, res: Response) => {
   try {
@@ -23,21 +23,21 @@ router.get('/', jwtAuthMiddleware, async (req: AuthenticatedRequest, res: Respon
     if (!actorId) {
       return res.status(400).json({
         error: 'Invalid authentication',
-        message: 'ユーザーIDが取得できませんでした',
+        message: 'Failed to retrieve user ID',
         requestId: auth.requestId,
       });
     }
 
-    // AgentCore Memory ID が設定されているかチェック
+    // Check if AgentCore Memory ID is configured
     if (!config.agentcore.memoryId) {
       return res.status(500).json({
         error: 'Configuration Error',
-        message: 'AgentCore Memory ID が設定されていません',
+        message: 'AgentCore Memory ID is not configured',
         requestId: auth.requestId,
       });
     }
 
-    console.log(`📋 セッション一覧取得開始 (${auth.requestId}):`, {
+    console.log(`📋 Session list retrieval started (${auth.requestId}):`, {
       userId: actorId,
       username: auth.username,
     });
@@ -45,7 +45,9 @@ router.get('/', jwtAuthMiddleware, async (req: AuthenticatedRequest, res: Respon
     const memoryService = createAgentCoreMemoryService();
     const sessions = await memoryService.listSessions(actorId);
 
-    console.log(`✅ セッション一覧取得完了 (${auth.requestId}): ${sessions.length}件`);
+    console.log(
+      `✅ Session list retrieval completed (${auth.requestId}): ${sessions.length} items`
+    );
 
     res.status(200).json({
       sessions,
@@ -58,20 +60,20 @@ router.get('/', jwtAuthMiddleware, async (req: AuthenticatedRequest, res: Respon
     });
   } catch (error) {
     const auth = getCurrentAuth(req);
-    console.error(`💥 セッション一覧取得エラー (${auth.requestId}):`, error);
+    console.error(`💥 Session list retrieval error (${auth.requestId}):`, error);
 
     res.status(500).json({
       error: 'Internal Server Error',
-      message: error instanceof Error ? error.message : 'セッション一覧の取得に失敗しました',
+      message: error instanceof Error ? error.message : 'Failed to retrieve session list',
       requestId: auth.requestId,
     });
   }
 });
 
 /**
- * セッション会話履歴取得エンドポイント
+ * Session conversation history retrieval endpoint
  * GET /sessions/:sessionId/events
- * JWT認証必須 - ユーザーIDをactorIdとして使用
+ * JWT authentication required - Use user ID as actorId
  */
 router.get(
   '/:sessionId/events',
@@ -85,7 +87,7 @@ router.get(
       if (!actorId) {
         return res.status(400).json({
           error: 'Invalid authentication',
-          message: 'ユーザーIDが取得できませんでした',
+          message: 'Failed to retrieve user ID',
           requestId: auth.requestId,
         });
       }
@@ -93,21 +95,21 @@ router.get(
       if (!sessionId) {
         return res.status(400).json({
           error: 'Invalid request',
-          message: 'セッションIDが指定されていません',
+          message: 'Session ID is not specified',
           requestId: auth.requestId,
         });
       }
 
-      // AgentCore Memory ID が設定されているかチェック
+      // Check if AgentCore Memory ID is configured
       if (!config.agentcore.memoryId) {
         return res.status(500).json({
           error: 'Configuration Error',
-          message: 'AgentCore Memory ID が設定されていません',
+          message: 'AgentCore Memory ID is not configured',
           requestId: auth.requestId,
         });
       }
 
-      console.log(`💬 セッション会話履歴取得開始 (${auth.requestId}):`, {
+      console.log(`💬 Session conversation history retrieval started (${auth.requestId}):`, {
         userId: actorId,
         username: auth.username,
         sessionId,
@@ -116,7 +118,9 @@ router.get(
       const memoryService = createAgentCoreMemoryService();
       const events = await memoryService.getSessionEvents(actorId, sessionId);
 
-      console.log(`✅ セッション会話履歴取得完了 (${auth.requestId}): ${events.length}件`);
+      console.log(
+        `✅ Session conversation history retrieval completed (${auth.requestId}): ${events.length} items`
+      );
 
       res.status(200).json({
         events,
@@ -130,11 +134,14 @@ router.get(
       });
     } catch (error) {
       const auth = getCurrentAuth(req);
-      console.error(`💥 セッション会話履歴取得エラー (${auth.requestId}):`, error);
+      console.error(`💥 Session conversation history retrieval error (${auth.requestId}):`, error);
 
       res.status(500).json({
         error: 'Internal Server Error',
-        message: error instanceof Error ? error.message : 'セッション会話履歴の取得に失敗しました',
+        message:
+          error instanceof Error
+            ? error.message
+            : 'Failed to retrieve session conversation history',
         requestId: auth.requestId,
       });
     }

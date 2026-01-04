@@ -1,6 +1,6 @@
 /**
- * ファイルシステムベースのセッションストレージ実装
- * 開発・テスト用途。本番環境では DynamoDB や AgentCore Memory を推奨
+ * File system-based session storage implementation
+ * For development and testing. DynamoDB or AgentCore Memory recommended for production
  */
 
 import * as fs from 'fs/promises';
@@ -10,14 +10,14 @@ import { SessionConfig, SessionStorage } from './types.js';
 import { logger } from '../config/index.js';
 
 /**
- * ローカルファイルシステムでセッション履歴を管理するクラス
+ * Class for managing session history with local filesystem
  *
- * ファイル構造:
+ * File structure:
  * {storageDir}/
  * └── {actorId}/
  *     └── {sessionId}.json
  *
- * 例:
+ * Example:
  * sessions/
  * ├── engineer_alice/
  * │   ├── python_study_20250817.json
@@ -29,7 +29,7 @@ export class FileSessionStorage implements SessionStorage {
   constructor(private readonly storageDir: string = './sessions') {}
 
   /**
-   * 指定されたセッションの会話履歴を読み込む
+   * Load conversation history for specified session
    */
   async loadMessages(config: SessionConfig): Promise<Message[]> {
     const filePath = this.getFilePath(config);
@@ -39,50 +39,47 @@ export class FileSessionStorage implements SessionStorage {
       const messages = JSON.parse(data) as Message[];
 
       logger.debug(
-        `📖 セッション履歴を読み込み: ${config.actorId}/${config.sessionId} (${messages.length}件)`
+        `📖 Session history loaded: ${config.actorId}/${config.sessionId} (${messages.length} items)`
       );
       return messages;
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-        // ファイルが存在しない場合は空配列を返す（新規セッション）
-        logger.debug(`📄 新規セッション: ${config.actorId}/${config.sessionId}`);
+        // Return empty array if file doesn't exist (new session)
+        logger.debug(`📄 New session: ${config.actorId}/${config.sessionId}`);
         return [];
       } else {
-        logger.error(
-          `❌ セッション履歴の読み込みエラー: ${config.actorId}/${config.sessionId}`,
-          error
-        );
+        logger.error(`❌ Session history load error: ${config.actorId}/${config.sessionId}`, error);
         throw error;
       }
     }
   }
 
   /**
-   * 指定されたセッションに会話履歴を保存する
+   * Save conversation history to specified session
    */
   async saveMessages(config: SessionConfig, messages: Message[]): Promise<void> {
     const actorDir = this.getActorDir(config.actorId);
     const filePath = this.getFilePath(config);
 
     try {
-      // actor ディレクトリを作成
+      // Create actor directory
       await fs.mkdir(actorDir, { recursive: true });
 
-      // メッセージをJSONファイルに保存（読みやすさのためインデント付き）
+      // Save messages to JSON file (with indentation for readability)
       await fs.writeFile(filePath, JSON.stringify(messages, null, 2), 'utf-8');
 
       logger.debug(
-        `💾 セッション履歴を保存: ${config.actorId}/${config.sessionId} (${messages.length}件)`
+        `💾 Session history saved: ${config.actorId}/${config.sessionId} (${messages.length} items)`
       );
     } catch (error) {
-      logger.error(`❌ セッション履歴の保存エラー: ${config.actorId}/${config.sessionId}`, error);
+      logger.error(`❌ Session history save error: ${config.actorId}/${config.sessionId}`, error);
       throw error;
     }
   }
 
   /**
-   * 指定されたセッションの履歴をクリアする
-   * @param config セッション設定
+   * Clear history for specified session
+   * @param config Session configuration
    */
   async clearSession(config: SessionConfig): Promise<void> {
     const sessionPath = this.getFilePath(config);
@@ -90,7 +87,7 @@ export class FileSessionStorage implements SessionStorage {
       await fs.unlink(sessionPath);
       console.log(`[FileSessionStorage] Session cleared: ${sessionPath}`);
     } catch (error) {
-      // ファイルが存在しない場合は無視
+      // Ignore if file doesn't exist
       if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
         console.error(`[FileSessionStorage] Error clearing session:`, error);
         throw error;
@@ -99,10 +96,10 @@ export class FileSessionStorage implements SessionStorage {
   }
 
   /**
-   * 指定されたセッションに単一のメッセージを追加保存する
-   * ストリーミング中のリアルタイム保存用
-   * @param config セッション設定
-   * @param message 追加するメッセージ
+   * Append and save a single message to specified session
+   * For real-time saving during streaming
+   * @param config Session configuration
+   * @param message Message to append
    */
   async appendMessage(config: SessionConfig, message: Message): Promise<void> {
     try {
@@ -110,13 +107,13 @@ export class FileSessionStorage implements SessionStorage {
         `[FileSessionStorage] Appending message for session: ${config.sessionId}, role: ${message.role}`
       );
 
-      // 既存のメッセージを読み込み
+      // Load existing messages
       const existingMessages = await this.loadMessages(config);
 
-      // 新しいメッセージを追加
+      // Add new message
       const updatedMessages = [...existingMessages, message];
 
-      // 更新されたメッセージを保存
+      // Save updated messages
       await this.saveMessages(config, updatedMessages);
     } catch (error) {
       console.error(`[FileSessionStorage] Error appending message:`, error);
@@ -125,7 +122,7 @@ export class FileSessionStorage implements SessionStorage {
   }
 
   /**
-   * actor のディレクトリパスを取得
+   * Get directory path for actor
    */
   private getActorDir(actorId: string): string {
     const safeActorId = this.sanitizeId(actorId);
@@ -133,7 +130,7 @@ export class FileSessionStorage implements SessionStorage {
   }
 
   /**
-   * セッションファイルのパスを取得
+   * Get session file path
    */
   private getFilePath(config: SessionConfig): string {
     const safeActorId = this.sanitizeId(config.actorId);
@@ -142,18 +139,18 @@ export class FileSessionStorage implements SessionStorage {
   }
 
   /**
-   * ID文字列をファイルシステム安全な形式にサニタイズ
-   * 許可文字: a-zA-Z0-9_-
-   * その他は _ に置換
+   * Sanitize ID string to filesystem-safe format
+   * Allowed characters: a-zA-Z0-9_-
+   * Others replaced with _
    */
   private sanitizeId(id: string): string {
     if (!id) {
-      throw new Error('ID は空文字列にできません');
+      throw new Error('ID cannot be empty string');
     }
 
     const sanitized = id.replace(/[^a-zA-Z0-9_-]/g, '_');
 
-    // 長すぎる場合は制限（ファイルシステムの制限を考慮）
+    // Limit length if too long (considering filesystem limitations)
     const maxLength = 100;
     if (sanitized.length > maxLength) {
       return sanitized.substring(0, maxLength);

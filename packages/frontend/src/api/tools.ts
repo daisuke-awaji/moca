@@ -1,12 +1,12 @@
 /**
- * ツール管理 API クライアント
- * Backend のツール API を呼び出すためのクライアント
+ * Tools Management API Client
+ * Client for calling Backend tools API
  */
 
 import { backendGet, backendPost } from './client/backend-client';
 
 /**
- * MCP ツールの型定義
+ * MCP Tool type definition
  */
 export interface MCPTool {
   name: string;
@@ -19,31 +19,31 @@ export interface MCPTool {
 }
 
 /**
- * ローカルツール定義（エージェント内蔵ツール）
- * AgentCore Gateway ではなく、エージェント内で直接実装されているツール
+ * Local tool definitions (Built-in agent tools)
+ * Tools implemented directly in the agent, not in AgentCore Gateway
  */
 export const LOCAL_TOOLS: MCPTool[] = [
   {
     name: 'execute_command',
     description:
-      'シェルコマンドを実行し、結果を返します。ファイル操作、情報収集、開発タスクの自動化に使用できます。',
+      'Execute shell commands and return results. Can be used for file operations, information gathering, and development task automation.',
     inputSchema: {
       type: 'object',
       properties: {
         command: {
           type: 'string',
-          description: '実行するシェルコマンド',
+          description: 'Shell command to execute',
         },
         workingDirectory: {
           type: 'string',
-          description: '作業ディレクトリ（未指定の場合は現在のディレクトリ）',
+          description: 'Working directory (defaults to current directory if not specified)',
         },
         timeout: {
           type: 'number',
           minimum: 1000,
           maximum: 60000,
           default: 30000,
-          description: 'タイムアウト（ミリ秒、デフォルト: 30秒、最大: 60秒）',
+          description: 'Timeout in milliseconds (default: 30s, max: 60s)',
         },
       },
       required: ['command'],
@@ -52,65 +52,65 @@ export const LOCAL_TOOLS: MCPTool[] = [
   {
     name: 'tavily_search',
     description:
-      'Tavily APIを使用して高品質なWeb検索を実行します。最新の情報、ニュース、一般的な話題について包括的な検索結果を取得できます。',
+      'Execute high-quality web search using Tavily API. Get comprehensive search results for latest information, news, and general topics.',
     inputSchema: {
       type: 'object',
       properties: {
         query: {
           type: 'string',
-          description: '検索クエリ（必須）',
+          description: 'Search query (required)',
         },
         searchDepth: {
           type: 'string',
           enum: ['basic', 'advanced'],
           default: 'basic',
-          description: '検索深度。basicは1クレジット、advancedは2クレジット使用',
+          description: 'Search depth. basic uses 1 credit, advanced uses 2 credits',
         },
         topic: {
           type: 'string',
           enum: ['general', 'news', 'finance'],
           default: 'general',
-          description: '検索カテゴリ。newsは最新情報、generalは一般検索',
+          description: 'Search category. news for latest information, general for general search',
         },
         maxResults: {
           type: 'number',
           minimum: 1,
           maximum: 20,
           default: 5,
-          description: '取得する最大検索結果数（1-20）',
+          description: 'Maximum number of search results to retrieve (1-20)',
         },
         includeAnswer: {
           type: 'boolean',
           default: true,
-          description: 'LLM生成の要約回答を含める',
+          description: 'Include LLM-generated summary answer',
         },
         timeRange: {
           type: 'string',
           enum: ['day', 'week', 'month', 'year', 'd', 'w', 'm', 'y'],
-          description: '時間範囲フィルター（過去の期間で絞り込み）',
+          description: 'Time range filter (filter by past period)',
         },
         includeDomains: {
           type: 'array',
           items: {
             type: 'string',
           },
-          description: '検索対象に含めるドメインのリスト',
+          description: 'List of domains to include in search',
         },
         excludeDomains: {
           type: 'array',
           items: {
             type: 'string',
           },
-          description: '検索対象から除外するドメインのリスト',
+          description: 'List of domains to exclude from search',
         },
         includeImages: {
           type: 'boolean',
           default: false,
-          description: '関連画像も取得する',
+          description: 'Retrieve related images as well',
         },
         country: {
           type: 'string',
-          description: '特定の国の結果を優先（例: japan, united states）',
+          description: 'Prioritize results from specific country (e.g., japan, united states)',
         },
       },
       required: ['query'],
@@ -119,7 +119,7 @@ export const LOCAL_TOOLS: MCPTool[] = [
   {
     name: 'tavily_extract',
     description:
-      'Tavily APIを使用して指定されたURLからコンテンツを抽出します。Webページの内容を構造化されたテキストとして取得できます。',
+      'Extract content from specified URLs using Tavily API. Get webpage content as structured text.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -131,42 +131,42 @@ export const LOCAL_TOOLS: MCPTool[] = [
               items: { type: 'string' },
             },
           ],
-          description: '抽出対象のURL（単一URLまたはURL配列）',
+          description: 'URL(s) to extract from (single URL or array of URLs)',
         },
         query: {
           type: 'string',
-          description: 'リランキング用クエリ。指定すると関連性の高いコンテンツが優先されます',
+          description: 'Query for reranking. When specified, prioritizes more relevant content',
         },
         extractDepth: {
           type: 'string',
           enum: ['basic', 'advanced'],
           default: 'basic',
-          description: '抽出深度。basicは1クレジット/5URL、advancedは2クレジット/5URL',
+          description: 'Extraction depth. basic: 1 credit/5 URLs, advanced: 2 credits/5 URLs',
         },
         format: {
           type: 'string',
           enum: ['markdown', 'text'],
           default: 'markdown',
-          description: '出力フォーマット。markdownまたはtext',
+          description: 'Output format. markdown or text',
         },
         chunksPerSource: {
           type: 'number',
           minimum: 1,
           maximum: 5,
           default: 3,
-          description: 'ソースあたりのチャンク数（1-5、queryが指定された場合のみ有効）',
+          description: 'Number of chunks per source (1-5, only effective when query is specified)',
         },
         includeImages: {
           type: 'boolean',
           default: false,
-          description: '画像情報を含めるかどうか',
+          description: 'Whether to include image information',
         },
         timeout: {
           type: 'number',
           minimum: 1,
           maximum: 60,
           default: 30,
-          description: 'タイムアウト（秒、1-60）',
+          description: 'Timeout in seconds (1-60)',
         },
       },
       required: ['urls'],
@@ -175,92 +175,95 @@ export const LOCAL_TOOLS: MCPTool[] = [
   {
     name: 'tavily_crawl',
     description:
-      'Tavily APIを使用してWebサイトを包括的にクロールします。指定されたルートURLから始まり、関連するページを自動的に発見・抽出します。',
+      'Comprehensively crawl websites using Tavily API. Starting from specified root URL, automatically discovers and extracts related pages.',
     inputSchema: {
       type: 'object',
       properties: {
         url: {
           type: 'string',
-          description: 'クロール開始URL',
+          description: 'Starting URL for crawl',
         },
         instructions: {
           type: 'string',
-          description: 'クロールの指示（自然言語）。指定すると使用コストが2倍になります',
+          description: 'Crawl instructions (natural language). Specifying doubles the usage cost',
         },
         maxDepth: {
           type: 'number',
           minimum: 1,
           maximum: 5,
           default: 1,
-          description: '最大探索深度（1-5、ベースURLからどこまで離れるか）',
+          description: 'Maximum exploration depth (1-5, how far from base URL)',
         },
         maxBreadth: {
           type: 'number',
           minimum: 1,
           default: 20,
-          description: 'ページごとの最大リンク数（1以上）',
+          description: 'Maximum number of links per page (1 or more)',
         },
         limit: {
           type: 'number',
           minimum: 1,
           default: 50,
-          description: '処理する最大リンク数（1以上）',
+          description: 'Maximum number of links to process (1 or more)',
         },
         selectPaths: {
           type: 'array',
           items: { type: 'string' },
-          description: '含めるパスの正規表現パターン（例: ["/docs/.*", "/api/v1.*"]）',
+          description: 'Regex patterns for paths to include (e.g., ["/docs/.*", "/api/v1.*"])',
         },
         selectDomains: {
           type: 'array',
           items: { type: 'string' },
-          description: '含めるドメインの正規表現パターン（例: ["^docs\\.example\\.com$"]）',
+          description: 'Regex patterns for domains to include (e.g., ["^docs\\.example\\.com$"])',
         },
         excludePaths: {
           type: 'array',
           items: { type: 'string' },
-          description: '除外するパスの正規表現パターン（例: ["/private/.*", "/admin/.*"]）',
+          description: 'Regex patterns for paths to exclude (e.g., ["/private/.*", "/admin/.*"])',
         },
         excludeDomains: {
           type: 'array',
           items: { type: 'string' },
-          description: '除外するドメインの正規表現パターン（例: ["^private\\.example\\.com$"]）',
+          description:
+            'Regex patterns for domains to exclude (e.g., ["^private\\.example\\.com$"])',
         },
         allowExternal: {
           type: 'boolean',
           default: true,
-          description: '外部ドメインリンクを結果に含めるかどうか',
+          description: 'Whether to include external domain links in results',
         },
         extractDepth: {
           type: 'string',
           enum: ['basic', 'advanced'],
           default: 'basic',
-          description: '抽出深度。basicは1クレジット/5抽出、advancedは2クレジット/5抽出',
+          description:
+            'Extraction depth. basic: 1 credit/5 extractions, advanced: 2 credits/5 extractions',
         },
         format: {
           type: 'string',
           enum: ['markdown', 'text'],
           default: 'markdown',
-          description: '出力フォーマット。markdownまたはtext',
+          description: 'Output format. markdown or text',
         },
         includeImages: {
           type: 'boolean',
           default: false,
-          description: '画像情報を含めるかどうか',
+          description: 'Whether to include image information',
         },
         chunksPerSource: {
           type: 'number',
           minimum: 1,
           maximum: 5,
           default: 3,
-          description: 'ソースあたりのチャンク数（1-5、instructionsが指定された場合のみ有効）',
+          description:
+            'Number of chunks per source (1-5, only effective when instructions is specified)',
         },
         timeout: {
           type: 'number',
           minimum: 10,
           maximum: 150,
           default: 150,
-          description: 'タイムアウト（秒、10-150）',
+          description: 'Timeout in seconds (10-150)',
         },
       },
       required: ['url'],
@@ -269,7 +272,7 @@ export const LOCAL_TOOLS: MCPTool[] = [
   {
     name: 'code_interpreter',
     description:
-      'Amazon Bedrock AgentCore CodeInterpreter ツール - セキュアなサンドボックス環境でコード実行やファイル操作を行います。Python、JavaScript、TypeScript のコード実行、シェルコマンド実行、ファイル操作（読み取り、書き込み、削除）、セッション管理などの機能を提供します。',
+      'Amazon Bedrock AgentCore CodeInterpreter tool - Execute code and perform file operations in a secure sandbox environment. Provides capabilities for Python, JavaScript, TypeScript code execution, shell command execution, file operations (read, write, delete), and session management.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -286,42 +289,42 @@ export const LOCAL_TOOLS: MCPTool[] = [
             'downloadFiles',
             'listLocalSessions',
           ],
-          description: '実行する操作',
+          description: 'Operation to execute',
         },
         sessionName: {
           type: 'string',
-          description: 'セッション名（省略時はデフォルト）',
+          description: 'Session name (defaults to default if omitted)',
         },
         description: {
           type: 'string',
-          description: 'セッションの説明（initSession時）',
+          description: 'Session description (for initSession)',
         },
         language: {
           type: 'string',
           enum: ['python', 'javascript', 'typescript'],
-          description: 'コード実行時の言語',
+          description: 'Language for code execution',
         },
         code: {
           type: 'string',
-          description: '実行するコード',
+          description: 'Code to execute',
         },
         clearContext: {
           type: 'boolean',
           default: false,
-          description: 'コンテキストをクリアするか',
+          description: 'Whether to clear context',
         },
         command: {
           type: 'string',
-          description: '実行するシェルコマンド',
+          description: 'Shell command to execute',
         },
         paths: {
           type: 'array',
           items: { type: 'string' },
-          description: 'ファイルパスの配列',
+          description: 'Array of file paths',
         },
         path: {
           type: 'string',
-          description: 'ディレクトリパス',
+          description: 'Directory path',
         },
         content: {
           type: 'array',
@@ -333,16 +336,16 @@ export const LOCAL_TOOLS: MCPTool[] = [
             },
             required: ['path', 'text'],
           },
-          description: '書き込むファイルの配列',
+          description: 'Array of files to write',
         },
         sourcePaths: {
           type: 'array',
           items: { type: 'string' },
-          description: 'ダウンロードするファイルパスの配列',
+          description: 'Array of file paths to download',
         },
         destinationDir: {
           type: 'string',
-          description: 'ダウンロード先ディレクトリ（絶対パス）',
+          description: 'Download destination directory (absolute path)',
         },
       },
       required: ['action'],
@@ -351,26 +354,26 @@ export const LOCAL_TOOLS: MCPTool[] = [
   {
     name: 's3_list_files',
     description:
-      'ユーザーのS3ストレージ内のファイルとディレクトリの一覧を取得します。指定されたパス配下のコンテンツを探索できます。',
+      "Retrieve list of files and directories in user's S3 storage. Can explore contents under specified path.",
     inputSchema: {
       type: 'object',
       properties: {
         path: {
           type: 'string',
           default: '/',
-          description: '一覧を取得するディレクトリパス（デフォルト: ルート "/"）',
+          description: 'Directory path to list (default: root "/")',
         },
         recursive: {
           type: 'boolean',
           default: false,
-          description: '再帰的にサブディレクトリも含めて取得するか（デフォルト: false）',
+          description: 'Whether to recursively include subdirectories (default: false)',
         },
         maxResults: {
           type: 'number',
           minimum: 1,
           maximum: 1000,
           default: 100,
-          description: '取得する最大結果数（1-1000、デフォルト: 100）',
+          description: 'Maximum number of results to retrieve (1-1000, default: 100)',
         },
       },
       required: [],
@@ -379,7 +382,7 @@ export const LOCAL_TOOLS: MCPTool[] = [
   {
     name: 's3_get_presigned_urls',
     description:
-      'ユーザーのS3ストレージ内のファイルに対する署名付きURLを一括で生成します。ダウンロード用またはアップロード用のURLを取得できます。複数のファイルを一度に処理できます。',
+      "Generate presigned URLs in batch for files in user's S3 storage. Get URLs for download or upload. Can process multiple files at once.",
     inputSchema: {
       type: 'object',
       properties: {
@@ -391,13 +394,13 @@ export const LOCAL_TOOLS: MCPTool[] = [
               items: { type: 'string' },
             },
           ],
-          description: 'ファイルパス（単一の文字列または文字列の配列）',
+          description: 'File path(s) (single string or array of strings)',
         },
         operation: {
           type: 'string',
           enum: ['download', 'upload'],
           default: 'download',
-          description: '操作タイプ: "download"（ダウンロード用）または "upload"（アップロード用）',
+          description: 'Operation type: "download" (for download) or "upload" (for upload)',
         },
         expiresIn: {
           type: 'number',
@@ -405,11 +408,11 @@ export const LOCAL_TOOLS: MCPTool[] = [
           maximum: 604800,
           default: 3600,
           description:
-            '署名付きURLの有効期限（秒）。デフォルト: 3600（1時間）、最大: 604800（7日間）',
+            'Expiration time for presigned URL (seconds). Default: 3600 (1 hour), Max: 604800 (7 days)',
         },
         contentType: {
           type: 'string',
-          description: 'アップロード操作の場合のContent-Type（オプション）',
+          description: 'Content-Type for upload operation (optional)',
         },
       },
       required: ['paths'],
@@ -418,22 +421,23 @@ export const LOCAL_TOOLS: MCPTool[] = [
   {
     name: 'file_editor',
     description:
-      'ファイルを編集または新規作成します。ファイルの移動や名前変更にはexecute_commandツールでmvコマンドを使用してください。使用前にcatコマンドでファイル内容を確認し、新規ファイルの場合はlsコマンドでディレクトリを確認してください。oldStringで指定したテキストをnewStringで置換します。oldStringはファイル内で一意である必要があり、空白やインデントも含めて完全に一致する必要があります。一度に1箇所のみ変更可能で、複数箇所を変更する場合は複数回呼び出してください。',
+      'Edit or create new files. For moving or renaming files, use the mv command with the execute_command tool. Before use, confirm file contents with the cat command, and for new files, check the directory with the ls command. Replaces text specified in oldString with newString. oldString must be unique within the file and must match exactly including whitespace and indentation. Can only change one location at a time; for multiple changes, call multiple times.',
     inputSchema: {
       type: 'object',
       properties: {
         filePath: {
           type: 'string',
-          description: '編集対象ファイルの絶対パス（相対パスは使用不可）',
+          description: 'Absolute path of the file to edit (relative paths not allowed)',
         },
         oldString: {
           type: 'string',
           description:
-            '置換対象のテキスト。ファイル内で一意である必要があり、空白やインデントも含めて完全に一致する必要があります。新規ファイルを作成する場合は空文字列を指定してください。',
+            'Text to replace. Must be unique within the file and must match exactly including whitespace and indentation. Specify empty string to create a new file.',
         },
         newString: {
           type: 'string',
-          description: '置換後のテキスト。新規ファイル作成時はこの内容がファイルに書き込まれます。',
+          description:
+            'Replacement text. For new file creation, this content will be written to the file.',
         },
       },
       required: ['filePath', 'oldString', 'newString'],
@@ -442,7 +446,7 @@ export const LOCAL_TOOLS: MCPTool[] = [
 ];
 
 /**
- * API レスポンスの型定義
+ * API response type definitions
  */
 interface ToolsResponse {
   tools: MCPTool[];
@@ -470,9 +474,9 @@ interface HealthResponse {
 }
 
 /**
- * ツール一覧を取得（ページネーション対応）
- * @param cursor ページネーション用のカーソル（オプショナル）
- * @returns ツール一覧とnextCursor
+ * Fetch list of tools (with pagination support)
+ * @param cursor Cursor for pagination (optional)
+ * @returns List of tools and nextCursor
  */
 export async function fetchTools(cursor?: string): Promise<{
   tools: MCPTool[];
@@ -488,10 +492,10 @@ export async function fetchTools(cursor?: string): Promise<{
 }
 
 /**
- * ローカル MCP ツール取得
- * ユーザー定義の MCP サーバー設定からツール一覧を取得
- * @param mcpConfig mcp.json 形式の MCP サーバー設定
- * @returns ツール一覧（サーバー名付き）
+ * Fetch local MCP tools
+ * Retrieve tool list from user-defined MCP server configuration
+ * @param mcpConfig MCP server configuration in mcp.json format
+ * @returns Tool list (with server name)
  */
 export async function fetchLocalMCPTools(
   mcpConfig: Record<string, unknown>
@@ -504,13 +508,13 @@ export async function fetchLocalMCPTools(
 }
 
 /**
- * ツールを検索
- * @param query 検索クエリ
- * @returns 検索結果のツール一覧
+ * Search tools
+ * @param query Search query
+ * @returns List of tools matching search results
  */
 export async function searchTools(query: string): Promise<MCPTool[]> {
   if (!query || query.trim().length === 0) {
-    throw new Error('検索クエリが必要です');
+    throw new Error('Search query is required');
   }
 
   const data = await backendPost<ToolsResponse>('/tools/search', {
@@ -521,8 +525,8 @@ export async function searchTools(query: string): Promise<MCPTool[]> {
 }
 
 /**
- * Gateway 接続状態を確認
- * @returns 接続状態情報
+ * Check Gateway connection status
+ * @returns Connection status information
  */
 export async function checkGatewayHealth(): Promise<HealthResponse> {
   return backendGet<HealthResponse>('/tools/health');

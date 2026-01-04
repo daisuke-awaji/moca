@@ -1,5 +1,5 @@
 /**
- * コマンド実行ツール - シェルコマンドを安全に実行
+ * Command execution tool - Execute shell commands safely
  */
 
 import { tool } from '@strands-agents/sdk';
@@ -12,7 +12,7 @@ import { getCurrentContext } from '../context/request-context.js';
 const execAsync = promisify(exec);
 
 /**
- * exec実行時のエラー型定義
+ * Error type definition for exec execution
  */
 interface ExecError extends Error {
   code?: number;
@@ -22,16 +22,16 @@ interface ExecError extends Error {
 }
 
 /**
- * 危険なコマンドのブラックリスト
+ * Blacklist of dangerous commands
  */
 const DANGEROUS_COMMANDS = [
-  // システム破壊系
+  // System destructive commands
   'rm -rf /',
   'mkfs',
   'dd if=',
   'fdisk',
 
-  // システム操作系
+  // System operation commands
   'shutdown',
   'reboot',
   'halt',
@@ -40,27 +40,27 @@ const DANGEROUS_COMMANDS = [
 ];
 
 /**
- * 許可された作業ディレクトリかチェック
+ * Check if working directory is allowed
  */
 function isAllowedWorkingDirectory(dir: string): boolean {
-  // ルートディレクトリは禁止
+  // Root directory is forbidden
   if (dir === '/') {
     return false;
   }
 
-  // 環境変数で許可ディレクトリが指定されている場合はチェック
+  // Check if allowed directories are specified in environment variable
   const allowedDirs = process.env.ALLOWED_WORKING_DIRS?.split(',') || [];
   if (allowedDirs.length > 0) {
     return allowedDirs.some((allowed) => dir.startsWith(allowed.trim()));
   }
 
-  // デフォルトでは/home、/tmp、/var/tmp、/Users以下は許可
+  // By default, /home, /tmp, /var/tmp, /Users are allowed
   const defaultAllowed = ['/home/', '/tmp/', '/var/tmp/', '/Users/'];
   return defaultAllowed.some((allowed) => dir.startsWith(allowed));
 }
 
 /**
- * 危険なコマンドかチェック
+ * Check if command is dangerous
  */
 function isDangerousCommand(command: string): boolean {
   const lowerCommand = command.toLowerCase().trim();
@@ -69,7 +69,7 @@ function isDangerousCommand(command: string): boolean {
 }
 
 /**
- * 出力を安全なサイズに切り詰め
+ * Truncate output to safe size
  */
 function truncateOutput(output: string, maxLength: number = 4000): string {
   if (output.length <= maxLength) {
@@ -77,59 +77,59 @@ function truncateOutput(output: string, maxLength: number = 4000): string {
   }
 
   const truncated = output.substring(0, maxLength);
-  return `${truncated}\n\n... (出力が長すぎるため切り詰められました。元の長さ: ${output.length}文字)`;
+  return `${truncated}\n\n... (Output truncated due to length. Original length: ${output.length} characters)`;
 }
 
 /**
- * コマンド実行ツール
+ * Command execution tool
  */
 export const executeCommandTool = tool({
   name: 'execute_command',
   description:
-    'シェルコマンドを実行し、結果を返します。ファイル操作、情報収集、開発タスクの自動化に使用できます。',
+    'Execute shell commands and return results. Can be used for file operations, information gathering, and development task automation.',
   inputSchema: z.object({
-    command: z.string().describe('実行するシェルコマンド'),
+    command: z.string().describe('Shell command to execute'),
     workingDirectory: z
       .string()
       .optional()
-      .describe('作業ディレクトリ（未指定の場合は現在のディレクトリ）'),
+      .describe('Working directory (current directory if not specified)'),
     timeout: z
       .number()
       .min(1000)
       .max(60000)
       .default(30000)
-      .describe('タイムアウト（ミリ秒、デフォルト: 30秒、最大: 60秒）'),
+      .describe('Timeout in milliseconds (default: 30s, max: 60s)'),
   }),
   callback: async (input) => {
     const { command, workingDirectory, timeout } = input;
 
-    logger.info(`🔧 コマンド実行開始: ${command}`);
+    logger.info(`🔧 Command execution started: ${command}`);
 
     try {
-      // ワークスペース同期が完了していることを確認
+      // Wait for workspace sync to complete
       const context = getCurrentContext();
       if (context?.workspaceSync) {
         await context.workspaceSync.waitForInitialSync();
       }
 
-      // デフォルト作業ディレクトリを設定
+      // Set default working directory
       const effectiveWorkingDirectory = workingDirectory || WORKSPACE_DIRECTORY;
 
-      // 1. セキュリティチェック: 危険なコマンドの検出
+      // 1. Security check: Detect dangerous commands
       if (isDangerousCommand(command)) {
-        const errorMsg = `⚠️ セキュリティエラー: 危険なコマンドが検出されました\nコマンド: ${command}`;
+        const errorMsg = `⚠️ Security Error: Dangerous command detected\nCommand: ${command}`;
         logger.warn(errorMsg);
         return errorMsg;
       }
 
-      // 2. 作業ディレクトリのチェック
+      // 2. Working directory check
       if (!isAllowedWorkingDirectory(effectiveWorkingDirectory)) {
-        const errorMsg = `⚠️ セキュリティエラー: 許可されていない作業ディレクトリです\nディレクトリ: ${effectiveWorkingDirectory}`;
+        const errorMsg = `⚠️ Security Error: Working directory not allowed\nDirectory: ${effectiveWorkingDirectory}`;
         logger.warn(errorMsg);
         return errorMsg;
       }
 
-      // 3. コマンド実行
+      // 3. Execute command
       const execOptions = {
         timeout,
         maxBuffer: 1024 * 1024 * 10, // 10MB
@@ -141,59 +141,59 @@ export const executeCommandTool = tool({
       const result = await execAsync(command, execOptions);
       const duration = Date.now() - startTime;
 
-      // 4. 結果の整形
+      // 4. Format result
       const stdout = truncateOutput(result.stdout || '');
       const stderr = truncateOutput(result.stderr || '');
 
-      const output = `実行結果:
-コマンド: ${command}
-作業ディレクトリ: ${effectiveWorkingDirectory}
-実行時間: ${duration}ms
-終了コード: 0
+      const output = `Execution Result:
+Command: ${command}
+Working Directory: ${effectiveWorkingDirectory}
+Execution Time: ${duration}ms
+Exit Code: 0
 
-標準出力:
-${stdout || '(出力なし)'}
+Standard Output:
+${stdout || '(no output)'}
 
-${stderr ? `標準エラー:\n${stderr}` : ''}`.trim();
+${stderr ? `Standard Error:\n${stderr}` : ''}`.trim();
 
-      logger.info(`✅ コマンド実行成功: ${command} (${duration}ms)`);
+      logger.info(`✅ Command execution succeeded: ${command} (${duration}ms)`);
       return output;
     } catch (error: unknown) {
-      // エラーハンドリング
+      // Error handling
       const execError = error as ExecError;
       const effectiveWorkingDirectory = workingDirectory || WORKSPACE_DIRECTORY;
 
-      let errorOutput = `実行エラー:
-コマンド: ${command}
-作業ディレクトリ: ${effectiveWorkingDirectory}
+      let errorOutput = `Execution Error:
+Command: ${command}
+Working Directory: ${effectiveWorkingDirectory}
 `;
 
       if (execError.code !== undefined) {
-        errorOutput += `終了コード: ${execError.code}\n`;
+        errorOutput += `Exit Code: ${execError.code}\n`;
       }
 
       if (execError.signal) {
-        errorOutput += `シグナル: ${execError.signal}\n`;
+        errorOutput += `Signal: ${execError.signal}\n`;
       }
 
       if (execError.stdout) {
-        errorOutput += `\n標準出力:\n${truncateOutput(execError.stdout)}`;
+        errorOutput += `\nStandard Output:\n${truncateOutput(execError.stdout)}`;
       }
 
       if (execError.stderr) {
-        errorOutput += `\n標準エラー:\n${truncateOutput(execError.stderr)}`;
+        errorOutput += `\nStandard Error:\n${truncateOutput(execError.stderr)}`;
       }
 
-      // タイムアウトエラーの特別処理
+      // Special handling for timeout errors
       const isTimeout =
         execError.signal === 'SIGTERM' ||
         execError.message?.includes('timeout') ||
         execError.message?.includes('ETIMEDOUT');
       if (isTimeout) {
-        errorOutput += `\n⏰ タイムアウト: ${timeout}ms で実行が中断されました`;
+        errorOutput += `\n⏰ Timeout: Execution interrupted after ${timeout}ms`;
       }
 
-      logger.error(`❌ コマンド実行エラー: ${command}`, execError.message || 'Unknown error');
+      logger.error(`❌ Command execution error: ${command}`, execError.message || 'Unknown error');
       return errorOutput;
     }
   },

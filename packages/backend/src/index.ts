@@ -1,6 +1,6 @@
 /**
  * Backend API Server
- * JWT認証対応のExpress APIサーバー
+ * Express API server with JWT authentication support
  */
 
 import express, { Request, Response, NextFunction } from 'express';
@@ -16,7 +16,7 @@ import storageRouter from './routes/storage.js';
 const app = express();
 
 /**
- * CORS 設定
+ * CORS configuration
  */
 const corsOptions = {
   origin: (
@@ -25,12 +25,12 @@ const corsOptions = {
   ) => {
     const allowedOrigins = config.cors.allowedOrigins;
 
-    // オリジンがない場合（Postman等）は許可
+    // Allow if no origin (Postman, etc.)
     if (!origin) {
       return callback(null, true);
     }
 
-    // ワイルドカード（*）または明示的に許可されたオリジンをチェック
+    // Check wildcard (*) or explicitly allowed origins
     if (allowedOrigins.includes('*') || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
@@ -40,14 +40,14 @@ const corsOptions = {
   },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
-  maxAge: 86400, // preflight キャッシュ 24時間
+  maxAge: 86400, // Preflight cache 24 hours
 };
 
-// ミドルウェア設定
+// Middleware configuration
 app.use(cors(corsOptions));
 app.use(express.json());
 
-// API ルート設定
+// API route configuration
 app.use('/agents', agentsRouter);
 app.use('/sessions', sessionsRouter);
 app.use('/tools', toolsRouter);
@@ -55,8 +55,8 @@ app.use('/memory', jwtAuthMiddleware, memoryRouter);
 app.use('/storage', storageRouter);
 
 /**
- * ヘルスチェックエンドポイント（認証不要）
- * Lambda/API Gateway で使用される標準的なヘルスチェック
+ * Health check endpoint (no authentication required)
+ * Standard health check used by Lambda/API Gateway
  */
 app.get('/ping', (req: Request, res: Response) => {
   const healthStatus = {
@@ -72,14 +72,14 @@ app.get('/ping', (req: Request, res: Response) => {
     },
   };
 
-  console.log(`💓 ヘルスチェック - ${req.ip} - ${req.get('User-Agent')?.substring(0, 50)}`);
+  console.log(`💓 Health check - ${req.ip} - ${req.get('User-Agent')?.substring(0, 50)}`);
 
   res.status(200).json(healthStatus);
 });
 
 /**
- * JWT 内容確認エンドポイント（認証必要）
- * 現在のJWTの内容を返却
+ * JWT content verification endpoint (authentication required)
+ * Return current JWT content
  */
 app.get('/me', jwtAuthMiddleware, (req: AuthenticatedRequest, res: Response) => {
   try {
@@ -110,14 +110,14 @@ app.get('/me', jwtAuthMiddleware, (req: AuthenticatedRequest, res: Response) => 
       },
     };
 
-    console.log(`👤 /me リクエスト成功 (${auth.requestId}):`, {
+    console.log(`👤 /me request successful (${auth.requestId}):`, {
       userId: auth.userId,
       username: auth.username,
     });
 
     res.status(200).json(response);
   } catch (error) {
-    console.error(`💥 /me エンドポイントエラー:`, error);
+    console.error(`💥 /me endpoint error:`, error);
     res.status(500).json({
       error: 'Internal Server Error',
       message: 'Failed to process /me request',
@@ -127,8 +127,8 @@ app.get('/me', jwtAuthMiddleware, (req: AuthenticatedRequest, res: Response) => 
 });
 
 /**
- * ルートエンドポイント（認証不要）
- * API 情報を表示
+ * Root endpoint (no authentication required)
+ * Display API information
  */
 app.get('/', (req: Request, res: Response) => {
   res.status(200).json({
@@ -148,7 +148,7 @@ app.get('/', (req: Request, res: Response) => {
 });
 
 /**
- * 404 ハンドラー
+ * 404 handler
  */
 app.use('*', (req: Request, res: Response) => {
   console.warn(`❓ 404 Not Found: ${req.method} ${req.path} - ${req.ip}`);
@@ -162,7 +162,7 @@ app.use('*', (req: Request, res: Response) => {
 });
 
 /**
- * エラーハンドラー
+ * Error handler
  */
 app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
   console.error('💥 Unhandled error:', {
@@ -181,7 +181,7 @@ app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
 });
 
 /**
- * サーバー開始
+ * Start server
  */
 async function startServer(): Promise<void> {
   try {
@@ -194,7 +194,7 @@ async function startServer(): Promise<void> {
       console.log(`🔗 CORS origins: ${config.cors.allowedOrigins.join(', ')}`);
     });
   } catch (error) {
-    console.error('💥 サーバー開始に失敗しました:', error);
+    console.error('💥 Server start failed:', error);
     process.exit(1);
   }
 }
@@ -210,7 +210,7 @@ process.on('SIGINT', () => {
   process.exit(0);
 });
 
-// プロセス終了時のエラーハンドリング
+// Error handling on process termination
 process.on('uncaughtException', (error) => {
   console.error('💥 Uncaught Exception:', error);
   process.exit(1);
@@ -221,5 +221,5 @@ process.on('unhandledRejection', (reason, promise) => {
   process.exit(1);
 });
 
-// サーバー開始
+// Start server
 startServer();

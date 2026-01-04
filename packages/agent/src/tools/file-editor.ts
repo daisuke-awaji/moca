@@ -77,7 +77,7 @@ Best Practices:
     logger.info(`📝 File editor operation started: ${filePath}`);
 
     try {
-      // ワークスペース同期が完了していることを確認
+      // Wait for workspace sync to complete
       const context = getCurrentContext();
       if (context?.workspaceSync) {
         await context.workspaceSync.waitForInitialSync();

@@ -1,6 +1,6 @@
 /**
  * Request Context Middleware
- * リクエストコンテキストを設定するExpressミドルウェア
+ * Express middleware that sets request context
  */
 
 import { Request, Response, NextFunction } from 'express';
@@ -8,8 +8,8 @@ import { createRequestContext, runWithContext } from '../context/request-context
 import { logger } from '../config/index.js';
 
 /**
- * JWT から userId を抽出する（簡易実装）
- * 本格的な実装では jwt ライブラリを使用することを推奨
+ * Extract userId from JWT (simple implementation)
+ * For production use, using jwt library is recommended
  */
 function extractUserIdFromJWT(authHeader?: string): string | undefined {
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -17,38 +17,38 @@ function extractUserIdFromJWT(authHeader?: string): string | undefined {
   }
 
   try {
-    const token = authHeader.substring(7); // 'Bearer ' を削除
+    const token = authHeader.substring(7); // Remove 'Bearer '
     const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
 
-    // 一般的な JWT クレームから userId を抽出
+    // Extract userId from common JWT claims
     return payload.sub || payload.userId || payload.user_id || payload.username;
   } catch (error) {
-    logger.warn('JWT の解析に失敗:', { error });
+    logger.warn('JWT parsing failed:', { error });
     return undefined;
   }
 }
 
 /**
- * リクエストコンテキストを設定するミドルウェア
- * Authorization ヘッダーを抽出し、AsyncLocalStorage でコンテキストを設定
+ * Middleware to set request context
+ * Extract Authorization header and set context with AsyncLocalStorage
  */
 export function requestContextMiddleware(req: Request, res: Response, next: NextFunction): void {
-  // Authorization ヘッダーを複数のソースから取得
+  // Get Authorization header from multiple sources
   const authHeader =
     req.headers.authorization ||
     (req.headers['x-amzn-bedrock-agentcore-runtime-custom-authorization'] as string);
 
-  // JWT から userId を抽出
+  // Extract userId from JWT
   const userId = extractUserIdFromJWT(authHeader);
 
-  // リクエストコンテキストを作成
+  // Create request context
   const requestContext = createRequestContext(authHeader);
-  // userId を設定
+  // Set userId
   if (userId) {
     requestContext.userId = userId;
   }
 
-  // リクエストコンテキストのログ出力
+  // Log request context
   logger.info('📝 Request context middleware activated:', {
     requestId: requestContext.requestId,
     userId: requestContext.userId,
@@ -58,7 +58,7 @@ export function requestContextMiddleware(req: Request, res: Response, next: Next
     method: req.method,
   });
 
-  // AsyncLocalStorage でコンテキストを設定して next() を実行
+  // Set context with AsyncLocalStorage and execute next()
   runWithContext(requestContext, () => {
     next();
   });

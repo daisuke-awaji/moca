@@ -1,6 +1,6 @@
 /**
- * AgentCore Memory サービス層
- * セッション管理とイベント取得のためのサービス
+ * AgentCore Memory Service Layer
+ * Service for session management and event retrieval
  */
 
 import {
@@ -18,7 +18,7 @@ import {
 import { config } from '../config/index.js';
 
 /**
- * AWS SDK の型定義が不完全な部分を補完する型定義
+ * Type definitions to supplement incomplete AWS SDK type definitions
  */
 interface MemoryRecordSummary {
   memoryRecordId?: string;
@@ -48,19 +48,19 @@ interface RetrieveMemoryRecordsParams {
 }
 
 /**
- * セッション情報の型定義（Frontend 向けに整形済み）
+ * Session information type definition (formatted for Frontend)
  */
 export interface SessionSummary {
   sessionId: string;
-  title: string; // 最初のユーザーメッセージから生成
-  lastMessage: string; // 最後のメッセージ
+  title: string; // Generated from first user message
+  lastMessage: string; // Last message
   messageCount: number;
-  createdAt: string; // ISO 8601 文字列
-  updatedAt: string; // ISO 8601 文字列
+  createdAt: string; // ISO 8601 string
+  updatedAt: string; // ISO 8601 string
 }
 
 /**
- * ToolUse 型定義
+ * ToolUse type definition
  */
 export interface ToolUse {
   id: string;
@@ -71,7 +71,7 @@ export interface ToolUse {
 }
 
 /**
- * ToolResult 型定義
+ * ToolResult type definition
  */
 export interface ToolResult {
   toolUseId: string;
@@ -80,7 +80,7 @@ export interface ToolResult {
 }
 
 /**
- * MessageContent 型定義（Union型）
+ * MessageContent type definition (Union type)
  */
 export type MessageContent =
   | { type: 'text'; text: string }
@@ -88,17 +88,17 @@ export type MessageContent =
   | { type: 'toolResult'; toolResult: ToolResult };
 
 /**
- * イベント情報の型定義（Frontend 向けに整形済み）
+ * Event information type definition (formatted for Frontend)
  */
 export interface ConversationMessage {
   id: string;
   type: 'user' | 'assistant';
   contents: MessageContent[];
-  timestamp: string; // ISO 8601 文字列
+  timestamp: string; // ISO 8601 string
 }
 
 /**
- * Conversational Payload の型定義
+ * Conversational Payload type definition
  */
 interface ConversationalPayload {
   conversational: {
@@ -110,7 +110,7 @@ interface ConversationalPayload {
 }
 
 /**
- * Strands ContentBlock の型定義
+ * Strands ContentBlock type definition
  */
 interface StrandsContentBlock {
   type: string;
@@ -123,18 +123,18 @@ interface StrandsContentBlock {
 }
 
 /**
- * Blob データの内容型定義（新形式）
+ * Blob data content type definition (new format)
  */
 interface BlobData {
   messageType: 'content';
   role: string;
-  content: StrandsContentBlock[]; // Strands ContentBlock の配列
+  content: StrandsContentBlock[]; // Array of Strands ContentBlocks
 }
 
 /**
- * Strands ContentBlock から MessageContent への変換
- * @param contentBlocks Strands SDK の ContentBlock 配列
- * @returns MessageContent 配列
+ * Convert Strands ContentBlock to MessageContent
+ * @param contentBlocks Array of Strands SDK ContentBlocks
+ * @returns Array of MessageContent
  */
 function convertToMessageContents(contentBlocks: StrandsContentBlock[]): MessageContent[] {
   const messageContents: MessageContent[] = [];
@@ -164,7 +164,7 @@ function convertToMessageContents(contentBlocks: StrandsContentBlock[]): Message
               id: block.toolUseId,
               name: block.name,
               input: block.input || {},
-              status: 'completed', // デフォルトステータス
+              status: 'completed', // Default status
               originalToolUseId: block.toolUseId,
             },
           });
@@ -197,37 +197,37 @@ function convertToMessageContents(contentBlocks: StrandsContentBlock[]): Message
 }
 
 /**
- * blob payload をパースする
- * @param blob Uint8Array または Buffer または base64文字列
- * @returns パース済み BlobData
+ * Parse blob payload
+ * @param blob Uint8Array or Buffer or base64 string
+ * @returns Parsed BlobData
  */
 function parseBlobPayload(blob: Uint8Array | Buffer | unknown): BlobData | null {
   try {
     let blobString: string;
 
-    // Uint8Array の場合
+    // For Uint8Array
     if (blob instanceof Uint8Array) {
       const decoder = new TextDecoder();
       blobString = decoder.decode(blob);
     }
-    // Buffer の場合
+    // For Buffer
     else if (typeof Buffer !== 'undefined' && Buffer.isBuffer && Buffer.isBuffer(blob)) {
       blobString = (blob as Buffer).toString('utf8');
     }
-    // 文字列の場合（AWS SDK からの base64 エンコード文字列）
+    // For string (base64 encoded string from AWS SDK)
     else if (typeof blob === 'string') {
       try {
-        // base64 デコードを試行
+        // Try base64 decoding
         const decodedBuffer = Buffer.from(blob, 'base64');
         blobString = decodedBuffer.toString('utf8');
         console.log('[AgentCoreMemoryService] Successfully decoded base64 blob');
       } catch {
-        // base64 でない場合は直接使用
+        // Use directly if not base64
         console.log('[AgentCoreMemoryService] Using blob as plain string');
         blobString = blob;
       }
     }
-    // その他の場合
+    // For other cases
     else {
       console.warn('[AgentCoreMemoryService] Unknown blob type:', typeof blob);
       return null;
@@ -249,17 +249,17 @@ function parseBlobPayload(blob: Uint8Array | Buffer | unknown): BlobData | null 
 }
 
 /**
- * MessageContent 配列から最初のテキストを抽出（タイトル生成用）
- * @param contents MessageContent 配列
- * @returns 最初のテキスト文字列
+ * Extract first text from MessageContent array (for title generation)
+ * @param contents Array of MessageContent
+ * @returns First text string
  */
 function extractFirstText(contents: MessageContent[]): string {
   const firstTextContent = contents.find((content) => content.type === 'text');
-  return firstTextContent?.text || '';
+  return firstTextContent && firstTextContent.type === 'text' ? firstTextContent.text : '';
 }
 
 /**
- * 長期記憶レコードの型定義
+ * Long-term memory record type definition
  */
 export interface MemoryRecord {
   recordId: string;
@@ -270,7 +270,7 @@ export interface MemoryRecord {
 }
 
 /**
- * 長期記憶レコード一覧の型定義
+ * Long-term memory record list type definition
  */
 export interface MemoryRecordList {
   records: MemoryRecord[];
@@ -278,7 +278,7 @@ export interface MemoryRecordList {
 }
 
 /**
- * AgentCore Memory サービスクラス
+ * AgentCore Memory service class
  */
 export class AgentCoreMemoryService {
   private client: BedrockAgentCoreClient;
@@ -289,7 +289,7 @@ export class AgentCoreMemoryService {
 
   constructor(memoryId?: string, region: string = 'us-east-1') {
     if (!memoryId) {
-      throw new Error('AgentCore Memory ID が設定されていません');
+      throw new Error('AgentCore Memory ID is not configured');
     }
 
     this.client = new BedrockAgentCoreClient({ region });
@@ -299,20 +299,18 @@ export class AgentCoreMemoryService {
   }
 
   /**
-   * セマンティックメモリ戦略IDを取得（キャッシュ付き）
-   * @returns セマンティックメモリ戦略ID
+   * Get semantic memory strategy ID (with caching)
+   * @returns Semantic memory strategy ID
    */
   async getSemanticMemoryStrategyId(): Promise<string> {
     if (this.cachedStrategyId) {
-      console.log(
-        `[AgentCoreMemoryService] キャッシュされた strategyId を使用: ${this.cachedStrategyId}`
-      );
+      console.log(`[AgentCoreMemoryService] Using cached strategyId: ${this.cachedStrategyId}`);
       return this.cachedStrategyId;
     }
 
     try {
       console.log(
-        `[AgentCoreMemoryService] GetMemory API で strategyId を取得中: memoryId=${this.memoryId}`
+        `[AgentCoreMemoryService] Retrieving strategyId via GetMemory API: memoryId=${this.memoryId}`
       );
 
       const command = new GetMemoryCommand({
@@ -322,12 +320,12 @@ export class AgentCoreMemoryService {
       const response = await this.controlClient.send(command);
 
       if (!response.memory?.strategies || response.memory.strategies.length === 0) {
-        console.warn('[AgentCoreMemoryService] Memory に strategies が見つかりません');
-        this.cachedStrategyId = 'semantic_memory_strategy'; // フォールバック
+        console.warn('[AgentCoreMemoryService] No strategies found in Memory');
+        this.cachedStrategyId = 'semantic_memory_strategy'; // Fallback
         return this.cachedStrategyId;
       }
 
-      // name が 'semantic_memory_strategy' で始まる strategy を検索
+      // Search for strategy with name starting with 'semantic_memory_strategy'
       const semanticStrategy = response.memory.strategies.find((strategy) =>
         strategy.name?.startsWith('semantic_memory_strategy')
       );
@@ -335,32 +333,30 @@ export class AgentCoreMemoryService {
       if (semanticStrategy?.strategyId) {
         this.cachedStrategyId = semanticStrategy.strategyId;
         console.log(
-          `[AgentCoreMemoryService] セマンティック戦略ID を取得: ${this.cachedStrategyId}`
+          `[AgentCoreMemoryService] Retrieved semantic strategy ID: ${this.cachedStrategyId}`
         );
       } else {
-        console.warn(
-          '[AgentCoreMemoryService] セマンティック戦略が見つかりません、フォールバックを使用'
-        );
-        this.cachedStrategyId = 'semantic_memory_strategy'; // フォールバック
+        console.warn('[AgentCoreMemoryService] Semantic strategy not found, using fallback');
+        this.cachedStrategyId = 'semantic_memory_strategy'; // Fallback
       }
 
       return this.cachedStrategyId;
     } catch (error) {
-      console.error('[AgentCoreMemoryService] GetMemory API エラー:', error);
-      // エラー時はフォールバック値を使用
+      console.error('[AgentCoreMemoryService] GetMemory API error:', error);
+      // Use fallback value on error
       this.cachedStrategyId = 'semantic_memory_strategy';
       return this.cachedStrategyId;
     }
   }
 
   /**
-   * 指定されたアクターのセッション一覧を取得
-   * @param actorId ユーザーID（JWT の sub）
-   * @returns セッション一覧
+   * Get session list for specified actor
+   * @param actorId User ID (JWT sub)
+   * @returns Session list
    */
   async listSessions(actorId: string): Promise<SessionSummary[]> {
     try {
-      console.log(`[AgentCoreMemoryService] セッション一覧を取得中: actorId=${actorId}`);
+      console.log(`[AgentCoreMemoryService] Retrieving session list: actorId=${actorId}`);
 
       const command = new ListSessionsCommand({
         memoryId: this.memoryId,
@@ -370,83 +366,79 @@ export class AgentCoreMemoryService {
       const response = await this.client.send(command);
 
       if (!response.sessionSummaries || response.sessionSummaries.length === 0) {
-        console.log(
-          `[AgentCoreMemoryService] セッションが見つかりませんでした: actorId=${actorId}`
-        );
+        console.log(`[AgentCoreMemoryService] No sessions found: actorId=${actorId}`);
         return [];
       }
 
-      // セッション一覧を軽量形式で返却（詳細取得は行わない）
+      // Return session list in lightweight format (no detailed retrieval)
       const sessions: SessionSummary[] = response.sessionSummaries
         .filter((sessionSummary) => sessionSummary.sessionId)
         .map((sessionSummary) => ({
           sessionId: sessionSummary.sessionId!,
-          title: 'セッション名', // 固定タイトル
-          lastMessage: '会話を選択して履歴を表示', // 固定メッセージ
-          messageCount: 0, // 詳細取得しないため 0
+          title: 'Session', // Fixed title
+          lastMessage: 'Select conversation to view history', // Fixed message
+          messageCount: 0, // 0 since no detailed retrieval
           createdAt: sessionSummary.createdAt?.toISOString() || new Date().toISOString(),
           updatedAt: sessionSummary.createdAt?.toISOString() || new Date().toISOString(),
         }));
 
-      // 作成日時の降順でソート（最新のセッションが上に）
+      // Sort by creation date in descending order (latest sessions first)
       sessions.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-      console.log(`[AgentCoreMemoryService] ${sessions.length} 件のセッションを取得しました`);
+      console.log(`[AgentCoreMemoryService] Retrieved ${sessions.length} sessions`);
       return sessions;
     } catch (error) {
-      // 新規ユーザーでActorが存在しない場合は空配列を返す
+      // Return empty array for new users where Actor doesn't exist
       if (error instanceof Error && error.name === 'ResourceNotFoundException') {
         console.log(
-          `[AgentCoreMemoryService] 新規ユーザーのため空のセッション一覧を返却: actorId=${actorId}`
+          `[AgentCoreMemoryService] Returning empty session list for new user: actorId=${actorId}`
         );
         return [];
       }
-      console.error('[AgentCoreMemoryService] セッション一覧取得エラー:', error);
+      console.error('[AgentCoreMemoryService] Session list retrieval error:', error);
       throw error;
     }
   }
 
   /**
-   * 指定されたセッションの会話履歴を取得
-   * @param actorId ユーザーID
-   * @param sessionId セッションID
-   * @returns 会話履歴
+   * Get conversation history for specified session
+   * @param actorId User ID
+   * @param sessionId Session ID
+   * @returns Conversation history
    */
   async getSessionEvents(actorId: string, sessionId: string): Promise<ConversationMessage[]> {
     try {
-      console.log(`[AgentCoreMemoryService] セッションイベントを取得中: sessionId=${sessionId}`);
+      console.log(`[AgentCoreMemoryService] Retrieving session events: sessionId=${sessionId}`);
 
       const command = new ListEventsCommand({
         memoryId: this.memoryId,
         actorId: actorId,
         sessionId: sessionId,
         includePayloads: true,
-        maxResults: 100, // 最大100件を取得
+        maxResults: 100, // Retrieve maximum 100 items
       });
 
       const response = await this.client.send(command);
 
       if (!response.events) {
-        console.log(
-          `[AgentCoreMemoryService] イベントが見つかりませんでした: sessionId=${sessionId}`
-        );
+        console.log(`[AgentCoreMemoryService] No events found: sessionId=${sessionId}`);
         return [];
       }
 
-      // Events を時系列順にソート
+      // Sort Events in chronological order
       const sortedEvents = response.events.sort((a, b) => {
         const timestampA = a.eventTimestamp ? new Date(a.eventTimestamp).getTime() : 0;
         const timestampB = b.eventTimestamp ? new Date(b.eventTimestamp).getTime() : 0;
         return timestampA - timestampB;
       });
 
-      // Events から ConversationMessage に変換
+      // Convert Events to ConversationMessage
       const messages: ConversationMessage[] = [];
 
       for (const event of sortedEvents) {
         if (event.payload && event.payload.length > 0) {
           for (const payloadItem of event.payload) {
-            // ケース1: conversational payload（テキストのみ）
+            // Case 1: conversational payload (text only)
             if ('conversational' in payloadItem) {
               const conversationalPayload = payloadItem as ConversationalPayload;
               const role = conversationalPayload.conversational.role;
@@ -460,7 +452,7 @@ export class AgentCoreMemoryService {
               });
             }
 
-            // ケース2: blob payload（toolUse/toolResult含む）
+            // Case 2: blob payload (includes toolUse/toolResult)
             else if ('blob' in payloadItem && payloadItem.blob) {
               const blobData = parseBlobPayload(payloadItem.blob);
 
@@ -479,42 +471,42 @@ export class AgentCoreMemoryService {
         }
       }
 
-      console.log(`[AgentCoreMemoryService] ${messages.length} 件のメッセージを取得しました`);
+      console.log(`[AgentCoreMemoryService] Retrieved ${messages.length} messages`);
       return messages;
     } catch (error) {
-      console.error('[AgentCoreMemoryService] セッションイベント取得エラー:', error);
+      console.error('[AgentCoreMemoryService] Session event retrieval error:', error);
       throw error;
     }
   }
 
   /**
-   * セッションの詳細情報を取得（タイトルと最終メッセージを生成）
-   * @param actorId ユーザーID
-   * @param sessionId セッションID
-   * @returns セッション詳細
+   * Get session details (generate title and last message)
+   * @param actorId User ID
+   * @param sessionId Session ID
+   * @returns Session details
    * @private
    */
   private async getSessionDetail(actorId: string, sessionId: string): Promise<SessionSummary> {
     const messages = await this.getSessionEvents(actorId, sessionId);
 
-    // タイトルを生成（最初のユーザーメッセージを使用）
-    let title = `セッション ${sessionId.slice(0, 8)}...`;
+    // Generate title (use first user message)
+    let title = `Session ${sessionId.slice(0, 8)}...`;
     const firstUserMessage = messages.find((m) => m.type === 'user');
     if (firstUserMessage) {
       const firstText = extractFirstText(firstUserMessage.contents);
-      // 最大50文字に切り詰め
+      // Truncate to maximum 50 characters
       title = firstText.length > 50 ? `${firstText.slice(0, 50)}...` : firstText;
     }
 
-    // 最終メッセージを取得
-    let lastMessage = '会話を開始してください';
+    // Get last message
+    let lastMessage = 'Please start a conversation';
     if (messages.length > 0) {
       const lastMsg = messages[messages.length - 1];
       const lastText = extractFirstText(lastMsg.contents);
       lastMessage = lastText.length > 100 ? `${lastText.slice(0, 100)}...` : lastText;
     }
 
-    // 作成日時と更新日時
+    // Creation and update timestamps
     const createdAt = messages.length > 0 ? messages[0].timestamp : new Date().toISOString();
     const updatedAt = messages.length > 0 ? messages[messages.length - 1].timestamp : createdAt;
 
@@ -529,11 +521,11 @@ export class AgentCoreMemoryService {
   }
 
   /**
-   * 長期記憶レコード一覧を取得
-   * @param actorId ユーザーID
-   * @param memoryStrategyId 記憶戦略ID（例: preference_builtin_cdkGen0001-L84bdDEgeO）
-   * @param nextToken ページネーション用トークン
-   * @returns 長期記憶レコード一覧
+   * Get long-term memory record list
+   * @param actorId User ID
+   * @param memoryStrategyId Memory strategy ID (e.g., preference_builtin_cdkGen0001-L84bdDEgeO)
+   * @param nextToken Pagination token
+   * @returns Long-term memory record list
    */
   async listMemoryRecords(
     actorId: string,
@@ -542,10 +534,10 @@ export class AgentCoreMemoryService {
   ): Promise<MemoryRecordList> {
     try {
       console.log(
-        `[AgentCoreMemoryService] 長期記憶レコード一覧を取得中: actorId=${actorId}, memoryStrategyId=${memoryStrategyId}`
+        `[AgentCoreMemoryService] Retrieving long-term memory record list: actorId=${actorId}, memoryStrategyId=${memoryStrategyId}`
       );
 
-      // namespace形式を正しい形式に修正
+      // Fix namespace format to correct format
       const namespace = `/strategies/${memoryStrategyId}/actors/${actorId}`;
 
       const command = new ListMemoryRecordsCommand({
@@ -558,23 +550,23 @@ export class AgentCoreMemoryService {
 
       const response = await this.client.send(command);
 
-      // AWS SDKのレスポンス型にmemoryRecordSummariesが含まれていない場合の型アサーション
+      // Type assertion for cases where memoryRecordSummaries is not included in AWS SDK response type
       const extendedResponse = response as typeof response & {
         memoryRecordSummaries?: MemoryRecordSummary[];
       };
 
       if (!extendedResponse.memoryRecordSummaries) {
         console.log(
-          `[AgentCoreMemoryService] 長期記憶レコードが見つかりませんでした: memoryStrategyId=${memoryStrategyId}`
+          `[AgentCoreMemoryService] Long-term memory records not found: memoryStrategyId=${memoryStrategyId}`
         );
         return { records: [] };
       }
 
       const records: MemoryRecord[] = extendedResponse.memoryRecordSummaries.map(
         (record, index: number) => {
-          // デバッグログ: memoryRecordSummariesの構造を確認
+          // Debug log: Check structure of memoryRecordSummaries
           if (index < 2) {
-            // 最初の2件のみログ出力
+            // Log only first 2 items
             console.log(`[AgentCoreMemoryService] Record ${index} structure:`, {
               recordId: record.memoryRecordId,
               recordIdType: typeof record.memoryRecordId,
@@ -583,7 +575,7 @@ export class AgentCoreMemoryService {
             });
           }
 
-          // contentがオブジェクトの場合はtextプロパティを抽出
+          // Extract text property if content is an object
           let content = '';
           if (typeof record.content === 'object' && record.content?.text) {
             content = record.content.text;
@@ -593,7 +585,7 @@ export class AgentCoreMemoryService {
             content = JSON.stringify(record.content);
           }
 
-          // recordIdが空の場合は警告ログ
+          // Warning log if recordId is empty
           const recordId = record.memoryRecordId || '';
           if (!recordId) {
             console.warn(
@@ -612,7 +604,7 @@ export class AgentCoreMemoryService {
         }
       );
 
-      console.log(`[AgentCoreMemoryService] ${records.length} 件の長期記憶レコードを取得しました`);
+      console.log(`[AgentCoreMemoryService] Retrieved ${records.length} long-term memory records`);
       return {
         records,
         nextToken: response.nextToken,
@@ -620,20 +612,23 @@ export class AgentCoreMemoryService {
     } catch (error) {
       if (error instanceof Error && error.name === 'ResourceNotFoundException') {
         console.log(
-          `[AgentCoreMemoryService] 長期記憶レコードが存在しません: memoryStrategyId=${memoryStrategyId}`
+          `[AgentCoreMemoryService] Long-term memory records do not exist: memoryStrategyId=${memoryStrategyId}`
         );
         return { records: [] };
       }
-      console.error('[AgentCoreMemoryService] 長期記憶レコード一覧取得エラー:', error);
+      console.error(
+        '[AgentCoreMemoryService] Long-term memory record list retrieval error:',
+        error
+      );
       throw error;
     }
   }
 
   /**
-   * 長期記憶レコードを削除
-   * @param actorId ユーザーID
-   * @param memoryStrategyId 記憶戦略ID
-   * @param recordId レコードID
+   * Delete long-term memory record
+   * @param actorId User ID
+   * @param memoryStrategyId Memory strategy ID
+   * @param recordId Record ID
    */
   async deleteMemoryRecord(
     actorId: string,
@@ -642,39 +637,39 @@ export class AgentCoreMemoryService {
   ): Promise<void> {
     try {
       console.log(
-        `[AgentCoreMemoryService] 長期記憶レコードを削除中: recordId=${recordId}, memoryStrategyId=${memoryStrategyId}`
+        `[AgentCoreMemoryService] Deleting long-term memory record: recordId=${recordId}, memoryStrategyId=${memoryStrategyId}`
       );
 
-      // namespace形式を正しい形式に修正
+      // Fix namespace format to correct format
       const namespace = `/strategies/${memoryStrategyId}/actors/${actorId}`;
 
       const deleteParams: DeleteMemoryRecordParams = {
         memoryId: this.memoryId,
         namespace: namespace,
         memoryStrategyId: memoryStrategyId,
-        memoryRecordId: recordId, // recordId → memoryRecordId に修正
+        memoryRecordId: recordId, // recordId → memoryRecordId fixed
       };
 
-      console.log(`[AgentCoreMemoryService] 削除パラメータ:`, deleteParams);
+      console.log(`[AgentCoreMemoryService] Delete parameters:`, deleteParams);
 
       const command = new DeleteMemoryRecordCommand(deleteParams);
 
       await this.client.send(command);
-      console.log(`[AgentCoreMemoryService] 長期記憶レコードを削除しました: recordId=${recordId}`);
+      console.log(`[AgentCoreMemoryService] Long-term memory record deleted: recordId=${recordId}`);
     } catch (error) {
-      console.error('[AgentCoreMemoryService] 長期記憶レコード削除エラー:', error);
+      console.error('[AgentCoreMemoryService] Long-term memory record deletion error:', error);
       throw error;
     }
   }
 
   /**
-   * セマンティック検索で長期記憶レコードを取得
-   * @param actorId ユーザーID
-   * @param memoryStrategyId 記憶戦略ID
-   * @param query 検索クエリ
-   * @param topK 取得件数（デフォルト: 10）
-   * @param relevanceScore 関連度スコアの閾値（デフォルト: 0.2）
-   * @returns 長期記憶レコード一覧（関連度順）
+   * Retrieve long-term memory records using semantic search
+   * @param actorId User ID
+   * @param memoryStrategyId Memory strategy ID
+   * @param query Search query
+   * @param topK Number of items to retrieve (default: 10)
+   * @param relevanceScore Relevance score threshold (default: 0.2)
+   * @returns Long-term memory record list (sorted by relevance)
    */
   async retrieveMemoryRecords(
     actorId: string,
@@ -685,10 +680,10 @@ export class AgentCoreMemoryService {
   ): Promise<MemoryRecord[]> {
     try {
       console.log(
-        `[AgentCoreMemoryService] セマンティック検索を実行中: query=${query}, memoryStrategyId=${memoryStrategyId}`
+        `[AgentCoreMemoryService] Executing semantic search: query=${query}, memoryStrategyId=${memoryStrategyId}`
       );
 
-      // namespace形式を正しい形式に修正
+      // Fix namespace format to correct format
       const namespace = `/strategies/${memoryStrategyId}/actors/${actorId}`;
 
       const retrieveParams: RetrieveMemoryRecordsParams = {
@@ -706,23 +701,21 @@ export class AgentCoreMemoryService {
 
       const response = await this.client.send(command);
 
-      // AWS SDKのレスポンス型にmemoryRecordSummariesが含まれていない場合の型アサーション
+      // Type assertion for cases where memoryRecordSummaries is not included in AWS SDK response type
       const extendedResponse = response as typeof response & {
         memoryRecordSummaries?: MemoryRecordSummary[];
       };
 
       if (!extendedResponse.memoryRecordSummaries) {
-        console.log(
-          `[AgentCoreMemoryService] セマンティック検索結果が見つかりませんでした: query=${query}`
-        );
+        console.log(`[AgentCoreMemoryService] Semantic search results not found: query=${query}`);
         return [];
       }
 
       const records: MemoryRecord[] = extendedResponse.memoryRecordSummaries.map(
         (record: MemoryRecordSummary, index: number) => {
-          // デバッグログ: memoryRecordSummariesの構造を確認
+          // Debug log: Check structure of memoryRecordSummaries
           if (index < 2) {
-            // 最初の2件のみログ出力
+            // Log only first 2 items
             console.log(`[AgentCoreMemoryService] Retrieve record ${index} structure:`, {
               recordId: record.memoryRecordId,
               recordIdType: typeof record.memoryRecordId,
@@ -731,7 +724,7 @@ export class AgentCoreMemoryService {
             });
           }
 
-          // contentがオブジェクトの場合はtextプロパティを抽出
+          // Extract text property if content is an object
           let content = '';
           if (typeof record.content === 'object' && record.content?.text) {
             content = record.content.text;
@@ -741,7 +734,7 @@ export class AgentCoreMemoryService {
             content = JSON.stringify(record.content);
           }
 
-          // recordIdが空の場合は警告ログ
+          // Warning log if recordId is empty
           const recordId = record.memoryRecordId || '';
           if (!recordId) {
             console.warn(
@@ -760,26 +753,24 @@ export class AgentCoreMemoryService {
         }
       );
 
-      console.log(
-        `[AgentCoreMemoryService] ${records.length} 件のセマンティック検索結果を取得しました`
-      );
+      console.log(`[AgentCoreMemoryService] Retrieved ${records.length} semantic search results`);
       return records;
     } catch (error) {
       if (error instanceof Error && error.name === 'ResourceNotFoundException') {
         console.log(
-          `[AgentCoreMemoryService] セマンティック検索対象が存在しません: memoryStrategyId=${memoryStrategyId}`
+          `[AgentCoreMemoryService] Semantic search target does not exist: memoryStrategyId=${memoryStrategyId}`
         );
         return [];
       }
-      console.error('[AgentCoreMemoryService] セマンティック検索エラー:', error);
+      console.error('[AgentCoreMemoryService] Semantic search error:', error);
       throw error;
     }
   }
 }
 
 /**
- * AgentCore Memory サービスのインスタンスを作成
- * @returns AgentCoreMemoryService インスタンス
+ * Create AgentCore Memory service instance
+ * @returns AgentCoreMemoryService instance
  */
 export function createAgentCoreMemoryService(): AgentCoreMemoryService {
   return new AgentCoreMemoryService(config.agentcore.memoryId, config.agentcore.region);

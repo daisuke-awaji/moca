@@ -1,11 +1,11 @@
 import dotenv from 'dotenv';
 import { z } from 'zod';
 
-// 環境変数を読み込み
+// Load environment variables
 dotenv.config();
 
 /**
- * 環境変数のスキーマ定義
+ * Environment variable schema definition
  */
 const envSchema = z.object({
   // AWS Configuration
@@ -35,12 +35,12 @@ const envSchema = z.object({
 });
 
 /**
- * 設定の型定義
+ * Configuration type definition
  */
 export type Config = z.infer<typeof envSchema>;
 
 /**
- * 環境変数をパース・バリデーション
+ * Parse and validate environment variables
  */
 function parseEnv(): Config {
   try {
@@ -48,26 +48,26 @@ function parseEnv(): Config {
   } catch (error) {
     if (error instanceof z.ZodError) {
       const missingVars = error.issues.map((issue) => issue.path.join('.')).join(', ');
-      throw new Error(`必要な環境変数が設定されていません: ${missingVars}`);
+      throw new Error(`Required environment variables are not set: ${missingVars}`);
     }
     throw error;
   }
 }
 
 /**
- * アプリケーション設定
+ * Application configuration
  */
 export const config = parseEnv();
 
 /**
- * ワークスペースディレクトリ
- * Agent がファイル操作を行うデフォルトの作業ディレクトリ
+ * Workspace directory
+ * Default working directory for Agent file operations
  */
 export const WORKSPACE_DIRECTORY = '/tmp/ws';
 
 /**
- * ロギング設定
- * オブジェクトを自動的に JSON.stringify して CloudWatch で可読性を向上
+ * Logging configuration
+ * Automatically JSON.stringify objects to improve readability in CloudWatch
  */
 export const logger = {
   debug: (...args: unknown[]) => {
@@ -103,11 +103,11 @@ export const logger = {
 };
 
 /**
- * 設定値を検証・表示
+ * Validate and display configuration values
  */
 export function validateConfig(): void {
-  logger.info('設定値検証開始');
+  logger.info('Configuration validation started');
 
-  logger.debug('設定値:', config);
-  logger.info('設定値検証完了');
+  logger.debug('Configuration values:', config);
+  logger.info('Configuration validation completed');
 }

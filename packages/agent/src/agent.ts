@@ -1,6 +1,6 @@
 /**
  * Strands AI Agent for AgentCore Runtime
- * AgentCore Runtime で動作し、AgentCore Gateway のツールを使用する AI Agent
+ * AI Agent that runs on AgentCore Runtime and uses AgentCore Gateway tools
  */
 
 import { Agent, HookProvider, Message, McpClient } from '@strands-agents/sdk';
@@ -17,41 +17,41 @@ import { retrieveLongTermMemory } from './session/memory-retriever.js';
 import type { MCPConfig } from './mcp/types.js';
 
 /**
- * AgentCore Runtime 用の Strands Agent 作成オプション
+ * Strands Agent creation options for AgentCore Runtime
  */
 export interface CreateAgentOptions {
-  modelId?: string; // 使用するモデルID（未指定時は環境変数）
-  enabledTools?: string[]; // 有効化するツール名配列（undefined=全て、[]=なし）
-  systemPrompt?: string; // カスタムシステムプロンプト（未指定時は自動生成）
-  // セッション復元用（並列処理のため）
+  modelId?: string; // Model ID to use (uses environment variable if not specified)
+  enabledTools?: string[]; // Array of tool names to enable (undefined=all, []=none)
+  systemPrompt?: string; // Custom system prompt (auto-generated if not specified)
+  // For session restoration (for parallel processing)
   sessionStorage?: SessionStorage;
   sessionConfig?: SessionConfig;
-  // 長期記憶参照用
-  memoryEnabled?: boolean; // 長期記憶を有効化するか（デフォルト: false）
-  memoryContext?: string; // 検索クエリ（ユーザーの最新メッセージなど）
-  actorId?: string; // ユーザーID
-  memoryTopK?: number; // 取得する長期記憶の件数（デフォルト: 10）
-  // ユーザー定義 MCP サーバー設定
-  mcpConfig?: Record<string, unknown>; // mcp.json 形式の設定
+  // For long-term memory reference
+  memoryEnabled?: boolean; // Whether to enable long-term memory (default: false)
+  memoryContext?: string; // Search query (e.g., user's latest message)
+  actorId?: string; // User ID
+  memoryTopK?: number; // Number of long-term memories to retrieve (default: 10)
+  // User-defined MCP server configuration
+  mcpConfig?: Record<string, unknown>; // Configuration in mcp.json format
 }
 
 /**
- * ツールをフィルタリング
+ * Filter tools
  */
 function filterTools<T extends { name: string }>(tools: T[], enabledTools?: string[]): T[] {
   if (enabledTools === undefined) return [];
   if (enabledTools.length === 0) {
-    logger.info('🔧 ツールを無効化: 空配列が指定されました');
+    logger.info('🔧 Tools disabled: Empty array specified');
     return [];
   }
 
   const filtered = tools.filter((tool) => enabledTools.includes(tool.name));
-  logger.info(`🔧 ツールをフィルタリング: ${enabledTools.join(', ')}`);
+  logger.info(`🔧 Filtering tools: ${enabledTools.join(', ')}`);
   return filtered;
 }
 
 /**
- * セッション履歴を読み込む
+ * Load session history
  */
 async function loadSessionHistory(
   sessionStorage?: SessionStorage,
@@ -64,7 +64,7 @@ async function loadSessionHistory(
 }
 
 /**
- * 長期記憶を取得する
+ * Retrieve long-term memories
  */
 async function fetchLongTermMemories(options?: CreateAgentOptions): Promise<{
   memories: string[];
@@ -75,7 +75,7 @@ async function fetchLongTermMemories(options?: CreateAgentOptions): Promise<{
     hasMemoryId: boolean;
   };
 }> {
-  // 条件チェック
+  // Check conditions
   const conditions = {
     memoryEnabled: !!options?.memoryEnabled,
     hasActorId: !!options?.actorId,
@@ -83,28 +83,28 @@ async function fetchLongTermMemories(options?: CreateAgentOptions): Promise<{
     hasMemoryId: !!config.AGENTCORE_MEMORY_ID,
   };
 
-  logger.info('🧠 長期記憶取得条件チェック:', conditions);
+  logger.info('🧠 Long-term memory retrieval condition check:', conditions);
 
   if (!options?.memoryEnabled) {
-    logger.info('🧠 長期記憶が無効化されています');
+    logger.info('🧠 Long-term memory is disabled');
     return { memories: [], conditions };
   }
 
-  // 必須条件が満たされていない場合
+  // If required conditions not met
   if (!conditions.hasMemoryId) {
-    logger.warn('⚠️ AGENTCORE_MEMORY_ID が設定されていません');
+    logger.warn('⚠️ AGENTCORE_MEMORY_ID is not configured');
     return { memories: [], conditions };
   }
   if (!conditions.hasActorId) {
-    logger.warn('⚠️ actorId が提供されていません');
+    logger.warn('⚠️ actorId is not provided');
     return { memories: [], conditions };
   }
   if (!conditions.hasMemoryContext) {
-    logger.warn('⚠️ memoryContext が提供されていません');
+    logger.warn('⚠️ memoryContext is not provided');
     return { memories: [], conditions };
   }
 
-  // 長期記憶を取得（条件チェック済みなので non-null assertion を使用）
+  // Retrieve long-term memories (use non-null assertion since conditions are checked)
   const memories = await retrieveLongTermMemory(
     config.AGENTCORE_MEMORY_ID!,
     options.actorId!,
@@ -117,7 +117,7 @@ async function fetchLongTermMemories(options?: CreateAgentOptions): Promise<{
 }
 
 /**
- * Agent 作成結果
+ * Agent creation result
  */
 export interface CreateAgentResult {
   agent: Agent;
@@ -135,32 +135,32 @@ export interface CreateAgentResult {
 }
 
 /**
- * AgentCore Runtime 用の Strands Agent を作成
- * @param hooks HookProvider の配列（セッション永続化など）
- * @param options Agent作成オプション（モデルID、ツール、システムプロンプト、セッション設定）
+ * Create Strands Agent for AgentCore Runtime
+ * @param hooks Array of HookProviders (e.g., session persistence)
+ * @param options Agent creation options (model ID, tools, system prompt, session config)
  */
 export async function createAgent(
   hooks?: HookProvider[],
   options?: CreateAgentOptions
 ): Promise<CreateAgentResult> {
-  logger.info('Strands Agent を初期化中...');
+  logger.info('Initializing Strands Agent...');
 
   try {
-    // 1. ユーザー定義 MCP クライアントを生成（リクエストから受け取った mcpConfig）
+    // 1. Generate user-defined MCP clients (mcpConfig received from request)
     let userMCPClients: McpClient[] = [];
     if (options?.mcpConfig) {
       try {
-        logger.info('🔧 ユーザー定義 MCP 設定を処理中...');
+        logger.info('🔧 Processing user-defined MCP configuration...');
         const userMCPServers = getEnabledMCPServers(options.mcpConfig as unknown as MCPConfig);
         userMCPClients = createMCPClients(userMCPServers);
-        logger.info(`✅ ユーザー定義 MCP クライアント: ${userMCPClients.length}件`);
+        logger.info(`✅ User-defined MCP clients: ${userMCPClients.length} items`);
       } catch (error) {
-        logger.error('❌ ユーザー定義 MCP クライアントの生成に失敗:', error);
-        // エラーがあってもスキップして続行
+        logger.error('❌ Failed to generate user-defined MCP clients:', error);
+        // Skip and continue even if error occurs
       }
     }
 
-    // 2. セッション履歴復元、Gateway MCPツール取得、長期記憶取得を並列実行
+    // 2. Execute in parallel: restore session history, get Gateway MCP tools, retrieve long-term memories
     const [savedMessages, gatewayMCPTools, longTermMemoriesResult] = await Promise.all([
       loadSessionHistory(options?.sessionStorage, options?.sessionConfig),
       mcpClient.listTools(),
@@ -170,18 +170,18 @@ export async function createAgent(
     const longTermMemories = longTermMemoriesResult.memories;
     const memoryConditions = longTermMemoriesResult.conditions;
 
-    logger.info(`📖 セッション履歴を復元: ${savedMessages.length}件のメッセージ`);
+    logger.info(`📖 Session history restored: ${savedMessages.length} messages`);
     if (longTermMemories.length > 0) {
-      logger.info(`🧠 長期記憶を取得: ${longTermMemories.length}件`);
+      logger.info(`🧠 Long-term memories retrieved: ${longTermMemories.length} items`);
     }
 
-    // 3. Gateway MCP ツールを Strands 形式に変換
+    // 3. Convert Gateway MCP tools to Strands format
     const gatewayStrandsTools = convertMCPToolsToStrands(gatewayMCPTools as MCPToolDefinition[]);
 
-    // 4. すべてのツールを統合
-    // - ローカル Python ツール等（enabledTools でフィルタリング）
-    // - AgentCore Gateway 経由のツール（enabledTools でフィルタリング）
-    // - ユーザー定義 MCP サーバー（リクエストから、常に全て有効）
+    // 4. Integrate all tools
+    // - Local Python tools etc. (filtered by enabledTools)
+    // - Tools via AgentCore Gateway (filtered by enabledTools)
+    // - User-defined MCP servers (from request, always all enabled)
     const filteredTools = filterTools(
       [...localTools, ...gatewayStrandsTools],
       options?.enabledTools
@@ -189,14 +189,14 @@ export async function createAgent(
     const allTools = [...filteredTools, ...userMCPClients] as unknown[];
 
     logger.info(
-      `✅ 合計${allTools.length}個のツールを準備 (ローカル: ${localTools.length}, Gateway: ${gatewayStrandsTools.length}, ユーザーMCP: ${userMCPClients.length})`
+      `✅ Prepared total of ${allTools.length} tools (Local: ${localTools.length}, Gateway: ${gatewayStrandsTools.length}, User MCP: ${userMCPClients.length})`
     );
 
-    // 3. Bedrock モデルを作成
+    // 3. Create Bedrock model
     const model = createBedrockModel({ modelId: options?.modelId });
-    logger.info(`🤖 使用モデル: ${options?.modelId || 'デフォルト'}`);
+    logger.info(`🤖 Using model: ${options?.modelId || 'default'}`);
 
-    // 5. システムプロンプトを生成（ストレージパス情報と長期記憶を含む）
+    // 5. Generate system prompt (including storage path info and long-term memories)
     const storagePath = getCurrentStoragePath();
     const systemPrompt = buildSystemPrompt({
       customPrompt: options?.systemPrompt,
@@ -207,15 +207,15 @@ export async function createAgent(
     });
 
     if (options?.systemPrompt) {
-      logger.info('📝 カスタムシステムプロンプトを使用');
+      logger.info('📝 Using custom system prompt');
     } else {
-      logger.info('📝 デフォルトシステムプロンプトを生成');
+      logger.info('📝 Generated default system prompt');
     }
-    logger.info('📝 デフォルトコンテキストを付与したシステムプロンプトを生成');
+    logger.info('📝 Generated system prompt with default context');
 
     logger.info({ systemPrompt });
 
-    // 6. Agent を作成
+    // 6. Create Agent
 
     const agent = new Agent({
       model,
@@ -226,14 +226,14 @@ export async function createAgent(
       hooks,
     });
 
-    // 7. ログ出力
+    // 7. Log output
     if (hooks && hooks.length > 0) {
-      logger.info(`✅ ${hooks.length}個のフックを登録`);
+      logger.info(`✅ Registered ${hooks.length} hooks`);
     }
 
-    logger.info('✅ Strands Agent の初期化が完了しました');
+    logger.info('✅ Strands Agent initialization completed');
 
-    // メタデータを返す
+    // Return metadata
     return {
       agent,
       metadata: {
@@ -244,7 +244,7 @@ export async function createAgent(
       },
     };
   } catch (error) {
-    logger.error('❌ Strands Agent の初期化に失敗:', error);
+    logger.error('❌ Strands Agent initialization failed:', error);
     throw error;
   }
 }
