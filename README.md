@@ -1,7 +1,3 @@
-<p align="center">
-  <sub><sup>🔬 This is an experimental repository for personal use and learning purposes.</sup></sub>
-</p>
-
 # Fullstack AgentCore
 
 A full-stack AI agent system built with Amazon Bedrock AgentCore, providing a production-ready platform for deploying generative AI applications.
@@ -129,3 +125,9 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 - [Amazon Bedrock Documentation](https://docs.aws.amazon.com/bedrock/)
 - [AWS CDK Documentation](https://docs.aws.amazon.com/cdk/)
 - [Strands Agents SDK](https://github.com/awslabs/multi-agent-orchestrator)
+
+---
+
+<p align="center">
+  <sub><sup>This is an experimental repository for personal use and learning purposes.</sup></sub>
+</p>
