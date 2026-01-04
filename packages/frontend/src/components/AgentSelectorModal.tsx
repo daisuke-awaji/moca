@@ -263,83 +263,80 @@ export const AgentSelectorModal: React.FC<AgentSelectorModalProps> = ({
                                   </div>
                                 </div>
 
-                                {/* 3点メニュー - デスクトップのみ */}
-                                {!isMobileView && (
-                                  <div className="relative ml-2">
-                                    <button
-                                      onClick={(e) => toggleMenu(agent.id, e)}
-                                      className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
-                                    >
-                                      <MoreHorizontal className="w-4 h-4" />
-                                    </button>
+                                <div className="relative ml-2">
+                                  <button
+                                    onClick={(e) => toggleMenu(agent.id, e)}
+                                    className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
+                                  >
+                                    <MoreHorizontal className="w-5 h-5" />
+                                  </button>
 
-                                    {/* ドロップダウンメニュー */}
-                                    {openMenuId === agent.id && (
-                                      <div className="absolute right-0 top-full mt-1 w-40 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10">
-                                        <button
-                                          onMouseDown={(e) => {
-                                            e.stopPropagation();
-                                          }}
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            setEditingAgent(agent);
-                                            setMode('edit');
-                                            setOpenMenuId(null);
-                                          }}
-                                          className="w-full px-3 py-1.5 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-2"
-                                        >
-                                          <Edit2 className="w-3 h-3" />
-                                          <span>{t('common.edit')}</span>
-                                        </button>
-                                        <button
-                                          onMouseDown={(e) => {
-                                            e.stopPropagation();
-                                          }}
-                                          onClick={async (e) => {
-                                            e.stopPropagation();
-                                            const wasShared = agent.isShared;
-                                            try {
-                                              await toggleShare(agent.id);
-                                              // 成功時にトースト通知
-                                              toast.success(
-                                                wasShared
-                                                  ? t('agent.unshareSuccess')
-                                                  : t('agent.shareSuccess'),
-                                                {
-                                                  icon: '✅',
-                                                }
-                                              );
-                                            } catch (error) {
-                                              console.error('共有状態の変更に失敗:', error);
-                                              toast.error(t('agent.shareError'));
-                                            }
-                                            setOpenMenuId(null);
-                                          }}
-                                          className="w-full px-3 py-1.5 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-2"
-                                        >
-                                          <Share2 className="w-3 h-3" />
-                                          <span>
-                                            {agent.isShared ? t('agent.unshare') : t('agent.share')}
-                                          </span>
-                                        </button>
-                                        <button
-                                          onMouseDown={(e) => {
-                                            e.stopPropagation();
-                                          }}
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            setDeleteConfirmAgent(agent);
-                                            setOpenMenuId(null);
-                                          }}
-                                          className="w-full px-3 py-1.5 text-left text-sm text-red-600 hover:bg-red-50 flex items-center space-x-2"
-                                        >
-                                          <Trash2 className="w-3 h-3" />
-                                          <span>{t('common.delete')}</span>
-                                        </button>
-                                      </div>
-                                    )}
-                                  </div>
-                                )}
+                                  {/* ドロップダウンメニュー */}
+                                  {openMenuId === agent.id && (
+                                    <div className="absolute right-0 top-full mt-1 w-40 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10">
+                                      <button
+                                        onMouseDown={(e) => {
+                                          e.stopPropagation();
+                                        }}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setEditingAgent(agent);
+                                          setMode('edit');
+                                          setOpenMenuId(null);
+                                        }}
+                                        className="w-full px-3 py-1.5 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-2"
+                                      >
+                                        <Edit2 className="w-3 h-3" />
+                                        <span>{t('common.edit')}</span>
+                                      </button>
+                                      <button
+                                        onMouseDown={(e) => {
+                                          e.stopPropagation();
+                                        }}
+                                        onClick={async (e) => {
+                                          e.stopPropagation();
+                                          const wasShared = agent.isShared;
+                                          try {
+                                            await toggleShare(agent.id);
+                                            // 成功時にトースト通知
+                                            toast.success(
+                                              wasShared
+                                                ? t('agent.unshareSuccess')
+                                                : t('agent.shareSuccess'),
+                                              {
+                                                icon: '✅',
+                                              }
+                                            );
+                                          } catch (error) {
+                                            console.error('共有状態の変更に失敗:', error);
+                                            toast.error(t('agent.shareError'));
+                                          }
+                                          setOpenMenuId(null);
+                                        }}
+                                        className="w-full px-3 py-1.5 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-2"
+                                      >
+                                        <Share2 className="w-3 h-3" />
+                                        <span>
+                                          {agent.isShared ? t('agent.unshare') : t('agent.share')}
+                                        </span>
+                                      </button>
+                                      <button
+                                        onMouseDown={(e) => {
+                                          e.stopPropagation();
+                                        }}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setDeleteConfirmAgent(agent);
+                                          setOpenMenuId(null);
+                                        }}
+                                        className="w-full px-3 py-1.5 text-left text-sm text-red-600 hover:bg-red-50 flex items-center space-x-2"
+                                      >
+                                        <Trash2 className="w-3 h-3" />
+                                        <span>{t('common.delete')}</span>
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
                               </div>
                             </div>
                           </div>

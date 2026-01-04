@@ -15,6 +15,7 @@ import { useSharedAgentStore } from '../stores/sharedAgentStore';
 import { useAgentStore } from '../stores/agentStore';
 import { useAuthStore } from '../stores/authStore';
 import { toggleShareAgent, createAgent } from '../api/agents';
+import { useUIStore } from '../stores/uiStore';
 
 interface SharedAgentDetailModalProps {
   agent: Agent | null;
@@ -31,6 +32,7 @@ export const SharedAgentDetailModal: React.FC<SharedAgentDetailModalProps> = ({
   const { initializeStore: refreshAgents } = useAgentStore();
   const [isCloning, setIsCloning] = React.useState(false);
   const [isUnsharing, setIsUnsharing] = React.useState(false);
+  const { isMobileView } = useUIStore();
 
   if (!agent) return null;
 
@@ -194,12 +196,14 @@ export const SharedAgentDetailModal: React.FC<SharedAgentDetailModalProps> = ({
 
           {/* アクションボタン */}
           <div className="flex items-center gap-3">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 text-sm text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              {t('common.close')}
-            </button>
+            {!isMobileView && (
+              <button
+                onClick={onClose}
+                className="px-4 py-2 text-sm text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                {t('common.close')}
+              </button>
+            )}
             {isOwnAgent ? (
               <button
                 onClick={handleUnshare}
