@@ -313,6 +313,9 @@ storage:
   fileStorage: File Storage
   loadingImage: Loading image...
   failedToLoadImage: Failed to load image
+  loadingVideo: Loading video...
+  failedToLoadVideo: Failed to load video
+  videoNotSupported: Your browser does not support the video tag
   failedToLoad: Failed to load
   description: We provide Amazon S3 storage space for each user. It automatically syncs with the AI agent's workspace (/tmp/ws), so files created or edited by the agent are saved in this space. When you select a directory, files in that directory are loaded into the agent's workspace.
   currentPath: Current Path

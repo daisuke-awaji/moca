@@ -13,6 +13,7 @@ import { ToolResultBlock } from './ToolResultBlock';
 import { MermaidDiagram } from './MermaidDiagram';
 import { S3FileLink } from './S3FileLink';
 import { S3Image } from './S3Image';
+import { S3Video } from './S3Video';
 
 interface MessageProps {
   message: MessageType;
@@ -32,6 +33,13 @@ export const Message: React.FC<MessageProps> = ({ message }) => {
     return href.startsWith('/') && !href.startsWith('//') && !href.startsWith('/api/');
   };
 
+  // Check if a path is a video file
+  const isVideoFile = (path: string): boolean => {
+    const videoExtensions = ['.mp4', '.webm', '.mov', '.avi', '.mkv', '.m4v'];
+    const lowerPath = path.toLowerCase();
+    return videoExtensions.some((ext) => lowerPath.endsWith(ext));
+  };
+
   // Markdownカスタムコンポーネント（メモ化で参照を安定させる）
   const markdownComponents = useMemo(
     () => ({
@@ -39,6 +47,14 @@ export const Message: React.FC<MessageProps> = ({ message }) => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       a: ({ href, children, ...props }: any) => {
         if (href && isStoragePath(href)) {
+          // Check if it's a video file and display inline
+          if (isVideoFile(href)) {
+            return (
+              <div className="my-4">
+                <S3Video path={href} className="max-w-full" />
+              </div>
+            );
+          }
           return <S3FileLink path={href}>{children}</S3FileLink>;
         }
         // Regular link
@@ -48,10 +64,18 @@ export const Message: React.FC<MessageProps> = ({ message }) => {
           </a>
         );
       },
-      // Custom image renderer for S3 images
+      // Custom image renderer for S3 images and videos
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       img: ({ src, alt, ...props }: any) => {
         if (src && isStoragePath(src)) {
+          // Check if it's a video file and display inline
+          if (isVideoFile(src)) {
+            return (
+              <div className="my-4">
+                <S3Video path={src} className="max-w-full" />
+              </div>
+            );
+          }
           return <S3Image path={src} alt={alt || ''} className="max-w-full rounded-lg" />;
         }
         // Regular image

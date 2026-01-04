@@ -315,6 +315,9 @@ storage:
   fileStorage: ファイルストレージ
   loadingImage: 画像を読み込み中...
   failedToLoadImage: 画像の読み込みに失敗しました
+  loadingVideo: 動画を読み込み中...
+  failedToLoadVideo: 動画の読み込みに失敗しました
+  videoNotSupported: お使いのブラウザは動画タグをサポートしていません
   failedToLoad: 読み込み失敗
   description: ユーザーごとに Amazon S3 の領域を提供しています。AI エージェントのワークスペース（/tmp/ws）と自動的に同期されるため、エージェントが作成・編集したファイルはこの領域に保存されます。ディレクトリを選択すると、そのディレクトリ内のファイルがエージェントのワークスペースに読み込まれます。⚠️ セッション中に作業パスを変更すると、AIエージェントが以前のコンテキストを正しく解釈できなくなる可能性があります。
   currentPath: 現在のパス
