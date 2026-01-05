@@ -162,6 +162,7 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 - [Amazon Bedrock Documentation](https://docs.aws.amazon.com/bedrock/)
 - [AWS CDK Documentation](https://docs.aws.amazon.com/cdk/)
 - [Strands Agents SDK](https://github.com/awslabs/multi-agent-orchestrator)
+- [AgentCore Gateway & M365 Integration Guide](https://github.com/akadesilva/agentcore-gateway-demos/blob/main/guides/sharepoint-quickstart.md) - SharePoint/M365 connection setup
 
 ---
 

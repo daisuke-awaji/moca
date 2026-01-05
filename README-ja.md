@@ -159,6 +159,7 @@ AWS_REGION=eu-west-1 AWS_DEFAULT_REGION=eu-west-1 CDK_DEFAULT_REGION=eu-west-1 n
 - [Amazon Bedrockドキュメント](https://docs.aws.amazon.com/bedrock/)
 - [AWS CDKドキュメント](https://docs.aws.amazon.com/cdk/)
 - [Strands Agents SDK](https://github.com/awslabs/multi-agent-orchestrator)
+- [AgentCore Gateway & M365統合ガイド](https://github.com/akadesilva/agentcore-gateway-demos/blob/main/guides/sharepoint-quickstart.md) - SharePoint/M365との接続セットアップ
 
 ---
 
