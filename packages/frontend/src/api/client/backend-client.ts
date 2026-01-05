@@ -75,6 +75,11 @@ export async function backendRequest<T>(endpoint: string, options: RequestInit =
     return response.json();
   } catch (error) {
     logRequestError(method, endpoint, error);
+    
+    // Import and handle global errors
+    const { handleGlobalError } = await import('../../utils/errorHandler');
+    await handleGlobalError(error);
+    
     throw error;
   }
 }

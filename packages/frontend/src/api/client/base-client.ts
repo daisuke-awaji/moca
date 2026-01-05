@@ -4,6 +4,7 @@
  */
 
 import { getValidAccessToken } from '../../lib/cognito';
+import i18n from '../../i18n';
 
 /**
  * Custom error class for API errors
@@ -26,8 +27,8 @@ export class ApiError extends Error {
  * Custom error class for authentication errors
  */
 export class AuthenticationError extends Error {
-  constructor(message: string = '認証が必要です。再ログインしてください。') {
-    super(message);
+  constructor(message?: string) {
+    super(message || i18n.t('error.authenticationRequired'));
     this.name = 'AuthenticationError';
   }
 }
@@ -57,12 +58,19 @@ export async function createAuthHeaders(): Promise<Record<string, string>> {
 export async function handleApiError(response: Response): Promise<never> {
   const errorData = await response.json().catch(() => ({}));
 
-  throw new ApiError(
+  const apiError = new ApiError(
     errorData.message || errorData.error || 'Unknown error',
     response.status,
     response.statusText,
     errorData
   );
+
+  // Special handling for 401 errors
+  if (response.status === 401) {
+    console.warn('⚠️ 401 Unauthorized detected:', apiError.message);
+  }
+
+  throw apiError;
 }
 
 /**
