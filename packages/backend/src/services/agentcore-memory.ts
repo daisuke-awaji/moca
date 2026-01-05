@@ -6,10 +6,10 @@
 import {
   BedrockAgentCoreClient,
   ListSessionsCommand,
-  ListEventsCommand,
   ListMemoryRecordsCommand,
   DeleteMemoryRecordCommand,
   RetrieveMemoryRecordsCommand,
+  paginateListEvents,
 } from '@aws-sdk/client-bedrock-agentcore';
 import {
   BedrockAgentCoreControlClient,
@@ -220,10 +220,8 @@ function parseBlobPayload(blob: Uint8Array | Buffer | unknown): BlobData | null 
         // Try base64 decoding
         const decodedBuffer = Buffer.from(blob, 'base64');
         blobString = decodedBuffer.toString('utf8');
-        console.log('[AgentCoreMemoryService] Successfully decoded base64 blob');
       } catch {
         // Use directly if not base64
-        console.log('[AgentCoreMemoryService] Using blob as plain string');
         blobString = blob;
       }
     }
@@ -234,9 +232,6 @@ function parseBlobPayload(blob: Uint8Array | Buffer | unknown): BlobData | null 
     }
 
     const blobData = JSON.parse(blobString) as BlobData;
-    console.log(
-      `[AgentCoreMemoryService] Parsed blob data: messageType=${blobData.messageType}, role=${blobData.role}, contentBlocks=${blobData.content?.length || 0}`
-    );
     return blobData.messageType === 'content' ? blobData : null;
   } catch (error) {
     console.error('[AgentCoreMemoryService] Failed to parse blob payload:', error);
@@ -410,23 +405,32 @@ export class AgentCoreMemoryService {
     try {
       console.log(`[AgentCoreMemoryService] Retrieving session events: sessionId=${sessionId}`);
 
-      const command = new ListEventsCommand({
-        memoryId: this.memoryId,
-        actorId: actorId,
-        sessionId: sessionId,
-        includePayloads: true,
-        maxResults: 100, // Retrieve maximum 100 items
-      });
+      // ページネーション対応：すべてのイベントを取得
+      const allEvents = [];
+      const paginator = paginateListEvents(
+        { client: this.client },
+        {
+          memoryId: this.memoryId,
+          actorId: actorId,
+          sessionId: sessionId,
+          includePayloads: true,
+          maxResults: 100,
+        }
+      );
 
-      const response = await this.client.send(command);
+      for await (const page of paginator) {
+        if (page.events) {
+          allEvents.push(...page.events);
+        }
+      }
 
-      if (!response.events) {
+      if (allEvents.length === 0) {
         console.log(`[AgentCoreMemoryService] No events found: sessionId=${sessionId}`);
         return [];
       }
 
       // Sort Events in chronological order
-      const sortedEvents = response.events.sort((a, b) => {
+      const sortedEvents = allEvents.sort((a, b) => {
         const timestampA = a.eventTimestamp ? new Date(a.eventTimestamp).getTime() : 0;
         const timestampB = b.eventTimestamp ? new Date(b.eventTimestamp).getTime() : 0;
         return timestampA - timestampB;

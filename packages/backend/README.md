@@ -319,8 +319,6 @@ npm run docker:test
 Detailed logs are output for each endpoint access:
 
 ```
-🔐 JWT authentication started (req_1703057520123_abc123): { method: 'GET', path: '/me', ... }
-✅ JWT authentication successful (req_1703057520123_abc123): { userId: '...', username: '...' }
 👤 /me request successful (req_1703057520123_abc123): { userId: '...', ... }
 ```
 

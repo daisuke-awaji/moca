@@ -198,11 +198,6 @@ export function agentCorePayloadToMessage(payload: AgentCorePayload): Message {
 
       // blobData が取得できた場合の処理
       if (blobData && (blobData.messageType === 'content' || blobData.messageType === 'tool')) {
-        console.log('Successfully parsed blob data:', {
-          messageType: blobData.messageType,
-          role: blobData.role,
-        });
-
         const strandsRole = blobData.role as Role;
 
         // 新形式: content配列全体を保存

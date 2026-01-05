@@ -94,13 +94,6 @@ export async function verifyJWT(token: string): Promise<JWTVerificationResult> {
 
     const { payload }: JWTVerifyResult = await jwtVerify(token, JWKS, verifyOptions);
 
-    console.log('✅ JWT verification successful:', {
-      sub: payload.sub,
-      username: payload['cognito:username'],
-      tokenUse: payload.token_use,
-      exp: new Date((payload.exp || 0) * 1000).toISOString(),
-    });
-
     return {
       valid: true,
       payload: payload as CognitoJWTPayload,

@@ -4,8 +4,8 @@
 import {
   BedrockAgentCoreClient,
   CreateEventCommand,
-  ListEventsCommand,
   DeleteEventCommand,
+  paginateListEvents,
   type PayloadType,
 } from '@aws-sdk/client-bedrock-agentcore';
 import { Message } from '@strands-agents/sdk';
@@ -43,25 +43,39 @@ export class AgentCoreMemoryStorage implements SessionStorage {
         actorId: config.actorId,
       });
 
-      const command = new ListEventsCommand({
-        memoryId: this.memoryId,
-        actorId: config.actorId,
-        sessionId: config.sessionId,
-        includePayloads: true,
-        maxResults: 100, // 最大100件を取得
-      });
+      // ページネーション対応：すべてのイベントを取得
+      const allEvents = [];
+      const paginator = paginateListEvents(
+        { client: this.client },
+        {
+          memoryId: this.memoryId,
+          actorId: config.actorId,
+          sessionId: config.sessionId,
+          includePayloads: true,
+          maxResults: 100,
+        }
+      );
 
-      const response = await this.client.send(command);
+      for await (const page of paginator) {
+        if (page.events) {
+          allEvents.push(...page.events);
+        }
+      }
 
-      if (!response.events) {
+      if (allEvents.length === 0) {
         logger.info('[AgentCoreMemoryStorage] No events found:', {
           sessionId: config.sessionId,
         });
         return [];
       }
 
+      logger.info('[AgentCoreMemoryStorage] Fetched all events:', {
+        sessionId: config.sessionId,
+        totalEvents: allEvents.length,
+      });
+
       // Events を時系列順にソート
-      const sortedEvents = response.events.sort((a, b) => {
+      const sortedEvents = allEvents.sort((a, b) => {
         const timestampA = a.eventTimestamp ? new Date(a.eventTimestamp).getTime() : 0;
         const timestampB = b.eventTimestamp ? new Date(b.eventTimestamp).getTime() : 0;
         return timestampA - timestampB;
@@ -148,18 +162,26 @@ export class AgentCoreMemoryStorage implements SessionStorage {
         sessionId: config.sessionId,
       });
 
-      // セッションの全イベントを取得
-      const command = new ListEventsCommand({
-        memoryId: this.memoryId,
-        actorId: config.actorId,
-        sessionId: config.sessionId,
-        includePayloads: false, // イベントIDのみ取得
-        maxResults: 100,
-      });
+      // ページネーション対応：すべてのイベントを取得
+      const allEvents = [];
+      const paginator = paginateListEvents(
+        { client: this.client },
+        {
+          memoryId: this.memoryId,
+          actorId: config.actorId,
+          sessionId: config.sessionId,
+          includePayloads: false, // イベントIDのみ取得
+          maxResults: 100,
+        }
+      );
 
-      const response = await this.client.send(command);
+      for await (const page of paginator) {
+        if (page.events) {
+          allEvents.push(...page.events);
+        }
+      }
 
-      if (!response.events || response.events.length === 0) {
+      if (allEvents.length === 0) {
         logger.info('[AgentCoreMemoryStorage] No events to delete:', {
           sessionId: config.sessionId,
         });
@@ -168,11 +190,11 @@ export class AgentCoreMemoryStorage implements SessionStorage {
 
       logger.info('[AgentCoreMemoryStorage] Deleting events:', {
         sessionId: config.sessionId,
-        eventCount: response.events.length,
+        eventCount: allEvents.length,
       });
 
       // 各イベントを個別に削除
-      for (const event of response.events) {
+      for (const event of allEvents) {
         const eventId = extractEventId(event);
         if (eventId) {
           await this.deleteEvent(config, eventId);

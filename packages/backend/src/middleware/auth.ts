@@ -67,12 +67,6 @@ export function jwtAuthMiddleware(
   const requestId = generateRequestId();
   req.requestId = requestId;
 
-  console.log(`🔐 JWT authentication started (${requestId}):`, {
-    method: req.method,
-    path: req.path,
-    userAgent: req.get('User-Agent')?.substring(0, 50),
-  });
-
   // Get Authorization header
   const authHeader = req.get('Authorization');
 
@@ -132,12 +126,6 @@ export function jwtAuthMiddleware(
         // Verification successful: Add authentication information to request
         req.jwt = result.payload;
         req.userId = result.payload?.sub || result.payload?.['cognito:username'];
-
-        console.log(`✅ JWT authentication successful (${requestId}):`, {
-          userId: req.userId,
-          username: result.payload?.['cognito:username'] || result.payload?.username,
-          tokenUse: result.payload?.token_use,
-        });
 
         next();
       })
