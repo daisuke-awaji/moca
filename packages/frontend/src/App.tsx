@@ -14,11 +14,16 @@ import { EventsPage } from './pages/EventsPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { getCurrentUserSession } from './lib/cognito';
 import { initializeAgentStore } from './stores/agentStore';
+import { ErrorBoundary } from './components/ErrorBoundary';
+import { initializeErrorHandler } from './utils/errorHandler';
 
 function App() {
-  const { isAuthenticated, setUser, setLoading, setError } = useAuthStore();
+  const { isAuthenticated, setUser, setLoading, setError, logout } = useAuthStore();
 
   useEffect(() => {
+    // Initialize global error handler with auth store
+    initializeErrorHandler({ logout });
+
     // AgentStoreを初期化
     initializeAgentStore();
 
@@ -40,10 +45,10 @@ function App() {
     };
 
     checkExistingSession();
-  }, [setUser, setLoading, setError]);
+  }, [setUser, setLoading, setError, logout]);
 
   return (
-    <>
+    <ErrorBoundary>
       <Toaster
         position="top-right"
         toastOptions={{
@@ -89,7 +94,7 @@ function App() {
           <AuthContainer />
         )}
       </BrowserRouter>
-    </>
+    </ErrorBoundary>
   );
 }
 

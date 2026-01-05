@@ -81,9 +81,30 @@ export async function agentRequest(options: RequestInit = {}): Promise<Response>
 
     logRequestSuccess(method, url, response.status);
 
+    // Check for authentication errors
+    if (response.status === 401) {
+      const { handleGlobalError } = await import('../../utils/errorHandler');
+      const { ApiError } = await import('./base-client');
+      const error = new ApiError(
+        'Unauthorized',
+        401,
+        'Unauthorized',
+        { message: '認証が必要です' }
+      );
+      await handleGlobalError(error);
+      throw error;
+    }
+
     return response;
   } catch (error) {
     logRequestError(method, url, error);
+    
+    // Handle global errors if not already handled
+    if (error instanceof Error && error.message !== 'Unauthorized') {
+      const { handleGlobalError } = await import('../../utils/errorHandler');
+      await handleGlobalError(error);
+    }
+    
     throw error;
   }
 }

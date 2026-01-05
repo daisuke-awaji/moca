@@ -57,12 +57,19 @@ export async function createAuthHeaders(): Promise<Record<string, string>> {
 export async function handleApiError(response: Response): Promise<never> {
   const errorData = await response.json().catch(() => ({}));
 
-  throw new ApiError(
+  const apiError = new ApiError(
     errorData.message || errorData.error || 'Unknown error',
     response.status,
     response.statusText,
     errorData
   );
+
+  // Special handling for 401 errors
+  if (response.status === 401) {
+    console.warn('⚠️ 401 Unauthorized detected:', apiError.message);
+  }
+
+  throw apiError;
 }
 
 /**

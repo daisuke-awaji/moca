@@ -212,7 +212,13 @@ export const getValidAccessToken = async (): Promise<string | null> => {
     // getSession() は内部で期限切れチェック & 自動リフレッシュを行う
     cognitoUser.getSession((err: Error | null, session: CognitoUserSession | null) => {
       if (err) {
-        console.warn('🔒 セッション取得エラー:', err.message);
+        // Check if error is related to refresh token expiration
+        const cognitoErr = err as CognitoError;
+        if (cognitoErr.code === 'NotAuthorizedException' || cognitoErr.message?.includes('refresh')) {
+          console.warn('🔒 リフレッシュトークンが期限切れです:', err.message);
+        } else {
+          console.warn('🔒 セッション取得エラー:', err.message);
+        }
         resolve(null);
         return;
       }
