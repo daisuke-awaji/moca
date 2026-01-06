@@ -50,6 +50,7 @@ async function handleStartTask(
     agentId?: string;
     query?: string;
     modelId?: string;
+    storagePath?: string;
   },
   context?: ToolContext
 ): Promise<Record<string, unknown>> {
@@ -78,12 +79,16 @@ async function handleStartTask(
     // Get session ID from agent state if available
     const parentSessionId = context?.agent?.state?.get('sessionId') as string | undefined;
 
+    // Get storagePath from input or inherit from parent
+    const storagePath = input.storagePath || context?.agent?.state?.get('storagePath');
+
     // Create task
     const taskId = await subAgentTaskManager.createTask(input.agentId, input.query, {
       modelId: input.modelId,
       parentSessionId,
       currentDepth,
       maxDepth,
+      storagePath: storagePath as string | undefined,
     });
 
     return {
@@ -255,6 +260,12 @@ Then use those agentIds with action='start_task' to invoke them.
       .describe('Agent ID (required for start_task, e.g., "web-researcher")'),
     query: z.string().optional().describe('Query to send to the agent (required for start_task)'),
     modelId: z.string().optional().describe('Model ID to use (optional, defaults to agent config)'),
+    storagePath: z
+      .string()
+      .optional()
+      .describe(
+        'S3 storage path for sub-agent (e.g., "/project-a/"). Inherits from parent if not specified.'
+      ),
 
     // status parameters
     taskId: z.string().optional().describe('Task ID (required for status action)'),
@@ -278,7 +289,7 @@ Then use those agentIds with action='start_task' to invoke them.
       result = await handleStatus(input, context);
     }
 
-    // Type assertion to satisfy tool callback signature
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return result as any;
   },
 });

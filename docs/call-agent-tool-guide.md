@@ -9,6 +9,7 @@ The `call_agent` tool enables agents to invoke other specialized agents asynchro
 - **Asynchronous Execution**: Sub-agents run in background, allowing long-running tasks (minutes to hours)
 - **Polling Support**: Optional polling to wait for task completion
 - **Independent Sessions**: Sub-agents have no shared history with parent
+- **Shared Storage**: Sub-agents can share the same S3 storage path for collaborative work
 - **Recursion Control**: Maximum depth limit (default: 2 levels)
 - **Task Management**: Track and manage multiple concurrent sub-agent tasks
 - **API-based Configuration**: Agent definitions fetched dynamically from backend
@@ -73,7 +74,8 @@ First, list available agents to get their IDs and descriptions:
   action: 'start_task',
   agentId: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890', // UUID from list_agents
   query: 'Research the latest AI developments in 2025',
-  modelId: 'anthropic.claude-sonnet-4-5-20250929-v1:0' // Optional
+  modelId: 'anthropic.claude-sonnet-4-5-20250929-v1:0', // Optional
+  storagePath: '/project-a/' // Optional: S3 storage path (inherits from parent if not specified)
 }
 ```
 
@@ -185,6 +187,7 @@ The system includes these default agent types (actual IDs are UUIDs):
 | agentId | string | Yes | UUID of the agent (get from list_agents) |
 | query | string | Yes | Task or query to send to the agent |
 | modelId | string | No | Model ID override (defaults to agent config) |
+| storagePath | string | No | S3 storage path for sub-agent (e.g., "/project-a/"). Inherits from parent if not specified |
 
 ### status Parameters
 
@@ -352,6 +355,89 @@ const result = await callAgent({
 if (result.timedOut) {
   // Task still running, check again later
   console.log('Task still in progress');
+}
+```
+
+## Storage Path Inheritance
+
+Sub-agents can share the same S3 storage path with their parent agent, enabling collaborative file operations:
+
+### Automatic Inheritance
+
+By default, sub-agents inherit the parent's `storagePath`:
+
+```typescript
+// Parent agent has storagePath: "/project-a/"
+const result = await callAgent({
+  action: 'start_task',
+  agentId: 'software-developer-id',
+  query: 'Create a README.md file'
+  // storagePath automatically inherits "/project-a/"
+});
+
+// Sub-agent can read/write files in "/project-a/"
+```
+
+### Explicit Override
+
+You can specify a different `storagePath` for the sub-agent:
+
+```typescript
+const result = await callAgent({
+  action: 'start_task',
+  agentId: 'software-developer-id',
+  query: 'Create documentation',
+  storagePath: '/project-b/docs/' // Use different storage path
+});
+```
+
+### Benefits
+
+- **Collaborative Work**: Multiple agents can work on the same files
+- **File Sharing**: Sub-agents can access files created by parent agent
+- **Workspace Sync**: Changes are synced to S3 automatically
+- **Consistent Context**: All agents work in the same project directory
+
+### Example: Multi-Agent File Processing
+
+```typescript
+// Parent agent orchestrates file processing
+async function processProjectFiles() {
+  // Step 1: List available agents
+  const agents = await callAgent({ action: 'list_agents' });
+  const developerId = agents.agents.find(a => a.name.includes('Software Developer'))?.agentId;
+  const reviewerId = agents.agents.find(a => a.name.includes('Code Reviewer'))?.agentId;
+  
+  // Step 2: Developer creates code (inherits parent's storagePath)
+  const devTask = await callAgent({
+    action: 'start_task',
+    agentId: developerId,
+    query: 'Create a Python script for data processing'
+  });
+  
+  const devResult = await callAgent({
+    action: 'status',
+    taskId: devTask.taskId,
+    waitForCompletion: true
+  });
+  
+  // Step 3: Reviewer reviews the created code (same storagePath)
+  const reviewTask = await callAgent({
+    action: 'start_task',
+    agentId: reviewerId,
+    query: 'Review the Python script and provide feedback'
+  });
+  
+  const reviewResult = await callAgent({
+    action: 'status',
+    taskId: reviewTask.taskId,
+    waitForCompletion: true
+  });
+  
+  return {
+    codeCreated: devResult.result,
+    reviewFeedback: reviewResult.result
+  };
 }
 ```
 

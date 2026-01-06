@@ -6,6 +6,9 @@
 import { logger } from '../config/index.js';
 import { createAgent } from '../agent.js';
 import { getAgentDefinition } from './agent-registry.js';
+import { getCurrentContext } from '../context/request-context.js';
+import { WorkspaceSync } from './workspace-sync.js';
+import { WorkspaceSyncHook } from '../session/workspace-sync-hook.js';
 
 /**
  * Task status
@@ -29,6 +32,7 @@ export interface SubAgentTask {
   parentSessionId?: string;
   maxDepth: number;
   currentDepth: number;
+  storagePath?: string;
 }
 
 /**
@@ -58,6 +62,7 @@ class SubAgentTaskManager {
       parentSessionId?: string;
       currentDepth?: number;
       maxDepth?: number;
+      storagePath?: string;
     } = {}
   ): Promise<string> {
     // Check task limit per session
@@ -84,6 +89,7 @@ class SubAgentTaskManager {
       parentSessionId: options.parentSessionId,
       maxDepth: options.maxDepth || 2,
       currentDepth: options.currentDepth || 0,
+      storagePath: options.storagePath,
     };
 
     this.tasks.set(taskId, task);
@@ -126,16 +132,51 @@ class SubAgentTaskManager {
 
       this.updateTaskStatus(taskId, 'running', 'Creating agent instance...');
 
+      // Set storagePath in RequestContext if provided
+      const context = getCurrentContext();
+      if (task.storagePath && context) {
+        context.storagePath = task.storagePath;
+        logger.info('📂 Set storagePath in context:', {
+          taskId,
+          storagePath: task.storagePath,
+        });
+      }
+
+      // Initialize workspace sync if storagePath is provided and we have auth
+      let workspaceSync: WorkspaceSync | null = null;
+      let workspaceSyncHook: WorkspaceSyncHook | null = null;
+
+      if (task.storagePath && context?.userId) {
+        workspaceSync = new WorkspaceSync(context.userId, task.storagePath);
+        workspaceSync.startInitialSync();
+
+        if (context) {
+          context.workspaceSync = workspaceSync;
+        }
+
+        workspaceSyncHook = new WorkspaceSyncHook(workspaceSync);
+
+        logger.info('🔄 Initialized workspace sync for sub-agent:', {
+          taskId,
+          userId: context.userId,
+          storagePath: task.storagePath,
+        });
+      }
+
       // Create sub-agent (independent session, no history)
-      const { agent } = await createAgent([], {
+      const hooks = workspaceSyncHook ? [workspaceSyncHook] : [];
+      const { agent } = await createAgent(hooks, {
         systemPrompt: agentDef.systemPrompt,
         // Filter out call_agent to prevent infinite recursion
         enabledTools: agentDef.enabledTools.filter((t: string) => t !== 'call_agent'),
         modelId: task.modelId || agentDef.modelId,
       });
 
-      // Set depth in agent state
+      // Set depth and storagePath in agent state
       agent.state.set('subAgentDepth', task.currentDepth + 1);
+      if (task.storagePath) {
+        agent.state.set('storagePath', task.storagePath);
+      }
 
       this.updateTaskStatus(taskId, 'running', 'Executing query...');
 

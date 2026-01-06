@@ -17,6 +17,28 @@ export interface AgentDefinition {
 }
 
 /**
+ * Backend API response types
+ */
+interface BackendAgent {
+  agentId: string;
+  name: string;
+  description: string;
+  systemPrompt?: string;
+  enabledTools?: string[];
+  modelId?: string;
+}
+
+interface GetAgentResponse {
+  agent: BackendAgent;
+  metadata?: Record<string, unknown>;
+}
+
+interface ListAgentsResponse {
+  agents: BackendAgent[];
+  metadata?: Record<string, unknown>;
+}
+
+/**
  * Cache for agent definitions
  */
 const agentCache = new Map<string, AgentDefinition>();
@@ -80,10 +102,10 @@ export async function getAgentDefinition(agentId: string): Promise<AgentDefiniti
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
 
-    const data = (await response.json()) as any;
+    const data = (await response.json()) as GetAgentResponse | BackendAgent;
 
     // Extract agent from response (backend returns { agent: {...}, metadata: {...} })
-    const agent = data.agent || data;
+    const agent = 'agent' in data ? data.agent : data;
 
     if (!agent) {
       logger.warn('⚠️ Agent not found in response:', { agentId });
@@ -93,9 +115,9 @@ export async function getAgentDefinition(agentId: string): Promise<AgentDefiniti
     // Map backend agent structure to AgentDefinition
     const definition: AgentDefinition = {
       name: agent.name,
-      systemPrompt: agent.systemPrompt || agent.system_prompt || '',
-      enabledTools: agent.enabledTools || agent.enabled_tools || [],
-      modelId: agent.modelId || agent.model_id,
+      systemPrompt: agent.systemPrompt || '',
+      enabledTools: agent.enabledTools || [],
+      modelId: agent.modelId,
     };
 
     // Cache the result
@@ -146,12 +168,12 @@ export async function listAgents(): Promise<
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
 
-    const data = (await response.json()) as any;
+    const data = (await response.json()) as ListAgentsResponse;
 
     // Backend returns { agents: [...], metadata: {...} }
     const agents = data.agents || [];
 
-    return agents.map((agent: any) => ({
+    return agents.map((agent) => ({
       agentId: agent.agentId,
       name: agent.name,
       description: agent.description,

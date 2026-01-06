@@ -783,3 +783,26 @@ defaultAgents:
       templateBased:
         title: テンプレートからの作成
         prompt: "テンプレートを使用してプレゼンを作成してください:\n\nテンプレート: \n内容: \nカスタマイズ箇所: "
+
+  multiAgentOrchestrator:
+    name: マルチエージェントオーケストレーター
+    description: 複雑なタスクを分解し、複数の専門エージェントを調整して包括的なソリューションを実現します
+    scenarios:
+      comprehensiveResearch:
+        title: 包括的な調査レポート
+        prompt: "以下のテーマについて、包括的な調査レポートを作成してください:\n\nテーマ: \n\n以下の流れで進めてください:\n1. Web Researcher で情報収集\n2. Data Analyst でデータ分析（該当する場合）\n3. General Assistant でレポート作成"
+      projectExecution:
+        title: プロジェクト実行
+        prompt: "以下のプロジェクトを実行してください:\n\nプロジェクト概要: \n成果物: \n\n適切なエージェントに作業を分担し、統合された成果物を作成してください。"
+      contentPipeline:
+        title: コンテンツ制作パイプライン
+        prompt: "以下のコンテンツを制作してください:\n\nテーマ: \n形式: (プレゼン / 動画 / レポート)\n\n画像生成、文章作成、資料作成を連携して実行してください。"
+      multiPerspectiveAnalysis:
+        title: 多角的分析
+        prompt: "以下のトピックを複数の観点から分析してください:\n\nトピック: \n\n技術、ビジネス、ユーザー体験など、異なる専門分野から分析し統合してください。"
+      workflowAutomation:
+        title: ワークフロー自動化
+        prompt: "以下の定型作業を自動化してください:\n\n作業内容: \n手順: \n\n複数のエージェントを使用して効率的に実行してください。"
+      presentationCreation:
+        title: プレゼン資料一括作成
+        prompt: "以下のテーマでプレゼンテーション資料を作成してください:\n\nテーマ: \n対象者: \n\n調査、要約、スライド作成、レビューを連携して実行してください。"

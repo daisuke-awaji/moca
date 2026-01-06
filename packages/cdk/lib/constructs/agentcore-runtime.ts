@@ -91,6 +91,13 @@ export interface AgentCoreRuntimeProps {
    * デフォルト: us-east-1
    */
   readonly novaCanvasRegion?: string;
+
+  /**
+   * Backend API URL（オプション）
+   * call_agent ツールでエージェント情報を取得するために必要
+   * 例: https://api.example.com
+   */
+  readonly backendApiUrl?: string;
 }
 
 /**
@@ -180,6 +187,11 @@ export class AgentCoreRuntime extends Construct {
     // Nova Canvas リージョンの設定
     if (props.novaCanvasRegion) {
       environmentVariables.NOVA_CANVAS_REGION = props.novaCanvasRegion;
+    }
+
+    // Backend API URL の設定
+    if (props.backendApiUrl) {
+      environmentVariables.BACKEND_API_URL = props.backendApiUrl;
     }
 
     // AgentCore Runtime を作成

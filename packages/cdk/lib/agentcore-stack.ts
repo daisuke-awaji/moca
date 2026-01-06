@@ -264,31 +264,7 @@ export class AgentCoreStack extends cdk.Stack {
       pointInTimeRecovery: true,
     });
 
-    // 6. Create AgentCore Runtime
-    this.agentRuntime = new AgentCoreRuntime(this, 'AgentCoreRuntime', {
-      runtimeName: envConfig.runtimeName,
-      description: `TypeScript-based Strands Agent Runtime - ${resourcePrefix}`,
-      region: this.region,
-      authType: props?.runtimeAuthType || 'jwt',
-      cognitoAuth: this.cognitoAuth,
-      gateway: this.gateway, // Gateway endpoint configuration for JWT propagation
-      corsAllowedOrigins: envConfig.corsAllowedOrigins.join(','),
-      memory: {
-        memoryId: this.memory.memoryId,
-        enabled: true,
-      },
-      tavilyApiKeySecretName: props?.tavilyApiKeySecretName || envConfig.tavilyApiKeySecretName, // Pass Tavily API Key Secret Name
-      githubTokenSecretName: props?.githubTokenSecretName || envConfig.githubTokenSecretName, // Pass GitHub Token Secret Name
-      userStorageBucketName: this.userStorage.bucketName, // Pass User Storage bucket name
-    });
-
-    // Grant Memory access permissions to Runtime
-    this.memory.grantAgentCoreAccess(this.agentRuntime.runtime);
-
-    // Grant User Storage full access to Runtime
-    this.userStorage.grantFullAccess(this.agentRuntime.runtime);
-
-    // 7. Create Backend API (Lambda Web Adapter)
+    // 6. Create Backend API (Lambda Web Adapter) - Create before Runtime to pass URL
     this.backendApi = new BackendApi(this, 'BackendApi', {
       apiName: envConfig.backendApiName || `${resourcePrefix}-backend-api`,
       cognitoAuth: this.cognitoAuth,
@@ -307,6 +283,31 @@ export class AgentCoreStack extends cdk.Stack {
 
     // Grant Agents Table read/write access to Backend API
     this.agentsTable.grantReadWrite(this.backendApi.lambdaFunction);
+
+    // 7. Create AgentCore Runtime
+    this.agentRuntime = new AgentCoreRuntime(this, 'AgentCoreRuntime', {
+      runtimeName: envConfig.runtimeName,
+      description: `TypeScript-based Strands Agent Runtime - ${resourcePrefix}`,
+      region: this.region,
+      authType: props?.runtimeAuthType || 'jwt',
+      cognitoAuth: this.cognitoAuth,
+      gateway: this.gateway, // Gateway endpoint configuration for JWT propagation
+      corsAllowedOrigins: envConfig.corsAllowedOrigins.join(','),
+      memory: {
+        memoryId: this.memory.memoryId,
+        enabled: true,
+      },
+      tavilyApiKeySecretName: props?.tavilyApiKeySecretName || envConfig.tavilyApiKeySecretName, // Pass Tavily API Key Secret Name
+      githubTokenSecretName: props?.githubTokenSecretName || envConfig.githubTokenSecretName, // Pass GitHub Token Secret Name
+      userStorageBucketName: this.userStorage.bucketName, // Pass User Storage bucket name
+      backendApiUrl: this.backendApi.apiUrl, // Pass Backend API URL for call_agent tool
+    });
+
+    // Grant Memory access permissions to Runtime
+    this.memory.grantAgentCoreAccess(this.agentRuntime.runtime);
+
+    // Grant User Storage full access to Runtime
+    this.userStorage.grantFullAccess(this.agentRuntime.runtime);
 
     // 8. Create Frontend
     this.frontend = new Frontend(this, 'Frontend', {

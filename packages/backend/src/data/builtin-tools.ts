@@ -532,6 +532,11 @@ export const BUILTIN_TOOLS: MCPTool[] = [
           default: 1200,
           description: 'Maximum wait time in seconds (default: 1200 = 20 minutes)',
         },
+        storagePath: {
+          type: 'string',
+          description:
+            "S3 storage path for the sub-agent workspace. If omitted, inherits the parent agent's storage path. Use this to share files between agents or specify a different workspace.",
+        },
       },
       required: ['action'],
     },

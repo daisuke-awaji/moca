@@ -85,6 +85,7 @@ async function fetchImageFromS3(s3Uri: string): Promise<ImageSource> {
 
     // Convert stream to buffer
     const chunks: Uint8Array[] = [];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     for await (const chunk of response.Body as any) {
       chunks.push(chunk);
     }
