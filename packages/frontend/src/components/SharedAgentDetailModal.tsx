@@ -65,7 +65,7 @@ export const SharedAgentDetailModal: React.FC<SharedAgentDetailModalProps> = ({
           toast.error(t('agentDirectory.userIdNotFound'));
           return;
         }
-        await cloneAgent(agent.userId, agent.id);
+        await cloneAgent(agent.userId, agent.agentId);
       }
 
       await refreshAgents();
@@ -83,7 +83,7 @@ export const SharedAgentDetailModal: React.FC<SharedAgentDetailModalProps> = ({
   const handleUnshare = async () => {
     setIsUnsharing(true);
     try {
-      await toggleShareAgent(agent.id);
+      await toggleShareAgent(agent.agentId);
       await fetchSharedAgents(); // 共有エージェント一覧を更新
       toast.success(t('agentDirectory.unshareSuccess'));
       onClose();

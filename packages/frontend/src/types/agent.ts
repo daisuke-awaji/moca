@@ -27,7 +27,7 @@ export interface Scenario {
 }
 
 export interface Agent {
-  id: string; // UUID
+  agentId: string; // Agent ID (UUID or predefined ID like 'web-researcher')
   name: string; // Agent名
   description: string; // 説明
   icon?: string; // lucideアイコン名（例: "Bot", "Code", "Brain"）
@@ -61,7 +61,7 @@ export interface CreateAgentInput {
  * Agent更新時の入力データ
  */
 export interface UpdateAgentInput extends Partial<CreateAgentInput> {
-  id: string;
+  agentId: string;
 }
 
 /**

@@ -226,6 +226,12 @@ export async function createAgent(
       hooks,
     });
 
+    // Set storagePath in agent state for sub-agent inheritance
+    if (storagePath) {
+      agent.state.set('storagePath', storagePath);
+      logger.info('📂 Set storagePath in agent state:', { storagePath });
+    }
+
     // 7. Log output
     if (hooks && hooks.length > 0) {
       logger.info(`✅ Registered ${hooks.length} hooks`);

@@ -86,7 +86,7 @@ export const AgentSelectorModal: React.FC<AgentSelectorModalProps> = ({
     if (!editingAgent) return;
 
     await updateAgent({
-      id: editingAgent.id,
+      agentId: editingAgent.agentId,
       ...data,
     });
     setMode('list');
@@ -95,11 +95,11 @@ export const AgentSelectorModal: React.FC<AgentSelectorModalProps> = ({
 
   // Agent削除
   const handleDeleteAgent = async (agent: Agent) => {
-    await deleteAgent(agent.id);
+    await deleteAgent(agent.agentId);
     setDeleteConfirmAgent(null);
     setOpenMenuId(null);
 
-    if (selectedAgent?.id === agent.id) {
+    if (selectedAgent?.agentId === agent.agentId) {
       selectAgent(null);
       onAgentSelect(null);
     }
@@ -223,13 +223,13 @@ export const AgentSelectorModal: React.FC<AgentSelectorModalProps> = ({
                       className={`grid gap-6 ${isMobileView ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'}`}
                     >
                       {agents.map((agent) => {
-                        const isSelected = selectedAgent?.id === agent.id;
+                        const isSelected = selectedAgent?.agentId === agent.agentId;
                         const AgentIcon =
                           (icons[agent.icon as keyof typeof icons] as LucideIcon) || Bot;
 
                         return (
                           <div
-                            key={agent.id}
+                            key={agent.agentId}
                             className={`relative bg-white rounded-2xl transition-all cursor-pointer border ${
                               isSelected
                                 ? 'border-blue-500 ring-2 ring-blue-100'
@@ -265,14 +265,14 @@ export const AgentSelectorModal: React.FC<AgentSelectorModalProps> = ({
 
                                 <div className="relative ml-2">
                                   <button
-                                    onClick={(e) => toggleMenu(agent.id, e)}
+                                    onClick={(e) => toggleMenu(agent.agentId, e)}
                                     className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
                                   >
                                     <MoreHorizontal className="w-5 h-5" />
                                   </button>
 
                                   {/* ドロップダウンメニュー */}
-                                  {openMenuId === agent.id && (
+                                  {openMenuId === agent.agentId && (
                                     <div className="absolute right-0 top-full mt-1 w-40 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10">
                                       <button
                                         onMouseDown={(e) => {
@@ -297,7 +297,7 @@ export const AgentSelectorModal: React.FC<AgentSelectorModalProps> = ({
                                           e.stopPropagation();
                                           const wasShared = agent.isShared;
                                           try {
-                                            await toggleShare(agent.id);
+                                            await toggleShare(agent.agentId);
                                             // 成功時にトースト通知
                                             toast.success(
                                               wasShared

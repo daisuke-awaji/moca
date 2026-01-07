@@ -52,7 +52,7 @@ export function AgentDirectoryPage() {
   const selectedAgent = useMemo(() => {
     const agentParam = searchParams.get('agent');
     if (agentParam && sharedAgents.length > 0) {
-      return sharedAgents.find((a) => `${a.createdBy}-${a.id}` === agentParam) || null;
+      return sharedAgents.find((a) => `${a.createdBy}-${a.agentId}` === agentParam) || null;
     }
     return null;
   }, [searchParams, sharedAgents]);
@@ -85,7 +85,7 @@ export function AgentDirectoryPage() {
   // エージェントカードクリック
   const handleAgentClick = (agent: Agent) => {
     // URLパラメータを更新
-    setSearchParams({ agent: `${agent.createdBy}-${agent.id}` });
+    setSearchParams({ agent: `${agent.createdBy}-${agent.agentId}` });
   };
 
   // モーダルをクローズ
@@ -177,7 +177,7 @@ export function AgentDirectoryPage() {
 
                 return (
                   <div
-                    key={`${agent.createdBy}-${agent.id}`}
+                    key={`${agent.createdBy}-${agent.agentId}`}
                     onClick={() => handleAgentClick(agent)}
                     className="bg-white rounded-xl border border-gray-200 p-4 hover:border-gray-300 hover:shadow-md transition-all cursor-pointer"
                   >

@@ -6,9 +6,11 @@
 import {
   BedrockAgentCoreClient,
   ListSessionsCommand,
+  ListSessionsCommandOutput,
   ListMemoryRecordsCommand,
   DeleteMemoryRecordCommand,
   RetrieveMemoryRecordsCommand,
+  DeleteEventCommand,
   paginateListEvents,
 } from '@aws-sdk/client-bedrock-agentcore';
 import {
@@ -53,10 +55,17 @@ interface RetrieveMemoryRecordsParams {
 export interface SessionSummary {
   sessionId: string;
   title: string; // Generated from first user message
-  lastMessage: string; // Last message
-  messageCount: number;
   createdAt: string; // ISO 8601 string
   updatedAt: string; // ISO 8601 string
+}
+
+/**
+ * Session list result type definition (with pagination)
+ */
+export interface SessionListResult {
+  sessions: SessionSummary[];
+  nextToken?: string;
+  hasMore: boolean;
 }
 
 /**
@@ -244,16 +253,6 @@ function parseBlobPayload(blob: Uint8Array | Buffer | unknown): BlobData | null 
 }
 
 /**
- * Extract first text from MessageContent array (for title generation)
- * @param contents Array of MessageContent
- * @returns First text string
- */
-function extractFirstText(contents: MessageContent[]): string {
-  const firstTextContent = contents.find((content) => content.type === 'text');
-  return firstTextContent && firstTextContent.type === 'text' ? firstTextContent.text : '';
-}
-
-/**
  * Long-term memory record type definition
  */
 export interface MemoryRecord {
@@ -345,52 +344,125 @@ export class AgentCoreMemoryService {
   }
 
   /**
-   * Get session list for specified actor
+   * Get session list for specified actor (fetch all sessions)
    * @param actorId User ID (JWT sub)
-   * @returns Session list
+   * @returns Session list result (all sessions, sorted by creation date descending)
    */
-  async listSessions(actorId: string): Promise<SessionSummary[]> {
+  async listSessions(actorId: string): Promise<SessionListResult> {
     try {
-      console.log(`[AgentCoreMemoryService] Retrieving session list: actorId=${actorId}`);
+      console.log(`[AgentCoreMemoryService] Retrieving all sessions: actorId=${actorId}`);
 
-      const command = new ListSessionsCommand({
-        memoryId: this.memoryId,
-        actorId: actorId,
-      });
+      const allSessions: SessionSummary[] = [];
+      let nextToken: string | undefined = undefined;
 
-      const response = await this.client.send(command);
+      // Fetch all pages
+      do {
+        const command = new ListSessionsCommand({
+          memoryId: this.memoryId,
+          actorId: actorId,
+          maxResults: 100, // Maximum allowed by API
+          nextToken: nextToken,
+        });
 
-      if (!response.sessionSummaries || response.sessionSummaries.length === 0) {
-        console.log(`[AgentCoreMemoryService] No sessions found: actorId=${actorId}`);
-        return [];
-      }
+        const response: ListSessionsCommandOutput = await this.client.send(command);
 
-      // Return session list in lightweight format (no detailed retrieval)
-      const sessions: SessionSummary[] = response.sessionSummaries
-        .filter((sessionSummary) => sessionSummary.sessionId)
-        .map((sessionSummary) => ({
-          sessionId: sessionSummary.sessionId!,
-          title: 'Session', // Fixed title
-          lastMessage: 'Select conversation to view history', // Fixed message
-          messageCount: 0, // 0 since no detailed retrieval
-          createdAt: sessionSummary.createdAt?.toISOString() || new Date().toISOString(),
-          updatedAt: sessionSummary.createdAt?.toISOString() || new Date().toISOString(),
-        }));
+        if (response.sessionSummaries && response.sessionSummaries.length > 0) {
+          // Add sessions from this page
+          const pageSessions = response.sessionSummaries
+            .filter((sessionSummary) => sessionSummary.sessionId)
+            .map((sessionSummary) => ({
+              sessionId: sessionSummary.sessionId!,
+              title: 'Session',
+              createdAt: sessionSummary.createdAt?.toISOString() || new Date().toISOString(),
+              updatedAt: sessionSummary.createdAt?.toISOString() || new Date().toISOString(),
+            }));
 
-      // Sort by creation date in descending order (latest sessions first)
-      sessions.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+          allSessions.push(...pageSessions);
+        }
 
-      console.log(`[AgentCoreMemoryService] Retrieved ${sessions.length} sessions`);
-      return sessions;
+        nextToken = response.nextToken;
+      } while (nextToken);
+
+      // Sort by creation date (newest first)
+      allSessions.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+      console.log(`[AgentCoreMemoryService] Retrieved all ${allSessions.length} sessions`);
+
+      return {
+        sessions: allSessions,
+        hasMore: false, // All sessions fetched
+      };
     } catch (error) {
-      // Return empty array for new users where Actor doesn't exist
+      // Return empty result for new users where Actor doesn't exist
       if (error instanceof Error && error.name === 'ResourceNotFoundException') {
         console.log(
           `[AgentCoreMemoryService] Returning empty session list for new user: actorId=${actorId}`
         );
-        return [];
+        return {
+          sessions: [],
+          hasMore: false,
+        };
       }
       console.error('[AgentCoreMemoryService] Session list retrieval error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete a session from AgentCore Memory by deleting all events
+   * @param actorId User ID
+   * @param sessionId Session ID
+   */
+  async deleteSession(actorId: string, sessionId: string): Promise<void> {
+    try {
+      console.log(`[AgentCoreMemoryService] Deleting session events: sessionId=${sessionId}`);
+
+      // Get all events for the session
+      const allEvents = [];
+      const paginator = paginateListEvents(
+        { client: this.client },
+        {
+          memoryId: this.memoryId,
+          actorId,
+          sessionId,
+          maxResults: 100,
+        }
+      );
+
+      for await (const page of paginator) {
+        if (page.events) {
+          allEvents.push(...page.events);
+        }
+      }
+
+      console.log(`[AgentCoreMemoryService] Found ${allEvents.length} events to delete`);
+
+      // Delete each event
+      for (const event of allEvents) {
+        if (event.eventId) {
+          try {
+            await this.client.send(
+              new DeleteEventCommand({
+                memoryId: this.memoryId,
+                actorId,
+                sessionId,
+                eventId: event.eventId,
+              })
+            );
+          } catch (deleteError) {
+            console.warn(
+              `[AgentCoreMemoryService] Failed to delete event ${event.eventId}:`,
+              deleteError
+            );
+          }
+        }
+      }
+
+      console.log(
+        `[AgentCoreMemoryService] Session events deleted successfully: sessionId=${sessionId}`
+      );
+    } catch (error) {
+      console.error('[AgentCoreMemoryService] Session deletion error:', error);
       throw error;
     }
   }
@@ -481,47 +553,6 @@ export class AgentCoreMemoryService {
       console.error('[AgentCoreMemoryService] Session event retrieval error:', error);
       throw error;
     }
-  }
-
-  /**
-   * Get session details (generate title and last message)
-   * @param actorId User ID
-   * @param sessionId Session ID
-   * @returns Session details
-   * @private
-   */
-  private async getSessionDetail(actorId: string, sessionId: string): Promise<SessionSummary> {
-    const messages = await this.getSessionEvents(actorId, sessionId);
-
-    // Generate title (use first user message)
-    let title = `Session ${sessionId.slice(0, 8)}...`;
-    const firstUserMessage = messages.find((m) => m.type === 'user');
-    if (firstUserMessage) {
-      const firstText = extractFirstText(firstUserMessage.contents);
-      // Truncate to maximum 50 characters
-      title = firstText.length > 50 ? `${firstText.slice(0, 50)}...` : firstText;
-    }
-
-    // Get last message
-    let lastMessage = 'Please start a conversation';
-    if (messages.length > 0) {
-      const lastMsg = messages[messages.length - 1];
-      const lastText = extractFirstText(lastMsg.contents);
-      lastMessage = lastText.length > 100 ? `${lastText.slice(0, 100)}...` : lastText;
-    }
-
-    // Creation and update timestamps
-    const createdAt = messages.length > 0 ? messages[0].timestamp : new Date().toISOString();
-    const updatedAt = messages.length > 0 ? messages[messages.length - 1].timestamp : createdAt;
-
-    return {
-      sessionId,
-      title,
-      lastMessage,
-      messageCount: messages.length,
-      createdAt,
-      updatedAt,
-    };
   }
 
   /**

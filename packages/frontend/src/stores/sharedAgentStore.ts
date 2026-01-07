@@ -143,7 +143,7 @@ export const useSharedAgentStore = create<SharedAgentStore>((set, get) => ({
 
       const clonedAgent = await agentsApi.cloneSharedAgent(userId, agentId);
 
-      console.log(`✅ 共有Agentクローン完了: ${clonedAgent.id}`);
+      console.log(`✅ 共有Agentクローン完了: ${clonedAgent.agentId}`);
 
       set({ isLoading: false, error: null });
 

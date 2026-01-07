@@ -8,7 +8,6 @@ import * as iam from 'aws-cdk-lib/aws-iam';
 import * as agentcore from '@aws-cdk/aws-bedrock-agentcore-alpha';
 import { RuntimeAuthorizerConfiguration } from '@aws-cdk/aws-bedrock-agentcore-alpha';
 import { Construct } from 'constructs';
-import * as path from 'path';
 import { CognitoAuth } from './cognito-auth.js';
 import { AgentCoreGateway } from './agentcore-gateway.js';
 
@@ -86,11 +85,24 @@ export interface AgentCoreRuntimeProps {
   readonly userStorageBucketName?: string;
 
   /**
+   * Sessions Table テーブル名（オプション）
+   * セッション管理のために必要
+   */
+  readonly sessionsTableName?: string;
+
+  /**
    * Nova Canvas のリージョン（オプション）
    * 画像生成に使用する Amazon Nova Canvas モデルのリージョン
    * デフォルト: us-east-1
    */
   readonly novaCanvasRegion?: string;
+
+  /**
+   * Backend API URL（オプション）
+   * call_agent ツールでエージェント情報を取得するために必要
+   * 例: https://api.example.com
+   */
+  readonly backendApiUrl?: string;
 }
 
 /**
@@ -115,10 +127,11 @@ export class AgentCoreRuntime extends Construct {
   constructor(scope: Construct, id: string, props: AgentCoreRuntimeProps) {
     super(scope, id);
 
-    const agentCodePath = props.agentCodePath || path.join(__dirname, '../../../agent');
-
     // Agent Runtime Artifact を作成
-    const agentRuntimeArtifact = agentcore.AgentRuntimeArtifact.fromAsset(agentCodePath);
+    // Docker context: プロジェクトルート, Dockerfile: docker/agent.Dockerfile
+    const agentRuntimeArtifact = agentcore.AgentRuntimeArtifact.fromAsset('.', {
+      file: 'docker/agent.Dockerfile',
+    });
 
     // 認証設定
     let authorizerConfiguration: RuntimeAuthorizerConfiguration | undefined;
@@ -177,9 +190,19 @@ export class AgentCoreRuntime extends Construct {
       environmentVariables.USER_STORAGE_BUCKET_NAME = props.userStorageBucketName;
     }
 
+    // Sessions Table テーブル名の設定
+    if (props.sessionsTableName) {
+      environmentVariables.SESSIONS_TABLE_NAME = props.sessionsTableName;
+    }
+
     // Nova Canvas リージョンの設定
     if (props.novaCanvasRegion) {
       environmentVariables.NOVA_CANVAS_REGION = props.novaCanvasRegion;
+    }
+
+    // Backend API URL の設定
+    if (props.backendApiUrl) {
+      environmentVariables.BACKEND_API_URL = props.backendApiUrl;
     }
 
     // AgentCore Runtime を作成

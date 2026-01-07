@@ -5,6 +5,7 @@ import { AgentCoreLambdaTarget } from './constructs/agentcore-lambda-target';
 import { AgentCoreMemory } from './constructs/agentcore-memory';
 import { AgentCoreRuntime } from './constructs/agentcore-runtime';
 import { AgentsTable } from './constructs/agents-table';
+import { SessionsTable } from './constructs/sessions-table';
 import { BackendApi } from './constructs/backend-api';
 import { CognitoAuth } from './constructs/cognito-auth';
 import { Frontend } from './constructs/frontend';
@@ -130,6 +131,11 @@ export class AgentCoreStack extends cdk.Stack {
    * Created Agents Table
    */
   public readonly agentsTable: AgentsTable;
+
+  /**
+   * Created Sessions Table
+   */
+  public readonly sessionsTable: SessionsTable;
 
   constructor(scope: Construct, id: string, props: AgentCoreStackProps) {
     super(scope, id, props);
@@ -264,7 +270,38 @@ export class AgentCoreStack extends cdk.Stack {
       pointInTimeRecovery: true,
     });
 
-    // 6. Create AgentCore Runtime
+    // 5.5. Create Sessions Table
+    this.sessionsTable = new SessionsTable(this, 'SessionsTable', {
+      tableNamePrefix: resourcePrefix,
+      removalPolicy: envConfig.s3RemovalPolicy, // Use same removal policy as S3
+      pointInTimeRecovery: true,
+    });
+
+    // 6. Create Backend API (Lambda Web Adapter) - Create before Runtime to pass URL
+    this.backendApi = new BackendApi(this, 'BackendApi', {
+      apiName: envConfig.backendApiName || `${resourcePrefix}-backend-api`,
+      cognitoAuth: this.cognitoAuth,
+      agentcoreGatewayEndpoint: `https://${this.gateway.gatewayId}.gateway.bedrock-agentcore.${this.region}.amazonaws.com/mcp`,
+      agentcoreMemoryId: this.memory.memoryId,
+      corsAllowedOrigins: envConfig.corsAllowedOrigins,
+      timeout: 30,
+      memorySize: 1024,
+      userStorageBucketName: this.userStorage.bucketName,
+      agentsTableName: this.agentsTable.tableName,
+      sessionsTableName: this.sessionsTable.tableName,
+      logRetention: envConfig.logRetentionDays,
+    });
+
+    // Grant User Storage full access to Backend API
+    this.userStorage.grantFullAccess(this.backendApi.lambdaFunction);
+
+    // Grant Agents Table read/write access to Backend API
+    this.agentsTable.grantReadWrite(this.backendApi.lambdaFunction);
+
+    // Grant Sessions Table read/write access to Backend API
+    this.sessionsTable.grantReadWrite(this.backendApi.lambdaFunction);
+
+    // 7. Create AgentCore Runtime
     this.agentRuntime = new AgentCoreRuntime(this, 'AgentCoreRuntime', {
       runtimeName: envConfig.runtimeName,
       description: `TypeScript-based Strands Agent Runtime - ${resourcePrefix}`,
@@ -280,6 +317,8 @@ export class AgentCoreStack extends cdk.Stack {
       tavilyApiKeySecretName: props?.tavilyApiKeySecretName || envConfig.tavilyApiKeySecretName, // Pass Tavily API Key Secret Name
       githubTokenSecretName: props?.githubTokenSecretName || envConfig.githubTokenSecretName, // Pass GitHub Token Secret Name
       userStorageBucketName: this.userStorage.bucketName, // Pass User Storage bucket name
+      sessionsTableName: this.sessionsTable.tableName, // Pass Sessions Table name
+      backendApiUrl: this.backendApi.apiUrl, // Pass Backend API URL for call_agent tool
     });
 
     // Grant Memory access permissions to Runtime
@@ -288,25 +327,8 @@ export class AgentCoreStack extends cdk.Stack {
     // Grant User Storage full access to Runtime
     this.userStorage.grantFullAccess(this.agentRuntime.runtime);
 
-    // 7. Create Backend API (Lambda Web Adapter)
-    this.backendApi = new BackendApi(this, 'BackendApi', {
-      apiName: envConfig.backendApiName || `${resourcePrefix}-backend-api`,
-      cognitoAuth: this.cognitoAuth,
-      agentcoreGatewayEndpoint: `https://${this.gateway.gatewayId}.gateway.bedrock-agentcore.${this.region}.amazonaws.com/mcp`,
-      agentcoreMemoryId: this.memory.memoryId,
-      corsAllowedOrigins: envConfig.corsAllowedOrigins,
-      timeout: 30,
-      memorySize: 1024,
-      userStorageBucketName: this.userStorage.bucketName,
-      agentsTableName: this.agentsTable.tableName,
-      logRetention: envConfig.logRetentionDays,
-    });
-
-    // Grant User Storage full access to Backend API
-    this.userStorage.grantFullAccess(this.backendApi.lambdaFunction);
-
-    // Grant Agents Table read/write access to Backend API
-    this.agentsTable.grantReadWrite(this.backendApi.lambdaFunction);
+    // Grant Sessions Table read/write access to Runtime
+    this.sessionsTable.grantReadWrite(this.agentRuntime.runtime);
 
     // 8. Create Frontend
     this.frontend = new Frontend(this, 'Frontend', {
@@ -455,6 +477,24 @@ export class AgentCoreStack extends cdk.Stack {
       description: 'Agents Table configuration summary',
     });
 
+    // Sessions Table-related outputs
+    new cdk.CfnOutput(this, 'SessionsTableName', {
+      value: this.sessionsTable.tableName,
+      description: 'Sessions DynamoDB Table Name',
+      exportName: `${id}-SessionsTableName`,
+    });
+
+    new cdk.CfnOutput(this, 'SessionsTableArn', {
+      value: this.sessionsTable.tableArn,
+      description: 'Sessions DynamoDB Table ARN',
+      exportName: `${id}-SessionsTableArn`,
+    });
+
+    new cdk.CfnOutput(this, 'SessionsTableConfiguration', {
+      value: `Sessions Table: ${this.sessionsTable.tableName} - User session storage`,
+      description: 'Sessions Table configuration summary',
+    });
+
     // Add tags
     cdk.Tags.of(this).add('Project', 'AgentCore');
     cdk.Tags.of(this).add('Component', 'Gateway');
@@ -462,5 +502,6 @@ export class AgentCoreStack extends cdk.Stack {
     cdk.Tags.of(this).add('BackendApi', 'Enabled');
     cdk.Tags.of(this).add('UserStorage', 'Enabled');
     cdk.Tags.of(this).add('AgentsTable', 'Enabled');
+    cdk.Tags.of(this).add('SessionsTable', 'Enabled');
   }
 }

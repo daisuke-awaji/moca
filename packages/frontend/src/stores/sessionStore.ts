@@ -1,44 +1,40 @@
 /**
- * セッション管理ストア
- * セッション一覧とアクティブセッションの状態管理
+ * Session Management Store
+ * State management for session list and active session
  */
 
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import { customAlphabet } from 'nanoid';
-import {
-  fetchSessions,
-  fetchSessionEvents,
-  type SessionSummary,
-  type ConversationMessage,
-} from '../api/sessions';
+import { fetchSessions, fetchSessionEvents } from '../api/sessions';
+import type { SessionSummary, ConversationMessage } from '../api/sessions';
 
-// AWS AgentCore sessionId制約: [a-zA-Z0-9][a-zA-Z0-9-_]*
-// 英数字のみのカスタムnanoid（ハイフンとアンダースコアを除外）
+// AWS AgentCore sessionId constraints: [a-zA-Z0-9][a-zA-Z0-9-_]*
+// Custom nanoid with alphanumeric characters only (excluding hyphens and underscores)
 const generateSessionId = customAlphabet(
   'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789',
   33
 );
 
 /**
- * セッションストアの状態型定義
+ * Session store state type definition
  */
 interface SessionState {
   sessions: SessionSummary[];
   isLoadingSessions: boolean;
   sessionsError: string | null;
-  hasLoadedOnce: boolean; // 初回読み込み完了フラグ
+  hasLoadedOnce: boolean; // Initial load completion flag
 
   activeSessionId: string | null;
   sessionEvents: ConversationMessage[];
   isLoadingEvents: boolean;
   eventsError: string | null;
 
-  isCreatingSession: boolean; // 新規セッション作成中フラグ
+  isCreatingSession: boolean; // New session creation in progress flag
 }
 
 /**
- * セッションストアのアクション型定義
+ * Session store actions type definition
  */
 interface SessionActions {
   loadSessions: () => Promise<void>;
@@ -49,12 +45,12 @@ interface SessionActions {
   setEventsError: (error: string | null) => void;
   clearErrors: () => void;
   refreshSessions: () => Promise<void>;
-  createNewSession: () => string; // 新規セッション作成（IDを生成してフラグをセット）
-  finalizeNewSession: () => void; // 新規セッション作成完了（フラグをクリア）
+  createNewSession: () => string; // Create new session (generate ID and set flag)
+  finalizeNewSession: () => void; // Finalize new session creation (clear flag)
 }
 
 /**
- * セッション管理ストア
+ * Session management store
  */
 type SessionStore = SessionState & SessionActions;
 
@@ -65,40 +61,40 @@ export const useSessionStore = create<SessionStore>()(
       sessions: [],
       isLoadingSessions: false,
       sessionsError: null,
-      hasLoadedOnce: false, // 初回読み込み完了フラグ
+      hasLoadedOnce: false, // Initial load completion flag
 
       activeSessionId: null,
       sessionEvents: [],
       isLoadingEvents: false,
       eventsError: null,
-      isCreatingSession: false, // 新規セッション作成中フラグ
+      isCreatingSession: false, // New session creation in progress flag
 
       // Actions
       loadSessions: async () => {
         try {
           set({ isLoadingSessions: true, sessionsError: null });
 
-          console.log('🔄 セッション一覧読み込み開始...');
+          console.log('🔄 Loading all sessions...');
           const sessions = await fetchSessions();
 
           set({
             sessions,
             isLoadingSessions: false,
             sessionsError: null,
-            hasLoadedOnce: true, // 初回読み込み完了フラグを設定
+            hasLoadedOnce: true, // Set initial load completion flag
           });
 
-          console.log(`✅ セッション一覧読み込み完了: ${sessions.length}件`);
+          console.log(`✅ Session list loaded: ${sessions.length} items`);
         } catch (error) {
           const errorMessage =
-            error instanceof Error ? error.message : 'セッション一覧の読み込みに失敗しました';
-          console.error('💥 セッション一覧読み込みエラー:', error);
+            error instanceof Error ? error.message : 'Failed to load session list';
+          console.error('💥 Session list loading error:', error);
 
           set({
             sessions: [],
             isLoadingSessions: false,
             sessionsError: errorMessage,
-            hasLoadedOnce: true, // エラーでも初回読み込み完了とマーク
+            hasLoadedOnce: true, // Mark as initial load completed even on error
           });
         }
       },
@@ -111,7 +107,7 @@ export const useSessionStore = create<SessionStore>()(
             activeSessionId: sessionId,
           });
 
-          console.log(`🔄 セッション選択: ${sessionId}`);
+          console.log(`🔄 Selecting session: ${sessionId}`);
           const events = await fetchSessionEvents(sessionId);
 
           set({
@@ -120,11 +116,11 @@ export const useSessionStore = create<SessionStore>()(
             eventsError: null,
           });
 
-          console.log(`✅ セッション会話履歴読み込み完了: ${events.length}件`);
+          console.log(`✅ Session conversation history loaded: ${events.length} items`);
         } catch (error) {
           const errorMessage =
-            error instanceof Error ? error.message : 'セッション会話履歴の読み込みに失敗しました';
-          console.error('💥 セッション会話履歴読み込みエラー:', error);
+            error instanceof Error ? error.message : 'Failed to load session conversation history';
+          console.error('💥 Session conversation history loading error:', error);
 
           set({
             sessionEvents: [],
@@ -137,11 +133,11 @@ export const useSessionStore = create<SessionStore>()(
       setActiveSessionId: (sessionId: string) => {
         set({
           activeSessionId: sessionId,
-          sessionEvents: [], // 新規セッションなので会話履歴は空
+          sessionEvents: [], // Empty conversation history for new session
           eventsError: null,
           isLoadingEvents: false,
         });
-        console.log(`🆕 新規セッションをアクティブに設定: ${sessionId}`);
+        console.log(`🆕 Set new session as active: ${sessionId}`);
       },
 
       clearActiveSession: () => {
@@ -149,9 +145,9 @@ export const useSessionStore = create<SessionStore>()(
           activeSessionId: null,
           sessionEvents: [],
           eventsError: null,
-          isLoadingEvents: false, // 新しいチャット時はローディング状態を明示的にクリア
+          isLoadingEvents: false, // Explicitly clear loading state for new chat
         });
-        console.log('🗑️ アクティブセッションをクリアしました');
+        console.log('🗑️ Cleared active session');
       },
 
       setSessionsError: (error: string | null) => {
@@ -170,8 +166,10 @@ export const useSessionStore = create<SessionStore>()(
       },
 
       refreshSessions: async () => {
+        // Reload all sessions
+        set({ sessions: [] });
         const { loadSessions } = get();
-        console.log('🔄 セッション一覧を更新中...');
+        console.log('🔄 Refreshing session list...');
         await loadSessions();
       },
 
@@ -182,15 +180,15 @@ export const useSessionStore = create<SessionStore>()(
           sessionEvents: [],
           eventsError: null,
           isLoadingEvents: false,
-          isCreatingSession: true, // 新規セッション作成中フラグを立てる
+          isCreatingSession: true, // Set new session creation flag
         });
-        console.log(`🆕 新規セッション作成: ${newSessionId}`);
+        console.log(`🆕 Created new session: ${newSessionId}`);
         return newSessionId;
       },
 
       finalizeNewSession: () => {
         set({ isCreatingSession: false });
-        console.log('✅ 新規セッション作成完了');
+        console.log('✅ New session creation completed');
       },
     }),
     {
@@ -200,11 +198,11 @@ export const useSessionStore = create<SessionStore>()(
 );
 
 /**
- * セッション関連のセレクタ（便利関数）
+ * Session-related selectors (utility functions)
  */
 export const sessionSelectors = {
   /**
-   * 指定されたセッションIDのセッション情報を取得
+   * Get session information for specified session ID
    */
   getSessionById: (sessionId: string) => {
     const { sessions } = useSessionStore.getState();
@@ -212,7 +210,7 @@ export const sessionSelectors = {
   },
 
   /**
-   * セッション読み込み中かどうかを判定
+   * Check if any session loading is in progress
    */
   isAnyLoading: () => {
     const { isLoadingSessions, isLoadingEvents } = useSessionStore.getState();
@@ -220,7 +218,7 @@ export const sessionSelectors = {
   },
 
   /**
-   * エラーがあるかどうかを判定
+   * Check if there are any errors
    */
   hasAnyError: () => {
     const { sessionsError, eventsError } = useSessionStore.getState();
@@ -228,7 +226,7 @@ export const sessionSelectors = {
   },
 
   /**
-   * すべてのエラーメッセージを配列で取得
+   * Get all error messages as an array
    */
   getAllErrors: () => {
     const { sessionsError, eventsError } = useSessionStore.getState();

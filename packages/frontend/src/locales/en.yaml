@@ -4,6 +4,7 @@
 common:
   loading: Loading...
   error: An error occurred
+  errorOccurred: An error occurred
   save: Save
   saving: Saving...
   cancel: Cancel
@@ -123,9 +124,12 @@ navigation:
 chat:
   sessionName: Session Name
   sessionNameLabel: Session
+  subAgentSessionLabel: Sub Agent
   noConversations: No conversations yet
   startNewChat: Start a new chat
   loadingSessions: Loading sessions...
+  loadingMoreSessions: Loading more sessions...
+  allSessionsLoaded: All sessions loaded
   sendMessage: Send Message
   typingMessage: Type a message...
   thinking: Thinking...
@@ -138,6 +142,15 @@ chat:
   inputHelp: Shift + Enter for new line, Enter to send
   searchChatsDescription: Chat search functionality is under development.
   searchChatsFeature: You will be able to search past conversation history by keywords.
+  searchPlaceholder: 'Search sessions...'
+  searchDateRange: 'Date range'
+  searchDateStart: 'Start date'
+  searchDateEnd: 'End date'
+  searchResults: 'Search results'
+  searchResultsCount: '{{count}} sessions'
+  searchNoResults: 'No matching sessions found'
+  updatedAt: 'Updated'
+  searchNote: '※ Semantic search is not yet implemented. Only title search is available.'
 
 # Agent
 agent:
@@ -1205,3 +1218,26 @@ defaultAgents:
       templateBased:
         title: Create from Template
         prompt: "Please create a presentation using a template:\n\nTemplate: \nContent: \nCustomization areas: "
+
+  multiAgentOrchestrator:
+    name: Multi-Agent Orchestrator
+    description: Decomposes complex tasks and coordinates multiple specialized agents to achieve comprehensive solutions
+    scenarios:
+      comprehensiveResearch:
+        title: Comprehensive Research Report
+        prompt: "Please create a comprehensive research report on the following theme:\n\nTheme: \n\nFollow this workflow:\n1. Web Researcher gathers information\n2. Data Analyst analyzes data (if applicable)\n3. General Assistant creates summary report"
+      projectExecution:
+        title: Project Execution
+        prompt: "Please execute the following project:\n\nProject overview: \nDeliverables: \n\nDistribute work to appropriate agents and create integrated deliverables."
+      contentPipeline:
+        title: Content Creation Pipeline
+        prompt: "Please create the following content:\n\nTheme: \nFormat: (presentation / video / report)\n\nCoordinate image generation, content writing, and material creation."
+      multiPerspectiveAnalysis:
+        title: Multi-Perspective Analysis
+        prompt: "Please analyze the following topic from multiple perspectives:\n\nTopic: \n\nAnalyze from different domains such as technology, business, and user experience, then integrate findings."
+      workflowAutomation:
+        title: Workflow Automation
+        prompt: "Please automate the following routine work:\n\nWork description: \nProcedure: \n\nExecute efficiently using multiple agents."
+      presentationCreation:
+        title: Presentation Creation Package
+        prompt: "Please create presentation materials on the following theme:\n\nTheme: \nAudience: \n\nCoordinate research, summarization, slide creation, and review."

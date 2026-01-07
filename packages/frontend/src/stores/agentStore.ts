@@ -71,10 +71,10 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
     set({ isLoading: true, error: null });
 
     try {
-      const updatedAgent = await agentsApi.updateAgent(input.id, input);
+      const updatedAgent = await agentsApi.updateAgent(input.agentId, input);
 
       set((state) => {
-        const agentIndex = state.agents.findIndex((agent) => agent.id === input.id);
+        const agentIndex = state.agents.findIndex((agent) => agent.agentId === input.agentId);
         const updatedAgents = [...state.agents];
 
         if (agentIndex !== -1) {
@@ -83,7 +83,7 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 
         // 選択中のAgentが更新された場合は選択状態も更新
         const updatedSelectedAgent =
-          state.selectedAgent?.id === input.id ? updatedAgent : state.selectedAgent;
+          state.selectedAgent?.agentId === input.agentId ? updatedAgent : state.selectedAgent;
 
         return {
           agents: updatedAgents,
@@ -99,20 +99,21 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
     }
   },
 
-  deleteAgent: async (id: string) => {
+  deleteAgent: async (agentId: string) => {
     set({ isLoading: true, error: null });
 
     try {
-      await agentsApi.deleteAgent(id);
+      await agentsApi.deleteAgent(agentId);
 
       set((state) => {
-        const updatedAgents = state.agents.filter((agent) => agent.id !== id);
+        const updatedAgents = state.agents.filter((agent) => agent.agentId !== agentId);
 
         // 削除されたAgentが選択中だった場合は選択を解除
-        const updatedSelectedAgent = state.selectedAgent?.id === id ? null : state.selectedAgent;
+        const updatedSelectedAgent =
+          state.selectedAgent?.agentId === agentId ? null : state.selectedAgent;
 
         if (updatedSelectedAgent !== state.selectedAgent) {
-          saveSelectedAgentIdToStorage(updatedSelectedAgent?.id || null);
+          saveSelectedAgentIdToStorage(updatedSelectedAgent?.agentId || null);
         }
 
         return {
@@ -129,19 +130,19 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
     }
   },
 
-  getAgent: (id: string) => {
-    return get().agents.find((agent) => agent.id === id);
+  getAgent: (agentId: string) => {
+    return get().agents.find((agent) => agent.agentId === agentId);
   },
 
   // 共有機能
-  toggleShare: async (id: string) => {
+  toggleShare: async (agentId: string) => {
     set({ isLoading: true, error: null });
 
     try {
-      const updatedAgent = await agentsApi.toggleShareAgent(id);
+      const updatedAgent = await agentsApi.toggleShareAgent(agentId);
 
       set((state) => {
-        const agentIndex = state.agents.findIndex((agent) => agent.id === id);
+        const agentIndex = state.agents.findIndex((agent) => agent.agentId === agentId);
         const updatedAgents = [...state.agents];
 
         if (agentIndex !== -1) {
@@ -150,7 +151,7 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 
         // 選択中のAgentが更新された場合は選択状態も更新
         const updatedSelectedAgent =
-          state.selectedAgent?.id === id ? updatedAgent : state.selectedAgent;
+          state.selectedAgent?.agentId === agentId ? updatedAgent : state.selectedAgent;
 
         return {
           agents: updatedAgents,
@@ -172,7 +173,7 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
   // Agent選択
   selectAgent: (agent: Agent | null) => {
     set({ selectedAgent: agent });
-    saveSelectedAgentIdToStorage(agent?.id || null);
+    saveSelectedAgentIdToStorage(agent?.agentId || null);
   },
 
   // ユーティリティ
@@ -199,13 +200,13 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 
       // 選択されたAgentIDが有効か確認
       if (selectedAgentId) {
-        selectedAgent = agents.find((a) => a.id === selectedAgentId) || null;
+        selectedAgent = agents.find((a) => a.agentId === selectedAgentId) || null;
       }
 
       // 未選択の場合はデフォルトで最初のAgentを選択
       if (!selectedAgent && agents.length > 0) {
         selectedAgent = agents[0];
-        saveSelectedAgentIdToStorage(selectedAgent.id);
+        saveSelectedAgentIdToStorage(selectedAgent.agentId);
       }
 
       console.log(`✅ AgentStore初期化完了: ${agents.length}件`);

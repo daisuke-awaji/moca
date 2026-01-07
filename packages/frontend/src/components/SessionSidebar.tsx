@@ -1,6 +1,6 @@
 /**
- * セッションサイドバーコンポーネント
- * セッション一覧の表示と管理を行う
+ * Session Sidebar Component
+ * Display and manage session list
  */
 
 import { useEffect, useState, useRef } from 'react';
@@ -27,7 +27,7 @@ import { Tooltip } from './ui/Tooltip';
 import type { SessionSummary } from '../api/sessions';
 
 /**
- * セッションアイテムコンポーネント
+ * Session Item Component
  */
 interface SessionItemProps {
   session: SessionSummary;
@@ -36,7 +36,8 @@ interface SessionItemProps {
 }
 
 function SessionItem({ session, isActive, isNew = false }: SessionItemProps) {
-  const { t } = useTranslation();
+  // Check if this is a sub-agent session
+  const isSubAgent = session.sessionId.endsWith('_subagent');
 
   return (
     <Link
@@ -50,19 +51,18 @@ function SessionItem({ session, isActive, isNew = false }: SessionItemProps) {
       <div className="flex items-center gap-2">
         <span
           className={`
-          font-medium text-sm leading-tight flex-shrink-0
-          ${isActive ? 'text-gray-900' : 'text-gray-900 group-hover:text-gray-700'}
+          text-sm leading-tight truncate
+          ${
+            isSubAgent
+              ? 'text-gray-500'
+              : isActive
+                ? 'text-gray-700'
+                : 'text-gray-700 group-hover:text-gray-800'
+          }
         `}
         >
-          {t('chat.sessionNameLabel')}
-        </span>
-        <span
-          className={`
-          text-xs leading-tight font-mono text-gray-500 truncate
-          ${isActive ? 'text-gray-600' : 'text-gray-500 group-hover:text-gray-600'}
-        `}
-        >
-          {session.sessionId}
+          {isSubAgent && <span className="text-xs">{'[Sub] '}</span>}
+          {session.title}
         </span>
       </div>
     </Link>
@@ -70,7 +70,7 @@ function SessionItem({ session, isActive, isNew = false }: SessionItemProps) {
 }
 
 /**
- * セッションサイドバーコンポーネント
+ * Session Sidebar Component
  */
 export function SessionSidebar() {
   const { t } = useTranslation();
@@ -87,28 +87,28 @@ export function SessionSidebar() {
   } = useSessionStore();
   const { isSidebarOpen, isMobileView, toggleSidebar } = useUIStore();
 
-  // ユーザードロップダウンの状態管理
+  // User dropdown state management
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const userDropdownRef = useRef<HTMLDivElement>(null);
 
-  // 新規セッション検出用
+  // Detect new sessions
   const prevSessionIdsRef = useRef<Set<string>>(new Set());
   const [newSessionIds, setNewSessionIds] = useState<Set<string>>(new Set());
 
-  // 初回読み込み
+  // Initial load
   useEffect(() => {
     if (user && !hasLoadedOnce && !isLoadingSessions) {
-      console.log('🔄 初回セッション読み込み開始');
+      console.log('🔄 Starting initial session load');
       loadSessions();
     }
   }, [user, hasLoadedOnce, isLoadingSessions, loadSessions]);
 
-  // 新規セッション検出
+  // Detect new sessions
   useEffect(() => {
     const currentIds = new Set(sessions.map((s) => s.sessionId));
     const prevIds = prevSessionIdsRef.current;
 
-    // 新規追加されたセッションを検出
+    // Detect newly added sessions
     const newIds = new Set<string>();
     currentIds.forEach((id) => {
       if (!prevIds.has(id)) {
@@ -117,11 +117,11 @@ export function SessionSidebar() {
     });
 
     if (newIds.size > 0) {
-      // setStateを非同期で実行してeslintエラーを回避
+      // Execute setState asynchronously to avoid eslint error
       setTimeout(() => {
         setNewSessionIds(newIds);
       }, 0);
-      // アニメーション完了後にクリア
+      // Clear after animation completes
       const timer = setTimeout(() => setNewSessionIds(new Set()), 300);
       return () => clearTimeout(timer);
     }
@@ -129,22 +129,22 @@ export function SessionSidebar() {
     prevSessionIdsRef.current = currentIds;
   }, [sessions]);
 
-  // 新規チャット開始
+  // Start new chat
   const handleNewChat = (e: React.MouseEvent) => {
-    // Cmd/Ctrl+クリックまたは中クリック時は別タブで開くだけなので、状態変更しない
+    // Don't change state when Cmd/Ctrl+click or middle-click (opens in new tab)
     if (e.metaKey || e.ctrlKey || e.button === 1) {
       return;
     }
-    console.log('🆕 新規チャット開始');
+    console.log('🆕 Starting new chat');
     clearActiveSession();
   };
 
-  // サイドバー折りたたみ
+  // Toggle sidebar
   const handleToggleSidebar = () => {
     toggleSidebar();
   };
 
-  // ログアウト処理
+  // Logout handler
   const handleLogout = async () => {
     try {
       await logout();
@@ -153,12 +153,12 @@ export function SessionSidebar() {
     }
   };
 
-  // ユーザードロップダウンの切り替え
+  // Toggle user dropdown
   const toggleUserDropdown = () => {
     setIsUserDropdownOpen(!isUserDropdownOpen);
   };
 
-  // ドロップダウン外クリックで閉じる
+  // Close dropdown on outside click
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (userDropdownRef.current && !userDropdownRef.current.contains(event.target as Node)) {
@@ -176,16 +176,16 @@ export function SessionSidebar() {
     return null;
   }
 
-  // モバイル時は常に展開状態（オーバーレイ形式なので内部は展開表示）
-  // ナローデスクトップ時は現在の状態に従う（自動折りたたみ推奨だが手動で開くことも可）
-  // ワイドデスクトップ時は現在の状態に従う
+  // Always expanded on mobile (overlay form, so expanded display internally)
+  // Follow current state on narrow desktop (auto-collapse recommended but can be manually opened)
+  // Follow current state on wide desktop
   const shouldShowExpanded = isMobileView || isSidebarOpen;
 
   return (
     <div
       className={`h-full bg-white border-r border-gray-200 flex flex-col ${shouldShowExpanded ? 'w-80' : 'w-16'}`}
     >
-      {/* ヘッダー */}
+      {/* Header */}
       <div className={`p-4 ${shouldShowExpanded ? 'border-b border-gray-200' : ''} bg-white`}>
         <div
           className={`flex items-center mb-3 ${shouldShowExpanded ? 'justify-between' : 'justify-center'}`}
@@ -195,7 +195,7 @@ export function SessionSidebar() {
               <Link
                 to="/"
                 className="flex items-center gap-2 rounded-lg p-2 pb-1 pt-1 transition-colors group no-underline"
-                title="ホームページに戻る"
+                title="Return to home page"
               >
                 <Donut className="w-5 h-5 text-gray-700 group-hover:text-amber-600 transition-colors" />
                 <span className="text-lg font-semibold text-gray-900 group-hover:text-amber-700 transition-colors">
@@ -203,11 +203,11 @@ export function SessionSidebar() {
                 </span>
               </Link>
 
-              {/* モバイル時は×ボタン、デスクトップ時はPanelRightボタン */}
+              {/* × button on mobile, PanelRight button on desktop */}
               <button
                 onClick={handleToggleSidebar}
                 className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
-                title={isMobileView ? 'サイドバーを閉じる' : 'サイドバーを閉じる'}
+                title={isMobileView ? 'Close sidebar' : 'Close sidebar'}
               >
                 {isMobileView ? <X className="w-5 h-5" /> : <PanelRight className="w-5 h-5" />}
               </button>
@@ -216,7 +216,7 @@ export function SessionSidebar() {
             <button
               onClick={handleToggleSidebar}
               className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors group"
-              title="サイドバーを開く"
+              title="Open sidebar"
             >
               <Donut className="w-5 h-5 text-amber-600 group-hover:hidden" />
               <PanelRight className="w-5 h-5 hidden group-hover:block" />
@@ -302,7 +302,7 @@ export function SessionSidebar() {
         </div>
       </div>
 
-      {/* セッション一覧 - 展開時のみ表示 */}
+      {/* Session list - Display only when expanded */}
       {shouldShowExpanded && (
         <div className="flex-1 overflow-y-auto">
           {sessionsError && (
@@ -363,7 +363,7 @@ export function SessionSidebar() {
         </div>
       )}
 
-      {/* ユーザー情報 - サイドバーの一番下 */}
+      {/* User info - Bottom of sidebar */}
       <div
         className={`mt-auto p-4 border-t border-gray-200 ${!shouldShowExpanded ? 'flex justify-center' : ''}`}
       >
@@ -388,7 +388,7 @@ export function SessionSidebar() {
             </button>
           </Tooltip>
 
-          {/* ドロップダウンメニュー */}
+          {/* Dropdown menu */}
           {isUserDropdownOpen && (
             <div
               className={`absolute bg-white rounded-2xl shadow-lg border border-gray-200 py-2 z-50 ${
@@ -397,7 +397,7 @@ export function SessionSidebar() {
                   : 'bottom-full left-0 mb-2 w-48'
               }`}
             >
-              {/* ユーザー情報 - 展開時のみ表示 */}
+              {/* User info - Display only when expanded */}
               {shouldShowExpanded && (
                 <div className="px-4 py-2 border-b border-gray-100">
                   <p className="text-sm font-medium text-gray-900">{user.username}</p>
@@ -405,7 +405,7 @@ export function SessionSidebar() {
                 </div>
               )}
 
-              {/* 折りたたみ時はユーザー名も表示 */}
+              {/* Also show username when collapsed */}
               {!shouldShowExpanded && (
                 <div className="px-4 py-2 border-b border-gray-100">
                   <p className="text-sm font-medium text-gray-900">{user.username}</p>
@@ -413,7 +413,7 @@ export function SessionSidebar() {
                 </div>
               )}
 
-              {/* 設定 */}
+              {/* Settings */}
               <Link
                 to="/settings"
                 onClick={() => setIsUserDropdownOpen(false)}
@@ -423,7 +423,7 @@ export function SessionSidebar() {
                 {t('navigation.settings')}
               </Link>
 
-              {/* ログアウト */}
+              {/* Logout */}
               <button
                 onClick={handleLogout}
                 className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"

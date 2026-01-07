@@ -40,6 +40,11 @@ export interface BackendApiProps {
   readonly agentsTableName?: string;
 
   /**
+   * Sessions Table テーブル名
+   */
+  readonly sessionsTableName?: string;
+
+  /**
    * CORS許可オリジン
    */
   readonly corsAllowedOrigins?: string[];
@@ -172,8 +177,8 @@ export class BackendApi extends Construct {
     // Lambda関数の作成（Docker Image Function）
     this.lambdaFunction = new lambda.DockerImageFunction(this, 'BackendApiFunction', {
       functionName: `${apiName}-function`,
-      code: lambda.DockerImageCode.fromImageAsset(props.dockerContextPath || 'packages/backend', {
-        file: props.dockerFileName || 'Dockerfile.lambda',
+      code: lambda.DockerImageCode.fromImageAsset(props.dockerContextPath || '.', {
+        file: props.dockerFileName || 'docker/backend.Dockerfile',
         platform: Platform.LINUX_AMD64,
       }),
       architecture: lambda.Architecture.X86_64,
@@ -199,6 +204,7 @@ export class BackendApi extends Construct {
         AGENTCORE_MEMORY_ID: props.agentcoreMemoryId || '',
         USER_STORAGE_BUCKET_NAME: props.userStorageBucketName || '',
         AGENTS_TABLE_NAME: props.agentsTableName || '',
+        SESSIONS_TABLE_NAME: props.sessionsTableName || '',
 
         // Lambda Web Adapter 設定（既にDockerfileで設定されているが念のため）
         AWS_LWA_PORT: '8080',

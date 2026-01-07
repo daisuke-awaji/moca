@@ -16,20 +16,6 @@ import { DEFAULT_AGENTS } from '../data/default-agents.js';
 const router = Router();
 
 /**
- * Convert Backend Agent to Frontend Agent
- * Map agentId -> id
- * Include userId if includeUserId is true (for shared agents)
- */
-function toFrontendAgent(agent: BackendAgent, includeUserId: boolean = false) {
-  const { userId, agentId, ...rest } = agent;
-  return {
-    id: agentId,
-    ...(includeUserId && { userId }), // Include userId for shared agents
-    ...rest,
-  };
-}
-
-/**
  * Agent list retrieval endpoint
  * GET /agents
  * JWT authentication required
@@ -58,7 +44,7 @@ router.get('/', jwtAuthMiddleware, async (req: AuthenticatedRequest, res: Respon
     console.log(`✅ Agent list retrieval completed (${auth.requestId}): ${agents.length} items`);
 
     res.status(200).json({
-      agents: agents.map((agent) => toFrontendAgent(agent)),
+      agents: agents,
       metadata: {
         requestId: auth.requestId,
         timestamp: new Date().toISOString(),
@@ -125,7 +111,7 @@ router.get('/:agentId', jwtAuthMiddleware, async (req: AuthenticatedRequest, res
     console.log(`✅ Agent retrieval completed (${auth.requestId}): ${agent.name}`);
 
     res.status(200).json({
-      agent: toFrontendAgent(agent),
+      agent: agent,
       metadata: {
         requestId: auth.requestId,
         timestamp: new Date().toISOString(),
@@ -184,7 +170,7 @@ router.post('/', jwtAuthMiddleware, async (req: AuthenticatedRequest, res: Respo
     console.log(`✅ Agent creation completed (${auth.requestId}): ${agent.agentId}`);
 
     res.status(201).json({
-      agent: toFrontendAgent(agent),
+      agent: agent,
       metadata: {
         requestId: auth.requestId,
         timestamp: new Date().toISOString(),
@@ -247,7 +233,7 @@ router.put('/:agentId', jwtAuthMiddleware, async (req: AuthenticatedRequest, res
     console.log(`✅ Agent update completed (${auth.requestId}): ${agent.name}`);
 
     res.status(200).json({
-      agent: toFrontendAgent(agent),
+      agent: agent,
       metadata: {
         requestId: auth.requestId,
         timestamp: new Date().toISOString(),
@@ -376,7 +362,7 @@ router.put(
       );
 
       res.status(200).json({
-        agent: toFrontendAgent(agent),
+        agent: agent,
         metadata: {
           requestId: auth.requestId,
           timestamp: new Date().toISOString(),
@@ -436,7 +422,7 @@ router.post('/initialize', jwtAuthMiddleware, async (req: AuthenticatedRequest, 
     if (existingAgents.length > 0) {
       console.log(`ℹ️  Skipping initialization because existing Agents exist (${auth.requestId})`);
       return res.status(200).json({
-        agents: existingAgents.map((agent) => toFrontendAgent(agent)),
+        agents: existingAgents,
         skipped: true,
         message: 'Initialization skipped because existing Agents exist',
         metadata: {
@@ -460,7 +446,7 @@ router.post('/initialize', jwtAuthMiddleware, async (req: AuthenticatedRequest, 
     );
 
     res.status(201).json({
-      agents: agents.map((agent) => toFrontendAgent(agent)),
+      agents: agents,
       skipped: false,
       metadata: {
         requestId: auth.requestId,
@@ -556,7 +542,7 @@ router.get(
       );
 
       res.status(200).json({
-        agents: allAgents.map((agent) => toFrontendAgent(agent, true)),
+        agents: allAgents,
         nextCursor: result.nextCursor,
         hasMore: result.hasMore,
         metadata: {
@@ -649,7 +635,7 @@ router.get(
       console.log(`✅ Shared Agent detail retrieval completed (${auth.requestId}): ${agent.name}`);
 
       res.status(200).json({
-        agent: toFrontendAgent(agent, true),
+        agent: agent,
         metadata: {
           requestId: auth.requestId,
           timestamp: new Date().toISOString(),
@@ -732,7 +718,7 @@ router.post(
       console.log(`✅ Shared Agent clone completed (${auth.requestId}): ${clonedAgent.agentId}`);
 
       res.status(201).json({
-        agent: toFrontendAgent(clonedAgent),
+        agent: clonedAgent,
         metadata: {
           requestId: auth.requestId,
           timestamp: new Date().toISOString(),
