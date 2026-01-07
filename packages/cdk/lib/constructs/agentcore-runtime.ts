@@ -85,6 +85,12 @@ export interface AgentCoreRuntimeProps {
   readonly userStorageBucketName?: string;
 
   /**
+   * Sessions Table テーブル名（オプション）
+   * セッション管理のために必要
+   */
+  readonly sessionsTableName?: string;
+
+  /**
    * Nova Canvas のリージョン（オプション）
    * 画像生成に使用する Amazon Nova Canvas モデルのリージョン
    * デフォルト: us-east-1
@@ -182,6 +188,11 @@ export class AgentCoreRuntime extends Construct {
     // User Storage バケット名の設定
     if (props.userStorageBucketName) {
       environmentVariables.USER_STORAGE_BUCKET_NAME = props.userStorageBucketName;
+    }
+
+    // Sessions Table テーブル名の設定
+    if (props.sessionsTableName) {
+      environmentVariables.SESSIONS_TABLE_NAME = props.sessionsTableName;
     }
 
     // Nova Canvas リージョンの設定

@@ -142,6 +142,15 @@ chat:
   inputHelp: Shift + Enter for new line, Enter to send
   searchChatsDescription: Chat search functionality is under development.
   searchChatsFeature: You will be able to search past conversation history by keywords.
+  searchPlaceholder: 'Search sessions...'
+  searchDateRange: 'Date range'
+  searchDateStart: 'Start date'
+  searchDateEnd: 'End date'
+  searchResults: 'Search results'
+  searchResultsCount: '{{count}} sessions'
+  searchNoResults: 'No matching sessions found'
+  updatedAt: 'Updated'
+  searchNote: '※ Semantic search is not yet implemented. Only title search is available.'
 
 # Agent
 agent:

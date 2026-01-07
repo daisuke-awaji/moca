@@ -41,6 +41,9 @@ const envSchema = z.object({
 
   // Agents Table configuration
   AGENTS_TABLE_NAME: z.string().optional(),
+
+  // Sessions Table configuration
+  SESSIONS_TABLE_NAME: z.string().optional(),
 });
 
 /**
@@ -109,6 +112,9 @@ export const config = {
 
   // Agents Table configuration
   agentsTableName: env.AGENTS_TABLE_NAME,
+
+  // Sessions Table configuration
+  sessionsTableName: env.SESSIONS_TABLE_NAME,
 } as const;
 
 /**
