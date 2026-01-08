@@ -195,7 +195,9 @@ export class WorkspaceSync {
   private async syncFromS3(): Promise<void> {
     const startTime = Date.now();
     let downloadedFiles = 0;
+    let deletedFiles = 0;
     const errors: string[] = [];
+    const s3FilePaths = new Set<string>();
 
     try {
       // S3パスのプレフィックスを生成
@@ -235,6 +237,9 @@ export class WorkspaceSync {
                 continue;
               }
 
+              // S3に存在するパスを記録
+              s3FilePaths.add(relativePath);
+
               const localPath = path.join(this.workspaceDir, relativePath);
 
               // ファイルをダウンロード
@@ -261,8 +266,13 @@ export class WorkspaceSync {
         continuationToken = listResponse.NextContinuationToken;
       } while (continuationToken);
 
+      // ローカルにのみ存在するファイルを削除
+      deletedFiles = await this.cleanupLocalOnlyFiles(s3FilePaths);
+
       const duration = Date.now() - startTime;
-      logger.info(`[WORKSPACE_SYNC] Download complete: ${downloadedFiles} files in ${duration}ms`);
+      logger.info(
+        `[WORKSPACE_SYNC] Sync complete: ${downloadedFiles} downloaded, ${deletedFiles} deleted in ${duration}ms`
+      );
 
       if (errors.length > 0) {
         logger.warn(`[WORKSPACE_SYNC] Download completed with ${errors.length} errors`);
@@ -381,6 +391,67 @@ export class WorkspaceSync {
         errors: [error instanceof Error ? error.message : 'Unknown error'],
       };
     }
+  }
+
+  /**
+   * ローカルにのみ存在するファイルを削除
+   * S3に存在しないがローカルに存在するファイルを削除することで、
+   * S3の状態を「正」としてローカルワークスペースを同期
+   */
+  private async cleanupLocalOnlyFiles(s3FilePaths: Set<string>): Promise<number> {
+    let deletedCount = 0;
+
+    const scanDirectory = (dir: string): void => {
+      if (!fs.existsSync(dir)) {
+        return;
+      }
+
+      const entries = fs.readdirSync(dir, { withFileTypes: true });
+
+      for (const entry of entries) {
+        const fullPath = path.join(dir, entry.name);
+        const relativePath = path.relative(this.workspaceDir, fullPath);
+
+        if (entry.isDirectory()) {
+          // ディレクトリを再帰的にスキャン
+          scanDirectory(fullPath);
+
+          // 空のディレクトリを削除
+          try {
+            const dirEntries = fs.readdirSync(fullPath);
+            if (dirEntries.length === 0) {
+              fs.rmdirSync(fullPath);
+              logger.debug(`[WORKSPACE_SYNC] Deleted empty directory: ${relativePath}`);
+            }
+          } catch {
+            // ディレクトリが空でない場合は無視
+          }
+        } else if (entry.isFile()) {
+          // ignoreされているファイルはスキップ
+          if (this.ignoreFilter.isIgnored(relativePath)) {
+            logger.debug(`[WORKSPACE_SYNC] Skipping ignored file from cleanup: ${relativePath}`);
+            continue;
+          }
+
+          // S3に存在しないファイルを削除
+          if (!s3FilePaths.has(relativePath)) {
+            try {
+              fs.unlinkSync(fullPath);
+              deletedCount++;
+              logger.info(`[WORKSPACE_SYNC] Deleted local-only file: ${relativePath}`);
+
+              // スナップショットからも削除
+              this.fileSnapshot.delete(relativePath);
+            } catch (error) {
+              logger.error(`[WORKSPACE_SYNC] Failed to delete ${relativePath}: ${error}`);
+            }
+          }
+        }
+      }
+    };
+
+    scanDirectory(this.workspaceDir);
+    return deletedCount;
   }
 
   /**
