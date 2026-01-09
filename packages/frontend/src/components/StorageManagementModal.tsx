@@ -158,7 +158,8 @@ function StorageItemComponent({
             onTouchEnd={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              handleDownloadClick(e as any);
+              const mouseEvent = e as unknown as React.MouseEvent;
+              handleDownloadClick(mouseEvent);
             }}
             className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
             title={item.type === 'directory' ? t('storage.downloadFolder') : t('storage.download')}
@@ -171,7 +172,8 @@ function StorageItemComponent({
               e.preventDefault();
               e.stopPropagation();
               if (!isDeleting) {
-                handleDelete(e as any);
+                const mouseEvent = e as unknown as React.MouseEvent;
+                handleDelete(mouseEvent);
               }
             }}
             disabled={isDeleting}

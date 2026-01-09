@@ -69,7 +69,8 @@ function TreeNode({
           onTouchEnd={(e) => {
             e.preventDefault();
             e.stopPropagation();
-            handleToggle(e as any);
+            const mouseEvent = e as unknown as React.MouseEvent;
+            handleToggle(mouseEvent);
           }}
           className={`p-0.5 hover:bg-gray-200 rounded transition-colors ${
             !hasChildren ? 'invisible' : ''
