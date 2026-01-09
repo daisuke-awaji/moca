@@ -7,6 +7,7 @@ import * as cdk from 'aws-cdk-lib';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as agentcore from '@aws-cdk/aws-bedrock-agentcore-alpha';
 import { RuntimeAuthorizerConfiguration } from '@aws-cdk/aws-bedrock-agentcore-alpha';
+import { Platform } from 'aws-cdk-lib/aws-ecr-assets';
 import { Construct } from 'constructs';
 import { CognitoAuth } from './cognito-auth.js';
 import { AgentCoreGateway } from './agentcore-gateway.js';
@@ -129,8 +130,10 @@ export class AgentCoreRuntime extends Construct {
 
     // Agent Runtime Artifact を作成
     // Docker context: プロジェクトルート, Dockerfile: docker/agent.Dockerfile
+    // Platform: ARM64 (Bedrock AgentCore Runtime requires ARM64 architecture)
     const agentRuntimeArtifact = agentcore.AgentRuntimeArtifact.fromAsset('.', {
       file: 'docker/agent.Dockerfile',
+      platform: Platform.LINUX_ARM64,
     });
 
     // 認証設定
