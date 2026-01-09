@@ -20,14 +20,3 @@ rules:
   no-invalid-media-type-examples: off
   # Allow examples that don't perfectly match schema format
   no-invalid-schema-examples: off
-
-# Redoc theme settings
-theme:
-  colors:
-    primary:
-      main: '#1976d2'
-    secondary:
-      main: '#424242'
-  typography:
-    fontSize: '16px'
-    fontFamily: 'Roboto, sans-serif'

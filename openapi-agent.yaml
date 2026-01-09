@@ -227,7 +227,7 @@ paths:
                     {"type":"afterToolsEvent"}
                     {"type":"modelContentBlockDeltaEvent","delta":{"type":"textDelta","text":"sunny."}}
                     {"type":"afterInvocationEvent"}
-                    {"type":"serverCompletionEvent","metadata":{"requestId":"req-abc123","duration":1500,"sessionId":"session-xyz","conversationLength":2}}
+                    {"type":"serverCompletionEvent","metadata":{"requestId":"123e4567-e89b-12d3-a456-426614174000","duration":1500,"sessionId":"session-xyz","conversationLength":2}}
 
         '400':
           description: Request error
@@ -513,7 +513,7 @@ components:
                   type: string
                   description: Request ID
                   format: uuid
-                  example: 'req-abc123'
+                  example: '123e4567-e89b-12d3-a456-426614174000'
                 duration:
                   type: number
                   description: Processing time (milliseconds)
@@ -567,7 +567,7 @@ components:
                   type: string
                   description: Request ID
                   format: uuid
-                  example: 'req-abc123'
+                  example: '123e4567-e89b-12d3-a456-426614174000'
 
   responses:
     NotFoundError:
