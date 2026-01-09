@@ -106,6 +106,13 @@ export interface EnvironmentConfig {
   githubTokenSecretName?: string;
 
   /**
+   * GitLab Token Secret Name (Secrets Manager)
+   * Set for environments to retrieve GitLab token from Secrets Manager
+   * Used for private NPM registry authentication
+   */
+  gitlabTokenSecretName?: string;
+
+  /**
    * Allowed email domains for sign-up (optional)
    * If set, only emails from these domains can sign up
    * Example: ['amazon.com', 'amazon.jp']
@@ -173,6 +180,7 @@ export const environments: Record<Environment, EnvironmentConfig> = {
     backendApiName: 'agentcore-app-backend-api',
     tavilyApiKeySecretName: 'agentcore/default/tavily-api-key',
     githubTokenSecretName: 'agentcore/default/github-token',
+    gitlabTokenSecretName: 'agentcore/default/gitlab-token',
     allowedSignUpEmailDomains: ['amazon.com', 'amazon.co.jp'],
   },
 
@@ -193,6 +201,7 @@ export const environments: Record<Environment, EnvironmentConfig> = {
     backendApiName: 'agentcore-app-dev-backend-api',
     tavilyApiKeySecretName: 'agentcore/dev/tavily-api-key',
     githubTokenSecretName: 'agentcore/dev/github-token',
+    gitlabTokenSecretName: 'agentcore/dev/gitlab-token',
     allowedSignUpEmailDomains: ['amazon.com', 'amazon.co.jp'],
     testUser: {
       username: 'testuser',
@@ -218,6 +227,7 @@ export const environments: Record<Environment, EnvironmentConfig> = {
     backendApiName: 'agentcore-app-stg-backend-api',
     tavilyApiKeySecretName: 'agentcore/stg/tavily-api-key',
     githubTokenSecretName: 'agentcore/stg/github-token',
+    gitlabTokenSecretName: 'agentcore/stg/gitlab-token',
   },
 
   prd: {
@@ -237,6 +247,7 @@ export const environments: Record<Environment, EnvironmentConfig> = {
     backendApiName: 'agentcore-app-prd-backend-api',
     tavilyApiKeySecretName: 'agentcore/prd/tavily-api-key',
     githubTokenSecretName: 'agentcore/prd/github-token',
+    gitlabTokenSecretName: 'agentcore/prd/gitlab-token',
   },
 };
 
@@ -291,6 +302,7 @@ function getPrEnvironmentConfig(env: string): EnvironmentConfig {
     backendApiName: `agentcore-pr-${prNumber}-backend-api`,
     tavilyApiKeySecretName: 'agentcore/dev/tavily-api-key', // Use dev secrets
     githubTokenSecretName: 'agentcore/dev/github-token', // Use dev secrets
+    gitlabTokenSecretName: 'agentcore/dev/gitlab-token', // Use dev secrets
     allowedSignUpEmailDomains: ['amazon.com', 'amazon.co.jp'],
     // No custom domain for PR environments
     // No test user for PR environments

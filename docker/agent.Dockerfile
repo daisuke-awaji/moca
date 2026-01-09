@@ -37,12 +37,13 @@ RUN cd packages/agent && npm run build
 # ========================================
 FROM node:22-slim
 
-# Install required tools (Python, AWS CLI, GitHub CLI, uv)
+# Install required tools (Python, AWS CLI, GitHub CLI, uv, Bun)
 RUN apt-get update && apt-get install -y \
     curl \
     python3 \
     python3-pip \
     gnupg \
+    unzip \
     && rm -rf /var/lib/apt/lists/*
 
 # Install AWS CLI
@@ -63,6 +64,11 @@ RUN curl -LsSf https://astral.sh/uv/install.sh | sh && \
     mv /root/.local/bin/uv /usr/local/bin/uv && \
     mv /root/.local/bin/uvx /usr/local/bin/uvx && \
     chmod +x /usr/local/bin/uv /usr/local/bin/uvx
+
+# Install Bun for JavaScript/TypeScript MCP servers
+RUN curl -fsSL https://bun.sh/install | bash && \
+    mv /root/.bun/bin/bun /usr/local/bin/bun && \
+    chmod +x /usr/local/bin/bun
 
 WORKDIR /app
 

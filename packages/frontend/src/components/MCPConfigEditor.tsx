@@ -75,6 +75,17 @@ const SAMPLE_CONFIGS = (t: (key: string) => string) => ({
       },
     },
   },
+  'slidev-theme-aws': {
+    label: t('tool.mcp.samples.slidevThemeAws'),
+    config: {
+      mcpServers: {
+        'slidev-theme-aws': {
+          command: 'npx',
+          args: ['-y', '@slidev-theme-aws/mcp'],
+        },
+      },
+    },
+  },
 });
 
 export const MCPConfigEditor: React.FC<MCPConfigEditorProps> = ({

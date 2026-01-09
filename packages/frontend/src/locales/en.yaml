@@ -319,6 +319,7 @@ tool:
       github: GitHub Server
       awsDocs: AWS Documentation Server
       multiple: Multiple Servers
+      slidevThemeAws: Slidev Theme AWS (GitLab)
 
 # Storage
 storage:

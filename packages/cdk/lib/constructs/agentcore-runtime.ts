@@ -80,6 +80,13 @@ export interface AgentCoreRuntimeProps {
   readonly githubTokenSecretName?: string;
 
   /**
+   * GitLab Token Secret Name (Secrets Manager)（オプション）
+   * 設定されている場合、ランタイムは Secrets Manager から GitLab トークンを取得して
+   * プライベート NPM レジストリ認証に使用
+   */
+  readonly gitlabTokenSecretName?: string;
+
+  /**
    * User Storage バケット名（オプション）
    * S3ストレージツールを使用するために必要
    */
@@ -187,6 +194,11 @@ export class AgentCoreRuntime extends Construct {
     // GitHub Token Secret Name の設定
     if (props.githubTokenSecretName) {
       environmentVariables.GITHUB_TOKEN_SECRET_NAME = props.githubTokenSecretName;
+    }
+
+    // GitLab Token Secret Name の設定
+    if (props.gitlabTokenSecretName) {
+      environmentVariables.GITLAB_TOKEN_SECRET_NAME = props.gitlabTokenSecretName;
     }
 
     // User Storage バケット名の設定
@@ -352,6 +364,20 @@ export class AgentCoreRuntime extends Construct {
           actions: ['secretsmanager:GetSecretValue'],
           resources: [
             `arn:aws:secretsmanager:${region}:${account}:secret:${props.githubTokenSecretName}*`,
+          ],
+        })
+      );
+    }
+
+    // Secrets Manager アクセス権限（GitLab Token）
+    if (props.gitlabTokenSecretName) {
+      this.runtime.addToRolePolicy(
+        new iam.PolicyStatement({
+          sid: 'SecretsManagerGitLabTokenAccess',
+          effect: iam.Effect.ALLOW,
+          actions: ['secretsmanager:GetSecretValue'],
+          resources: [
+            `arn:aws:secretsmanager:${region}:${account}:secret:${props.gitlabTokenSecretName}*`,
           ],
         })
       );

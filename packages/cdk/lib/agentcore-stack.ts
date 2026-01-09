@@ -316,6 +316,7 @@ export class AgentCoreStack extends cdk.Stack {
       },
       tavilyApiKeySecretName: props?.tavilyApiKeySecretName || envConfig.tavilyApiKeySecretName, // Pass Tavily API Key Secret Name
       githubTokenSecretName: props?.githubTokenSecretName || envConfig.githubTokenSecretName, // Pass GitHub Token Secret Name
+      gitlabTokenSecretName: envConfig.gitlabTokenSecretName, // Pass GitLab Token Secret Name
       userStorageBucketName: this.userStorage.bucketName, // Pass User Storage bucket name
       sessionsTableName: this.sessionsTable.tableName, // Pass Sessions Table name
       backendApiUrl: this.backendApi.apiUrl, // Pass Backend API URL for call_agent tool
