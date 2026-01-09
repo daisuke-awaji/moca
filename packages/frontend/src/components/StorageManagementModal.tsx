@@ -115,6 +115,10 @@ function StorageItemComponent({
   return (
     <div
       onClick={handleCardClick}
+      onTouchEnd={(e) => {
+        e.preventDefault();
+        handleCardClick();
+      }}
       onContextMenu={handleContextMenuClick}
       className="border border-gray-200 rounded-lg p-3 hover:bg-gray-50 transition-colors cursor-pointer"
       role="button"
@@ -151,6 +155,11 @@ function StorageItemComponent({
         <div className="flex items-center gap-1 sm:gap-2">
           <button
             onClick={handleDownloadClick}
+            onTouchEnd={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handleDownloadClick(e as any);
+            }}
             className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
             title={item.type === 'directory' ? t('storage.downloadFolder') : t('storage.download')}
           >
@@ -158,6 +167,13 @@ function StorageItemComponent({
           </button>
           <button
             onClick={handleDelete}
+            onTouchEnd={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              if (!isDeleting) {
+                handleDelete(e as any);
+              }
+            }}
             disabled={isDeleting}
             className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             title={t('common.delete')}
@@ -516,8 +532,15 @@ export function StorageManagementModal({ isOpen, onClose }: StorageManagementMod
       // Download with signed URL for files
       try {
         const downloadUrl = await generateDownloadUrl(item.path);
-        // Open download URL in new tab
-        window.open(downloadUrl, '_blank');
+        // Use anchor element for better mobile compatibility
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        // Trigger download
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
       } catch (error) {
         console.error('Download error:', error);
       }
@@ -709,6 +732,10 @@ export function StorageManagementModal({ isOpen, onClose }: StorageManagementMod
           </div>
           <button
             onClick={onClose}
+            onTouchEnd={(e) => {
+              e.preventDefault();
+              onClose();
+            }}
             className="rounded-md p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
           >
             <X className="w-5 h-5" />
@@ -721,6 +748,12 @@ export function StorageManagementModal({ isOpen, onClose }: StorageManagementMod
         <div className="flex flex-wrap items-center gap-1.5">
           <button
             onClick={() => fileInputRef.current?.click()}
+            onTouchEnd={(e) => {
+              e.preventDefault();
+              if (!isUploading) {
+                fileInputRef.current?.click();
+              }
+            }}
             disabled={isUploading}
             className="flex items-center gap-1.5 px-2 py-1.5 text-xs text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
@@ -730,6 +763,10 @@ export function StorageManagementModal({ isOpen, onClose }: StorageManagementMod
 
           <button
             onClick={() => setShowNewDirectoryInput(true)}
+            onTouchEnd={(e) => {
+              e.preventDefault();
+              setShowNewDirectoryInput(true);
+            }}
             className="flex items-center gap-1.5 px-2 py-1.5 text-xs text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors"
           >
             <FolderPlus className="w-3.5 h-3.5" />
@@ -796,6 +833,10 @@ export function StorageManagementModal({ isOpen, onClose }: StorageManagementMod
             <div className="flex flex-wrap items-center gap-1 text-sm overflow-x-auto">
               <button
                 onClick={handleNavigateToRoot}
+                onTouchEnd={(e) => {
+                  e.preventDefault();
+                  handleNavigateToRoot();
+                }}
                 className="flex items-center gap-1 px-2 py-1 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors whitespace-nowrap"
               >
                 <Home className="w-4 h-4 flex-shrink-0" />
@@ -809,6 +850,10 @@ export function StorageManagementModal({ isOpen, onClose }: StorageManagementMod
                     <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
                     <button
                       onClick={() => handleNavigate(segmentPath)}
+                      onTouchEnd={(e) => {
+                        e.preventDefault();
+                        handleNavigate(segmentPath);
+                      }}
                       className="px-2 py-1 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors truncate max-w-[120px] sm:max-w-none"
                     >
                       {segment}
@@ -836,6 +881,10 @@ export function StorageManagementModal({ isOpen, onClose }: StorageManagementMod
                   <p className="text-sm text-red-800 break-words">{error}</p>
                   <button
                     onClick={clearError}
+                    onTouchEnd={(e) => {
+                      e.preventDefault();
+                      clearError();
+                    }}
                     className="text-sm text-red-600 hover:text-red-800 font-medium mt-1"
                   >
                     {t('common.close')}
@@ -897,6 +946,12 @@ export function StorageManagementModal({ isOpen, onClose }: StorageManagementMod
                           />
                           <button
                             onClick={handleCreateDirectory}
+                            onTouchEnd={(e) => {
+                              e.preventDefault();
+                              if (newDirectoryName.trim()) {
+                                handleCreateDirectory();
+                              }
+                            }}
                             disabled={!newDirectoryName.trim()}
                             className="flex-shrink-0 p-2 text-blue-600 hover:bg-blue-100 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             title={t('storage.create')}
@@ -905,6 +960,11 @@ export function StorageManagementModal({ isOpen, onClose }: StorageManagementMod
                           </button>
                           <button
                             onClick={() => {
+                              setShowNewDirectoryInput(false);
+                              setNewDirectoryName('');
+                            }}
+                            onTouchEnd={(e) => {
+                              e.preventDefault();
                               setShowNewDirectoryInput(false);
                               setNewDirectoryName('');
                             }}
@@ -946,6 +1006,10 @@ export function StorageManagementModal({ isOpen, onClose }: StorageManagementMod
             {contextMenu.type === 'file' ? (
               <button
                 onClick={handleContextDownload}
+                onTouchEnd={(e) => {
+                  e.preventDefault();
+                  handleContextDownload();
+                }}
                 className="w-full px-4 py-2 text-sm text-left hover:bg-gray-100 flex items-center gap-2 transition-colors"
               >
                 <Download className="w-4 h-4 text-gray-600" />
@@ -954,6 +1018,10 @@ export function StorageManagementModal({ isOpen, onClose }: StorageManagementMod
             ) : (
               <button
                 onClick={handleContextFolderDownload}
+                onTouchEnd={(e) => {
+                  e.preventDefault();
+                  handleContextFolderDownload();
+                }}
                 className="w-full px-4 py-2 text-sm text-left hover:bg-gray-100 flex items-center gap-2 transition-colors"
               >
                 <Download className="w-4 h-4 text-gray-600" />
@@ -962,6 +1030,10 @@ export function StorageManagementModal({ isOpen, onClose }: StorageManagementMod
             )}
             <button
               onClick={handleContextDelete}
+              onTouchEnd={(e) => {
+                e.preventDefault();
+                handleContextDelete();
+              }}
               className="w-full px-4 py-2 text-sm text-left hover:bg-gray-100 flex items-center gap-2 transition-colors"
             >
               <Trash2 className="w-4 h-4 text-gray-600" />
@@ -970,6 +1042,10 @@ export function StorageManagementModal({ isOpen, onClose }: StorageManagementMod
             <div className="border-t border-gray-200 my-1" />
             <button
               onClick={() => handleCopyPath(contextMenu.path, () => setContextMenu(null))}
+              onTouchEnd={(e) => {
+                e.preventDefault();
+                handleCopyPath(contextMenu.path, () => setContextMenu(null));
+              }}
               className="w-full px-4 py-2 text-sm text-left hover:bg-gray-100 flex items-center gap-2 transition-colors"
             >
               {copiedPath === contextMenu.path ? (
@@ -999,6 +1075,10 @@ export function StorageManagementModal({ isOpen, onClose }: StorageManagementMod
           >
             <button
               onClick={handleTreeFolderDownload}
+              onTouchEnd={(e) => {
+                e.preventDefault();
+                handleTreeFolderDownload();
+              }}
               className="w-full px-4 py-2 text-sm text-left hover:bg-gray-100 flex items-center gap-2 transition-colors"
             >
               <Download className="w-4 h-4 text-gray-600" />
@@ -1006,6 +1086,10 @@ export function StorageManagementModal({ isOpen, onClose }: StorageManagementMod
             </button>
             <button
               onClick={handleFolderDelete}
+              onTouchEnd={(e) => {
+                e.preventDefault();
+                handleFolderDelete();
+              }}
               className="w-full px-4 py-2 text-sm text-left hover:bg-gray-100 flex items-center gap-2 transition-colors"
             >
               <Trash2 className="w-4 h-4 text-gray-600" />
@@ -1016,6 +1100,10 @@ export function StorageManagementModal({ isOpen, onClose }: StorageManagementMod
               onClick={() =>
                 handleCopyPath(folderContextMenu.path, () => setFolderContextMenu(null))
               }
+              onTouchEnd={(e) => {
+                e.preventDefault();
+                handleCopyPath(folderContextMenu.path, () => setFolderContextMenu(null));
+              }}
               className="w-full px-4 py-2 text-sm text-left hover:bg-gray-100 flex items-center gap-2 transition-colors"
             >
               {copiedPath === folderContextMenu.path ? (

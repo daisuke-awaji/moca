@@ -57,11 +57,20 @@ function TreeNode({
         }`}
         style={{ paddingLeft: `${level * 12 + 8}px` }}
         onClick={handleClick}
+        onTouchEnd={(e) => {
+          e.preventDefault();
+          handleClick();
+        }}
         onContextMenu={handleContextMenu}
       >
         {/* 展開/折りたたみアイコン */}
         <button
           onClick={handleToggle}
+          onTouchEnd={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            handleToggle(e as any);
+          }}
           className={`p-0.5 hover:bg-gray-200 rounded transition-colors ${
             !hasChildren ? 'invisible' : ''
           }`}
