@@ -1,7 +1,14 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import { nanoid } from 'nanoid';
-import type { ChatState, Message, MessageContent, ToolUse, ToolResult } from '../types/index';
+import type {
+  ChatState,
+  SessionChatState,
+  Message,
+  MessageContent,
+  ToolUse,
+  ToolResult,
+} from '../types/index';
 import { streamAgentResponse } from '../api/agent';
 import type { ConversationMessage } from '../api/sessions';
 import { useAgentStore } from './agentStore';
@@ -66,15 +73,37 @@ const updateToolUseStatus = (
   });
 };
 
+// ヘルパー関数: デフォルトのセッション状態を作成
+const createDefaultSessionState = (): SessionChatState => ({
+  messages: [],
+  isLoading: false,
+  error: null,
+  lastUpdated: new Date(),
+});
+
+// ヘルパー関数: セッション状態を取得（存在しない場合は作成）
+const getOrCreateSessionState = (
+  sessions: Record<string, SessionChatState>,
+  sessionId: string
+): SessionChatState => {
+  if (!sessions[sessionId]) {
+    return createDefaultSessionState();
+  }
+  return sessions[sessionId];
+};
+
 interface ChatActions {
-  addMessage: (message: Omit<Message, 'id' | 'timestamp'>) => string;
-  updateMessage: (id: string, updates: Partial<Message>) => void;
+  getSessionState: (sessionId: string) => SessionChatState;
+  getActiveSessionState: () => SessionChatState | null;
+  switchSession: (sessionId: string) => void;
+  addMessage: (sessionId: string, message: Omit<Message, 'id' | 'timestamp'>) => string;
+  updateMessage: (sessionId: string, messageId: string, updates: Partial<Message>) => void;
   sendPrompt: (prompt: string, sessionId: string) => Promise<void>;
-  clearMessages: () => void;
-  setLoading: (loading: boolean) => void;
-  setError: (error: string | null) => void;
-  clearError: () => void;
-  loadSessionHistory: (conversationMessages: ConversationMessage[]) => void;
+  clearSession: (sessionId: string) => void;
+  setLoading: (sessionId: string, loading: boolean) => void;
+  setError: (sessionId: string, error: string | null) => void;
+  clearError: (sessionId: string) => void;
+  loadSessionHistory: (sessionId: string, conversationMessages: ConversationMessage[]) => void;
 }
 
 type ChatStore = ChatState & ChatActions;
@@ -83,49 +112,110 @@ export const useChatStore = create<ChatStore>()(
   devtools(
     (set, get) => ({
       // State
-      messages: [],
-      isLoading: false,
-      error: null,
+      sessions: {},
+      activeSessionId: null,
 
       // Actions
-      addMessage: (message: Omit<Message, 'id' | 'timestamp'>) => {
+      getSessionState: (sessionId: string) => {
+        const { sessions } = get();
+        return getOrCreateSessionState(sessions, sessionId);
+      },
+
+      getActiveSessionState: () => {
+        const { sessions, activeSessionId } = get();
+        if (!activeSessionId) return null;
+        return getOrCreateSessionState(sessions, activeSessionId);
+      },
+
+      switchSession: (sessionId: string) => {
+        set({ activeSessionId: sessionId });
+
+        // セッション状態が存在しない場合は初期化
+        const { sessions } = get();
+        if (!sessions[sessionId]) {
+          set({
+            sessions: {
+              ...sessions,
+              [sessionId]: createDefaultSessionState(),
+            },
+          });
+        }
+        console.log(`🔄 セッション切り替え: ${sessionId}`);
+      },
+
+      addMessage: (sessionId: string, message: Omit<Message, 'id' | 'timestamp'>) => {
         const newMessage: Message = {
           ...message,
           id: nanoid(),
           timestamp: new Date(),
         };
 
-        set((state) => ({
-          messages: [...state.messages, newMessage],
-        }));
+        const { sessions } = get();
+        const sessionState = getOrCreateSessionState(sessions, sessionId);
+
+        set({
+          sessions: {
+            ...sessions,
+            [sessionId]: {
+              ...sessionState,
+              messages: [...sessionState.messages, newMessage],
+              lastUpdated: new Date(),
+            },
+          },
+        });
 
         return newMessage.id;
       },
 
-      updateMessage: (id: string, updates: Partial<Message>) => {
-        set((state) => ({
-          messages: state.messages.map((msg) => (msg.id === id ? { ...msg, ...updates } : msg)),
-        }));
+      updateMessage: (sessionId: string, messageId: string, updates: Partial<Message>) => {
+        const { sessions } = get();
+        const sessionState = getOrCreateSessionState(sessions, sessionId);
+
+        set({
+          sessions: {
+            ...sessions,
+            [sessionId]: {
+              ...sessionState,
+              messages: sessionState.messages.map((msg) =>
+                msg.id === messageId ? { ...msg, ...updates } : msg
+              ),
+              lastUpdated: new Date(),
+            },
+          },
+        });
       },
 
       sendPrompt: async (prompt: string, sessionId: string) => {
-        const { addMessage, updateMessage } = get();
+        const { addMessage, updateMessage, sessions } = get();
+
+        // セッション状態の取得/作成
+        const sessionState = getOrCreateSessionState(sessions, sessionId);
+
+        // ローディング状態を設定
+        set({
+          sessions: {
+            ...sessions,
+            [sessionId]: {
+              ...sessionState,
+              isLoading: true,
+              error: null,
+            },
+          },
+        });
 
         // 新規セッションかどうかを判定（セッション一覧更新に使用）
-        const sessions = useSessionStore.getState().sessions;
-        const isNewSession = !sessions.some((s) => s.sessionId === sessionId);
+        const sessionsStore = useSessionStore.getState().sessions;
+        const isNewSession = !sessionsStore.some((s) => s.sessionId === sessionId);
 
         try {
-          set({ isLoading: true, error: null });
-
           // ユーザーメッセージを追加
-          addMessage({
+          addMessage(sessionId, {
             type: 'user',
             contents: stringToContents(prompt),
           });
 
           // アシスタントの応答メッセージを作成（ストリーミング用）
-          const assistantMessageId = addMessage({
+          const assistantMessageId = addMessage(sessionId, {
             type: 'assistant',
             contents: [],
             isStreaming: true,
@@ -176,6 +266,17 @@ export const useChatStore = create<ChatStore>()(
             sessionId,
             {
               onTextDelta: (text: string) => {
+                // セッションIDでスコープを限定
+                const { activeSessionId } = get();
+
+                // アクティブセッションが切り替わっていたら更新をスキップ
+                if (activeSessionId !== sessionId) {
+                  console.log(
+                    `⚠️ セッション切り替え検出 (${sessionId} → ${activeSessionId})、更新をスキップ`
+                  );
+                  return;
+                }
+
                 // ツール実行後の最初のテキストの場合、新しいテキストブロック開始
                 if (isAfterToolExecution) {
                   accumulatedContent = text;
@@ -184,38 +285,58 @@ export const useChatStore = create<ChatStore>()(
                   accumulatedContent += text;
                 }
 
-                const { messages } = get();
-                const currentMessage = messages.find((msg) => msg.id === assistantMessageId);
+                const { sessions } = get();
+                const sessionState = sessions[sessionId];
+                if (!sessionState) return;
+
+                const currentMessage = sessionState.messages.find(
+                  (msg) => msg.id === assistantMessageId
+                );
+
                 if (currentMessage) {
                   // 既存のcontentsを保持しつつテキストを更新
                   const newContents = updateOrAddTextContent(
                     currentMessage.contents,
                     accumulatedContent
                   );
-                  updateMessage(assistantMessageId, {
+                  updateMessage(sessionId, assistantMessageId, {
                     contents: newContents,
                     isStreaming: true,
                   });
                 }
               },
               onToolUse: (toolUse: ToolUse) => {
+                const { activeSessionId, sessions } = get();
+                if (activeSessionId !== sessionId) return;
+
                 // ツール使用を追加
-                const { messages } = get();
-                const currentMessage = messages.find((msg) => msg.id === assistantMessageId);
+                const sessionState = sessions[sessionId];
+                if (!sessionState) return;
+
+                const currentMessage = sessionState.messages.find(
+                  (msg) => msg.id === assistantMessageId
+                );
                 if (currentMessage) {
                   const newContents = addContentToMessage(currentMessage.contents, {
                     type: 'toolUse',
                     toolUse,
                   });
-                  updateMessage(assistantMessageId, {
+                  updateMessage(sessionId, assistantMessageId, {
                     contents: newContents,
                   });
                 }
               },
               onToolInputUpdate: (toolUseId: string, input: Record<string, unknown>) => {
+                const { activeSessionId, sessions } = get();
+                if (activeSessionId !== sessionId) return;
+
                 // ツール入力パラメータを更新
-                const { messages } = get();
-                const currentMessage = messages.find((msg) => msg.id === assistantMessageId);
+                const sessionState = sessions[sessionId];
+                if (!sessionState) return;
+
+                const currentMessage = sessionState.messages.find(
+                  (msg) => msg.id === assistantMessageId
+                );
                 if (currentMessage) {
                   const updatedContents = currentMessage.contents.map((content) => {
                     if (content.type === 'toolUse' && content.toolUse) {
@@ -236,15 +357,22 @@ export const useChatStore = create<ChatStore>()(
                     return content;
                   });
 
-                  updateMessage(assistantMessageId, {
+                  updateMessage(sessionId, assistantMessageId, {
                     contents: updatedContents,
                   });
                 }
               },
               onToolResult: (toolResult: ToolResult) => {
+                const { activeSessionId, sessions } = get();
+                if (activeSessionId !== sessionId) return;
+
                 // ツール結果を追加
-                const { messages } = get();
-                const currentMessage = messages.find((msg) => msg.id === assistantMessageId);
+                const sessionState = sessions[sessionId];
+                if (!sessionState) return;
+
+                const currentMessage = sessionState.messages.find(
+                  (msg) => msg.id === assistantMessageId
+                );
                 if (currentMessage) {
                   // ToolUseのステータスを完了に更新
                   const updatedContentsWithStatus = updateToolUseStatus(
@@ -259,7 +387,7 @@ export const useChatStore = create<ChatStore>()(
                     toolResult,
                   });
 
-                  updateMessage(assistantMessageId, {
+                  updateMessage(sessionId, assistantMessageId, {
                     contents: finalContents,
                   });
 
@@ -268,11 +396,23 @@ export const useChatStore = create<ChatStore>()(
                 }
               },
               onComplete: () => {
-                updateMessage(assistantMessageId, {
+                updateMessage(sessionId, assistantMessageId, {
                   isStreaming: false,
                 });
 
-                set({ isLoading: false });
+                const { sessions } = get();
+                const currentState = sessions[sessionId] || createDefaultSessionState();
+
+                set({
+                  sessions: {
+                    ...sessions,
+                    [sessionId]: {
+                      ...currentState,
+                      isLoading: false,
+                    },
+                  },
+                });
+
                 console.log(`✅ メッセージ送信完了 (セッション: ${sessionId})`);
 
                 // 新規セッションの場合、セッション一覧を更新
@@ -283,8 +423,13 @@ export const useChatStore = create<ChatStore>()(
               },
               onError: (error: Error) => {
                 // エラーメッセージをアシスタントの応答として追加（isErrorフラグ付き）
-                const { messages } = get();
-                const currentMessage = messages.find((msg) => msg.id === assistantMessageId);
+                const { sessions } = get();
+                const sessionState = sessions[sessionId];
+                if (!sessionState) return;
+
+                const currentMessage = sessionState.messages.find(
+                  (msg) => msg.id === assistantMessageId
+                );
 
                 // 既存のcontentsを保持しつつエラーメッセージを追加
                 const existingContents = currentMessage?.contents || [];
@@ -293,15 +438,23 @@ export const useChatStore = create<ChatStore>()(
                   text: `エラーが発生しました: ${error.message}`,
                 };
 
-                updateMessage(assistantMessageId, {
+                updateMessage(sessionId, assistantMessageId, {
                   contents: [...existingContents, errorContent],
                   isStreaming: false,
-                  isError: true, // Set error flag
+                  isError: true,
                 });
 
+                const currentState = sessions[sessionId] || createDefaultSessionState();
+
                 set({
-                  isLoading: false,
-                  error: error.message,
+                  sessions: {
+                    ...sessions,
+                    [sessionId]: {
+                      ...currentState,
+                      isLoading: false,
+                      error: error.message,
+                    },
+                  },
                 });
               },
             },
@@ -310,33 +463,81 @@ export const useChatStore = create<ChatStore>()(
         } catch (error) {
           const errorMessage =
             error instanceof Error ? error.message : 'メッセージの送信に失敗しました';
+
+          const { sessions } = get();
+          const currentState = sessions[sessionId] || createDefaultSessionState();
+
           set({
-            isLoading: false,
-            error: errorMessage,
+            sessions: {
+              ...sessions,
+              [sessionId]: {
+                ...currentState,
+                isLoading: false,
+                error: errorMessage,
+              },
+            },
           });
         }
       },
 
-      clearMessages: () => {
+      clearSession: (sessionId: string) => {
+        const { sessions } = get();
+        const newSessions = { ...sessions };
+        delete newSessions[sessionId];
+
+        set({ sessions: newSessions });
+        console.log(`🗑️ セッションをクリア: ${sessionId}`);
+      },
+
+      setLoading: (sessionId: string, loading: boolean) => {
+        const { sessions } = get();
+        const sessionState = getOrCreateSessionState(sessions, sessionId);
+
         set({
-          messages: [],
+          sessions: {
+            ...sessions,
+            [sessionId]: {
+              ...sessionState,
+              isLoading: loading,
+            },
+          },
         });
       },
 
-      setLoading: (loading: boolean) => {
-        set({ isLoading: loading });
+      setError: (sessionId: string, error: string | null) => {
+        const { sessions } = get();
+        const sessionState = getOrCreateSessionState(sessions, sessionId);
+
+        set({
+          sessions: {
+            ...sessions,
+            [sessionId]: {
+              ...sessionState,
+              error,
+            },
+          },
+        });
       },
 
-      setError: (error: string | null) => {
-        set({ error });
+      clearError: (sessionId: string) => {
+        const { sessions } = get();
+        const sessionState = getOrCreateSessionState(sessions, sessionId);
+
+        set({
+          sessions: {
+            ...sessions,
+            [sessionId]: {
+              ...sessionState,
+              error: null,
+            },
+          },
+        });
       },
 
-      clearError: () => {
-        set({ error: null });
-      },
-
-      loadSessionHistory: (conversationMessages: ConversationMessage[]) => {
-        console.log(`📖 会話履歴を復元中: ${conversationMessages.length}件のメッセージ`);
+      loadSessionHistory: (sessionId: string, conversationMessages: ConversationMessage[]) => {
+        console.log(
+          `📖 会話履歴を復元中 (${sessionId}): ${conversationMessages.length}件のメッセージ`
+        );
 
         // Helper function to check if message contains error marker
         const isErrorMessage = (contents: MessageContent[]): boolean => {
@@ -359,12 +560,20 @@ export const useChatStore = create<ChatStore>()(
           isError: convMsg.type === 'assistant' && isErrorMessage(convMsg.contents), // Detect error message
         }));
 
+        const { sessions } = get();
         set({
-          messages,
-          error: null, // Clear errors
+          sessions: {
+            ...sessions,
+            [sessionId]: {
+              messages,
+              isLoading: false,
+              error: null,
+              lastUpdated: new Date(),
+            },
+          },
         });
 
-        console.log(`✅ 会話履歴の復元完了: ${messages.length}件のメッセージ`);
+        console.log(`✅ 会話履歴の復元完了 (${sessionId}): ${messages.length}件のメッセージ`);
       },
     }),
     {

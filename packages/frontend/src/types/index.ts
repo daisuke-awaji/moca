@@ -51,12 +51,18 @@ export interface LegacyMessage {
   isStreaming?: boolean;
 }
 
-// Chat types
-export interface ChatState {
+// Session-specific chat state
+export interface SessionChatState {
   messages: Message[];
   isLoading: boolean;
   error: string | null;
-  sessionId: string | null;
+  lastUpdated: Date;
+}
+
+// Chat types
+export interface ChatState {
+  sessions: Record<string, SessionChatState>;
+  activeSessionId: string | null;
 }
 
 // Auth types
