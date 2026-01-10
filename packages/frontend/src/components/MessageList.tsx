@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useChatStore } from '../stores/chatStore';
@@ -15,8 +15,12 @@ interface MessageListProps {
 export const MessageList: React.FC<MessageListProps> = ({ onScenarioClick }) => {
   const { t } = useTranslation();
   const { sessionId } = useParams<{ sessionId?: string }>();
-  const { messages, error } = useChatStore();
   const { isLoadingEvents } = useSessionStore();
+  const sessionState = useChatStore((state) =>
+    sessionId ? (state.sessions[sessionId] ?? null) : null
+  );
+  const messages = useMemo(() => sessionState?.messages || [], [sessionState?.messages]);
+  const error = sessionState?.error || null;
   const selectedAgent = useSelectedAgent();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
