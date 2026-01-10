@@ -74,12 +74,18 @@ export interface LegacyMessage {
   isStreaming?: boolean;
 }
 
-// Chat types
-export interface ChatState {
+// Session-specific chat state
+export interface SessionChatState {
   messages: Message[];
   isLoading: boolean;
   error: string | null;
-  sessionId: string | null;
+  lastUpdated: Date;
+}
+
+// Chat types
+export interface ChatState {
+  sessions: Record<string, SessionChatState>;
+  activeSessionId: string | null;
 }
 
 // Auth types
@@ -139,7 +145,7 @@ export interface BeforeToolsEvent extends AgentStreamEvent {
       name?: string;
       input?: Record<string, unknown>;
       toolUseId?: string;
-      text?: string; // textBlock用
+      text?: string; // For textBlock
       [key: string]: unknown;
     }>;
   };

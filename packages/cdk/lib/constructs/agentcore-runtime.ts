@@ -7,6 +7,7 @@ import * as cdk from 'aws-cdk-lib';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as agentcore from '@aws-cdk/aws-bedrock-agentcore-alpha';
 import { RuntimeAuthorizerConfiguration } from '@aws-cdk/aws-bedrock-agentcore-alpha';
+import { Platform } from 'aws-cdk-lib/aws-ecr-assets';
 import { Construct } from 'constructs';
 import { CognitoAuth } from './cognito-auth.js';
 import { AgentCoreGateway } from './agentcore-gateway.js';
@@ -85,6 +86,12 @@ export interface AgentCoreRuntimeProps {
   readonly userStorageBucketName?: string;
 
   /**
+   * Sessions Table テーブル名（オプション）
+   * セッション管理のために必要
+   */
+  readonly sessionsTableName?: string;
+
+  /**
    * Nova Canvas のリージョン（オプション）
    * 画像生成に使用する Amazon Nova Canvas モデルのリージョン
    * デフォルト: us-east-1
@@ -121,10 +128,13 @@ export class AgentCoreRuntime extends Construct {
   constructor(scope: Construct, id: string, props: AgentCoreRuntimeProps) {
     super(scope, id);
 
-    // Agent Runtime Artifact を作成
-    // Docker context: プロジェクトルート, Dockerfile: docker/agent.Dockerfile
+    // Platform: ARM64 (Amazon Bedrock AgentCore Runtime requires ARM64 architecture)
+    // Note: This works seamlessly on Apple Silicon Macs (native ARM64).
+    // For x86_64 systems (GitHub Actions), QEMU emulation is used to build ARM64 images.
+    // See .github/workflows/auto-deploy.yml for QEMU setup.
     const agentRuntimeArtifact = agentcore.AgentRuntimeArtifact.fromAsset('.', {
       file: 'docker/agent.Dockerfile',
+      platform: Platform.LINUX_ARM64,
     });
 
     // 認証設定
@@ -182,6 +192,11 @@ export class AgentCoreRuntime extends Construct {
     // User Storage バケット名の設定
     if (props.userStorageBucketName) {
       environmentVariables.USER_STORAGE_BUCKET_NAME = props.userStorageBucketName;
+    }
+
+    // Sessions Table テーブル名の設定
+    if (props.sessionsTableName) {
+      environmentVariables.SESSIONS_TABLE_NAME = props.sessionsTableName;
     }
 
     // Nova Canvas リージョンの設定
@@ -274,10 +289,19 @@ export class AgentCoreRuntime extends Construct {
       new iam.PolicyStatement({
         sid: 'BedrockModelInvocation',
         effect: iam.Effect.ALLOW,
-        actions: ['bedrock:InvokeModel', 'bedrock:InvokeModelWithResponseStream'],
+        actions: [
+          'bedrock:InvokeModel',
+          'bedrock:InvokeModelWithResponseStream',
+          'bedrock:StartAsyncInvoke', // Nova Reel 用の非同期ジョブ開始
+          'bedrock:GetAsyncInvoke',
+          'bedrock:ListAsyncInvokes',
+        ],
         resources: [
           'arn:aws:bedrock:*::foundation-model/*',
           `arn:aws:bedrock:${region}:${account}:*`,
+          // Nova Reel is only available in us-east-1, allow cross-region async invokes
+          `arn:aws:bedrock:us-east-1:${account}:async-invoke/*`,
+          `arn:aws:bedrock:${region}:${account}:async-invoke/*`,
         ],
       })
     );
@@ -328,6 +352,27 @@ export class AgentCoreRuntime extends Construct {
           actions: ['secretsmanager:GetSecretValue'],
           resources: [
             `arn:aws:secretsmanager:${region}:${account}:secret:${props.githubTokenSecretName}*`,
+          ],
+        })
+      );
+    }
+
+    // S3 アクセス権限（User Storage & Nova Reel 出力用）
+    if (props.userStorageBucketName) {
+      this.runtime.addToRolePolicy(
+        new iam.PolicyStatement({
+          sid: 'S3UserStorageAccess',
+          effect: iam.Effect.ALLOW,
+          actions: [
+            's3:GetObject',
+            's3:PutObject',
+            's3:DeleteObject',
+            's3:ListBucket',
+            's3:HeadObject',
+          ],
+          resources: [
+            `arn:aws:s3:::${props.userStorageBucketName}`,
+            `arn:aws:s3:::${props.userStorageBucketName}/*`,
           ],
         })
       );

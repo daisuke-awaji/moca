@@ -148,6 +148,15 @@ chat:
     tooLarge: File is too large. Maximum size is 5MB.
     maxReached: Maximum of 4 images can be attached.
     totalSizeExceeded: Total size of attached images exceeds 7MB. Please remove some images or select smaller ones.
+  searchPlaceholder: 'Search sessions...'
+  searchDateRange: 'Date range'
+  searchDateStart: 'Start date'
+  searchDateEnd: 'End date'
+  searchResults: 'Search results'
+  searchResultsCount: '{{count}} sessions'
+  searchNoResults: 'No matching sessions found'
+  updatedAt: 'Updated'
+  searchNote: '※ Semantic search is not yet implemented. Only title search is available.'
 
 # Agent
 agent:
@@ -359,6 +368,7 @@ storage:
   dragAndDropHint: Drag and drop files or click the upload button
   dropFiles: Drop files
   folderNamePlaceholder: Enter folder name
+  folderNameSpaceError: Folder name cannot contain spaces
   itemCount: '{{count}} items • Max file size: 5MB'
 
   # Folder download progress

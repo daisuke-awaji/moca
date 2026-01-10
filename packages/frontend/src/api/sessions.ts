@@ -11,10 +11,9 @@ import { backendGet } from './client/backend-client';
 export interface SessionSummary {
   sessionId: string;
   title: string;
-  lastMessage: string;
-  messageCount: number;
   createdAt: string;
   updatedAt: string;
+  agentId?: string;
 }
 
 /**

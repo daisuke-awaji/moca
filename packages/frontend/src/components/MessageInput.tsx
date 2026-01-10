@@ -23,8 +23,12 @@ export const MessageInput: React.FC<MessageInputProps> = ({
   getScenarioPrompt,
 }) => {
   const { t } = useTranslation();
-  const { sendPrompt, isLoading } = useChatStore();
+  const { sendPrompt } = useChatStore();
   const { sendBehavior } = useSettingsStore();
+  const sessionState = useChatStore((state) =>
+    sessionId ? (state.sessions[sessionId] ?? null) : null
+  );
+  const isLoading = sessionState?.isLoading || false;
   const [input, setInput] = useState('');
   const [attachedImages, setAttachedImages] = useState<ImageAttachment[]>([]);
   const [isStorageModalOpen, setIsStorageModalOpen] = useState(false);
@@ -33,7 +37,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const prevLoadingRef = useRef(isLoading);
 
-  // テキストエリアの自動リサイズ
+  // Auto-resize textarea
   useEffect(() => {
     const textarea = textareaRef.current;
     if (textarea) {
@@ -42,16 +46,16 @@ export const MessageInput: React.FC<MessageInputProps> = ({
     }
   }, [input]);
 
-  // ローディング完了時にフォーカスを戻す
+  // Return focus when loading completes
   useEffect(() => {
-    // ローディングが完了した時（true → false）にフォーカスを戻す
+    // Return focus when loading completes (true → false)
     if (prevLoadingRef.current && !isLoading) {
       textareaRef.current?.focus();
     }
     prevLoadingRef.current = isLoading;
   }, [isLoading]);
 
-  // 画像ファイルのバリデーション
+  // Validate image file
   const validateImageFile = useCallback(
     (file: File): string | null => {
       if (!IMAGE_ATTACHMENT_CONFIG.ACCEPTED_TYPES.includes(file.type as never)) {
@@ -65,7 +69,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
     [t]
   );
 
-  // 合計サイズのバリデーション
+  // Validate total size
   const validateTotalSize = useCallback(
     (currentImages: ImageAttachment[], newFiles: File[]): string | null => {
       const currentTotal = currentImages.reduce((sum, img) => sum + img.size, 0);
@@ -78,7 +82,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
     [t]
   );
 
-  // 画像ファイルを処理して添付
+  // Process and attach image files
   const processAndAttachImages = useCallback(
     (files: FileList | File[]) => {
       const fileArray = Array.from(files);
@@ -91,7 +95,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
 
       const filesToProcess = fileArray.slice(0, remainingSlots);
 
-      // 個別ファイルのバリデーション
+      // Validate individual files
       const validFiles: File[] = [];
       for (const file of filesToProcess) {
         const error = validateImageFile(file);
@@ -102,7 +106,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
         validFiles.push(file);
       }
 
-      // 合計サイズのバリデーション
+      // Validate total size
       const totalSizeError = validateTotalSize(attachedImages, validFiles);
       if (totalSizeError) {
         alert(totalSizeError);
@@ -129,7 +133,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
     [attachedImages, validateImageFile, validateTotalSize, t]
   );
 
-  // 画像の削除
+  // Remove image
   const handleRemoveImage = useCallback((id: string) => {
     setAttachedImages((prev) => {
       const imageToRemove = prev.find((img) => img.id === id);
@@ -140,7 +144,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
     });
   }, []);
 
-  // ファイル入力の変更ハンドラ
+  // Handle file input change
   const handleFileChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       if (e.target.files && e.target.files.length > 0) {
@@ -151,7 +155,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
     [processAndAttachImages]
   );
 
-  // ドラッグ＆ドロップハンドラ
+  // Drag and drop handlers
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -183,7 +187,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
     [processAndAttachImages]
   );
 
-  // クリーンアップ: コンポーネントアンマウント時にObject URLを解放
+  // Cleanup: Release Object URLs on component unmount
   useEffect(() => {
     return () => {
       attachedImages.forEach((img) => {
@@ -195,15 +199,15 @@ export const MessageInput: React.FC<MessageInputProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // シナリオプロンプトの自動入力
+  // Auto-fill scenario prompt
   useEffect(() => {
     if (getScenarioPrompt) {
       const scenarioPrompt = getScenarioPrompt();
       if (scenarioPrompt) {
-        // 次のフレームで実行してカスケードレンダリングを防ぐ
+        // Execute in next frame to prevent cascade rendering
         requestAnimationFrame(() => {
           setInput(scenarioPrompt);
-          // フォーカスを当ててカーソルを末尾に移動
+          // Focus and move cursor to end
           setTimeout(() => {
             if (textareaRef.current) {
               textareaRef.current.focus();
@@ -217,8 +221,8 @@ export const MessageInput: React.FC<MessageInputProps> = ({
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInput(e.target.value);
-    // エラーがある場合のみクリア（不要な再レンダリングを防ぐ）
-    // エラーは送信時または新しいメッセージ受信時にクリアされるため、ここでは削除
+    // Clear only if error exists (prevent unnecessary re-renders)
+    // Error cleared on send or new message, so delete here
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -230,51 +234,51 @@ export const MessageInput: React.FC<MessageInputProps> = ({
     }
 
     try {
-      // 送信するメッセージを保存
+      // Save message to send
       const messageToSend = input.trim();
       const imagesToSend = [...attachedImages];
 
-      // 入力フィールドを即座にクリア
+      // Clear input field immediately
       setInput('');
       setAttachedImages([]);
 
-      // 送信後にテキストエリアにフォーカスを戻す
+      // Return focus to textarea after sending
       textareaRef.current?.focus();
 
-      // 新規セッションの場合は先にセッション作成
+      // Create session first for new session
       let targetSessionId = sessionId;
       if (!targetSessionId) {
         targetSessionId = onCreateSession();
       }
 
-      // メッセージ送信（非同期で継続）
+      // Send message (continue asynchronously)
       await sendPrompt(messageToSend, targetSessionId, imagesToSend);
 
-      // 送信完了後にObject URLを解放
+      // Release Object URLs after sending
       imagesToSend.forEach((img) => {
         if (img.previewUrl) {
           URL.revokeObjectURL(img.previewUrl);
         }
       });
     } catch (err) {
-      console.error('メッセージ送信エラー:', err);
+      console.error('Message send error:', err);
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    // IME変換中は何もしない
+    // Do nothing during IME composition
     if (e.nativeEvent.isComposing) {
       return;
     }
 
     if (sendBehavior === 'enter') {
-      // Enter で送信、Shift+Enter で改行
+      // Send with Enter, newline with Shift+Enter
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
         handleSubmit(e);
       }
     } else {
-      // Cmd/Ctrl+Enter で送信、Enter で改行
+      // Send with Cmd/Ctrl+Enter, newline with Enter
       if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
         handleSubmit(e);
@@ -287,7 +291,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
       className="sticky bottom-0 left-0 right-0 z-30 bg-white p-4"
       style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
     >
-      {/* ストレージパス表示 */}
+      {/* Storage path display */}
       <div className="max-w-4xl mx-auto mb-2">
         <StoragePathDisplay onClick={() => setIsStorageModalOpen(true)} />
       </div>
@@ -299,10 +303,10 @@ export const MessageInput: React.FC<MessageInputProps> = ({
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
         >
-          {/* 添付画像プレビュー */}
+          {/* Image preview */}
           <ImagePreview images={attachedImages} onRemove={handleRemoveImage} disabled={isLoading} />
 
-          {/* 隠しファイル入力 */}
+          {/* Hidden file input */}
           <input
             ref={fileInputRef}
             type="file"
@@ -312,7 +316,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
             className="hidden"
           />
 
-          {/* テキスト入力エリア - 2行分のスペースを確保 */}
+          {/* Text input area - Reserve space for 2 rows */}
           <textarea
             ref={textareaRef}
             value={input}
@@ -324,10 +328,10 @@ export const MessageInput: React.FC<MessageInputProps> = ({
             style={{ height: 'auto' }}
           />
 
-          {/* モデルセレクター - 下部に配置 */}
+          {/* Model selector - Positioned at bottom */}
           <div className="absolute bottom-3 left-1.5 flex items-center gap-1">
             <ModelSelector />
-            {/* 画像添付ボタン */}
+            {/* Image attachment button */}
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
@@ -343,7 +347,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
             </button>
           </div>
 
-          {/* 送信ボタン */}
+          {/* Send button */}
           <button
             type="submit"
             disabled={(!input.trim() && attachedImages.length === 0) || isLoading}
@@ -362,7 +366,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
         </div>
       </form>
 
-      {/* ストレージ管理モーダル */}
+      {/* Storage management modal */}
       <StorageManagementModal
         isOpen={isStorageModalOpen}
         onClose={() => setIsStorageModalOpen(false)}

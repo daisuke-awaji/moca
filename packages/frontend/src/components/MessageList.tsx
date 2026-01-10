@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useChatStore } from '../stores/chatStore';
@@ -15,24 +15,28 @@ interface MessageListProps {
 export const MessageList: React.FC<MessageListProps> = ({ onScenarioClick }) => {
   const { t } = useTranslation();
   const { sessionId } = useParams<{ sessionId?: string }>();
-  const { messages, error } = useChatStore();
   const { isLoadingEvents } = useSessionStore();
+  const sessionState = useChatStore((state) =>
+    sessionId ? (state.sessions[sessionId] ?? null) : null
+  );
+  const messages = useMemo(() => sessionState?.messages || [], [sessionState?.messages]);
+  const error = sessionState?.error || null;
   const selectedAgent = useSelectedAgent();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
 
-  // スクロール位置を監視し、ユーザーが上方向にスクロールしたら自動スクロールを停止
+  // Monitor scroll position and stop auto-scroll if user scrolls up
   const handleScroll = () => {
     const container = containerRef.current;
     if (!container) return;
 
-    // スクロール位置が最下部から10px以内なら自動スクロールを有効化
+    // Enable auto-scroll if within 10px of bottom
     const isAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 10;
     setShouldAutoScroll(isAtBottom);
   };
 
-  // 新しいメッセージが追加されたときに自動スクロール（自動スクロールが有効な場合のみ）
+  // Auto-scroll when new message added (only if auto-scroll enabled)
   useEffect(() => {
     if (shouldAutoScroll) {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

@@ -36,7 +36,7 @@ export function useSessionSync(): UseSessionSyncReturn {
     finalizeNewSession,
   } = useSessionStore();
 
-  const { clearMessages, loadSessionHistory } = useChatStore();
+  const { switchSession, loadSessionHistory } = useChatStore();
 
   // URL → Store 同期
   useEffect(() => {
@@ -49,15 +49,14 @@ export function useSessionSync(): UseSessionSyncReturn {
       } else {
         console.log('⏳ 新規セッション作成中、URL同期をスキップ');
       }
-      return; // どちらの場合もここでreturn
+      return; // Return here in both cases
     }
 
     if (!urlSessionId) {
-      // /chat の場合：新規チャット準備
+      // For /chat: prepare new chat
       if (activeSessionId) {
         console.log('🗑️ 新規チャット準備のためアクティブセッションをクリア');
         clearActiveSession();
-        clearMessages();
       }
       return;
     }
@@ -70,7 +69,11 @@ export function useSessionSync(): UseSessionSyncReturn {
     // URL に sessionId がある場合は即座に events を取得（sessions 一覧の完了を待たない）
     // これにより、リロード時のラグを解消し、sessions API と events API が並列実行される
     console.log(`📥 セッション選択（並列取得）: ${urlSessionId}`);
-    clearMessages();
+
+    // chatStore のアクティブセッションを切り替え
+    switchSession(urlSessionId);
+
+    // sessionStore でイベント取得
     selectSession(urlSessionId);
   }, [
     urlSessionId,
@@ -78,7 +81,7 @@ export function useSessionSync(): UseSessionSyncReturn {
     isCreatingSession,
     selectSession,
     clearActiveSession,
-    clearMessages,
+    switchSession,
     finalizeNewSession,
   ]);
 
@@ -86,7 +89,7 @@ export function useSessionSync(): UseSessionSyncReturn {
   useEffect(() => {
     if (urlSessionId && activeSessionId === urlSessionId && sessionEvents.length > 0) {
       console.log(`📖 セッション履歴を ChatStore に復元: ${urlSessionId}`);
-      loadSessionHistory(sessionEvents);
+      loadSessionHistory(urlSessionId, sessionEvents);
     }
   }, [urlSessionId, activeSessionId, sessionEvents, loadSessionHistory]);
 

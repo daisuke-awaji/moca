@@ -150,6 +150,15 @@ chat:
     tooLarge: ファイルサイズが大きすぎます。最大5MBまでです。
     maxReached: 添付できる画像は最大4枚までです。
     totalSizeExceeded: 添付画像の合計サイズが7MBを超えています。画像を減らすか、小さいサイズの画像を選択してください。
+  searchPlaceholder: 'セッションを検索...'
+  searchDateRange: '期間'
+  searchDateStart: '開始日'
+  searchDateEnd: '終了日'
+  searchResults: '検索結果'
+  searchResultsCount: '{{count}}件のセッション'
+  searchNoResults: '該当するセッションがありません'
+  updatedAt: '更新日時'
+  searchNote: '※ セマンティック検索は未実装です。タイトルのみ検索可能です。'
 
 # エージェント
 agent:
@@ -361,6 +370,7 @@ storage:
   dragAndDropHint: ファイルをドラッグ&ドロップするか、アップロードボタンをクリックしてください
   dropFiles: ファイルをドロップ
   folderNamePlaceholder: フォルダ名を入力
+  folderNameSpaceError: フォルダ名にスペースを含めることはできません
   itemCount: '{{count}} 件のアイテム • 最大ファイルサイズ: 5MB'
 
   # フォルダダウンロード進捗

@@ -124,9 +124,27 @@ function serializeStreamEvent(event: unknown): object {
 
     // Metadata and result events
     case 'modelMetadataEvent':
+      // Log cache metrics
+      if (eventObj.usage) {
+        const usage = eventObj.usage as {
+          inputTokens?: number;
+          outputTokens?: number;
+          cacheWriteInputTokens?: number;
+          cacheReadInputTokens?: number;
+        };
+
+        if (usage.cacheWriteInputTokens || usage.cacheReadInputTokens) {
+          logger.info('📦 Cache metrics', {
+            cacheWriteInputTokens: usage.cacheWriteInputTokens || 0,
+            cacheReadInputTokens: usage.cacheReadInputTokens || 0,
+            inputTokens: usage.inputTokens || 0,
+            outputTokens: usage.outputTokens || 0,
+          });
+        }
+      }
       return {
         ...baseEvent,
-        metadata: eventObj.metadata,
+        usage: eventObj.usage,
       };
 
     case 'agentResult':

@@ -3,7 +3,7 @@
  * AI Agent that runs on AgentCore Runtime and uses AgentCore Gateway tools
  */
 
-import { Agent, HookProvider, Message, McpClient } from '@strands-agents/sdk';
+import { Agent, HookProvider, Message, McpClient, CachePointBlock } from '@strands-agents/sdk';
 import { logger, config } from './config/index.js';
 import { localTools, convertMCPToolsToStrands } from './tools/index.js';
 import { buildSystemPrompt } from './prompts/index.js';
@@ -117,6 +117,37 @@ async function fetchLongTermMemories(options?: CreateAgentOptions): Promise<{
 }
 
 /**
+ * Add cache point to session history
+ * Adds CachePointBlock to the last message in history to reuse the cache in the next request
+ *
+ * @param messages Session history message array
+ * @returns Message array with cache point added
+ */
+function addCachePointToHistory(messages: Message[]): Message[] {
+  // Return as is if caching is disabled or history is empty
+  if (!config.ENABLE_PROMPT_CACHING || messages.length === 0) {
+    return messages;
+  }
+
+  // Get the last message
+  const lastMessage = messages[messages.length - 1];
+
+  // Add CachePointBlock to the last message's content
+  const updatedLastMessage = new Message({
+    role: lastMessage.role,
+    content: [...lastMessage.content, new CachePointBlock({ cacheType: 'default' })],
+  });
+
+  logger.debug('📦 Added CachePointBlock to session history', {
+    totalMessages: messages.length,
+    cacheType: config.CACHE_TYPE,
+  });
+
+  // Return updated message array
+  return [...messages.slice(0, -1), updatedLastMessage];
+}
+
+/**
  * Agent creation result
  */
 export interface CreateAgentResult {
@@ -170,6 +201,9 @@ export async function createAgent(
     const longTermMemories = longTermMemoriesResult.memories;
     const memoryConditions = longTermMemoriesResult.conditions;
 
+    // ★ Add cache point to history
+    const messagesWithCache = addCachePointToHistory(savedMessages);
+
     logger.info(`📖 Session history restored: ${savedMessages.length} messages`);
     if (longTermMemories.length > 0) {
       logger.info(`🧠 Long-term memories retrieved: ${longTermMemories.length} items`);
@@ -215,14 +249,14 @@ export async function createAgent(
 
     logger.info({ systemPrompt });
 
-    // 6. Create Agent
+    // 6. Create Agent (use messages with cache point)
 
     const agent = new Agent({
       model,
       systemPrompt,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       tools: allTools as any,
-      messages: savedMessages,
+      messages: messagesWithCache, // ★ Use messages with cache point
       hooks,
     });
 

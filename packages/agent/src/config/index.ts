@@ -35,6 +35,13 @@ const envSchema = z.object({
     .string()
     .default('false')
     .transform((val) => val === 'true'),
+
+  // Prompt Caching Configuration
+  ENABLE_PROMPT_CACHING: z
+    .string()
+    .default('true')
+    .transform((val) => val === 'true'),
+  CACHE_TYPE: z.enum(['default', 'ephemeral']).default('default'),
 });
 
 /**

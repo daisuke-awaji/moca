@@ -6,6 +6,7 @@ import { tool } from '@strands-agents/sdk';
 import { tavilySearchDefinition } from '@fullstack-agentcore/tool-definitions';
 import { logger } from '../config/index.js';
 import { getTavilyApiKey } from './tavily-common.js';
+import { z } from 'zod';
 
 /**
  * Tavily API response type
@@ -143,7 +144,7 @@ export const tavilySearchTool = tool({
   name: tavilySearchDefinition.name,
   description: tavilySearchDefinition.description,
   inputSchema: tavilySearchDefinition.zodSchema,
-  callback: async (input) => {
+  callback: async (input: z.infer<typeof tavilySearchDefinition.zodSchema>) => {
     const {
       query,
       searchDepth,

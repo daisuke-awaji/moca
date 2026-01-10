@@ -196,37 +196,37 @@ export function agentCorePayloadToMessage(payload: AgentCorePayload): Message {
 
   // blob payload の場合
   if ('blob' in payload && payload.blob) {
-    console.log('Blob payload received:', {
-      type: typeof payload.blob,
-      constructor: payload.blob?.constructor?.name,
-      isUint8Array: payload.blob instanceof Uint8Array,
-      isBuffer: Buffer.isBuffer && Buffer.isBuffer(payload.blob),
-      keys: typeof payload.blob === 'object' ? Object.keys(payload.blob) : [],
-      sample:
-        typeof payload.blob === 'object' && !(payload.blob instanceof Uint8Array)
-          ? JSON.stringify(payload.blob).slice(0, 200)
-          : 'binary_data',
-    });
+    // console.log('Blob payload received:', {
+    //   type: typeof payload.blob,
+    //   constructor: payload.blob?.constructor?.name,
+    //   isUint8Array: payload.blob instanceof Uint8Array,
+    //   isBuffer: Buffer.isBuffer && Buffer.isBuffer(payload.blob),
+    //   keys: typeof payload.blob === 'object' ? Object.keys(payload.blob) : [],
+    //   sample:
+    //     typeof payload.blob === 'object' && !(payload.blob instanceof Uint8Array)
+    //       ? JSON.stringify(payload.blob).slice(0, 200)
+    //       : 'binary_data',
+    // });
 
     try {
       let blobData: BlobData | null = null;
 
       // 1. Uint8Array の場合（新形式）
       if (payload.blob instanceof Uint8Array) {
-        console.log('Processing as Uint8Array');
+        // console.log('Processing as Uint8Array');
         const decoder = new TextDecoder();
         const blobString = decoder.decode(payload.blob);
         blobData = JSON.parse(blobString);
       }
       // 2. Buffer の場合
       else if (typeof Buffer !== 'undefined' && Buffer.isBuffer && Buffer.isBuffer(payload.blob)) {
-        console.log('Processing as Buffer');
+        // console.log('Processing as Buffer');
         const blobString = (payload.blob as Buffer).toString('utf8');
         blobData = JSON.parse(blobString);
       }
       // 3. 直接オブジェクトの場合（古い形式 - 後方互換性）
       else if (typeof payload.blob === 'object' && payload.blob !== null) {
-        console.log('Processing as direct object (backward compatibility)');
+        // console.log('Processing as direct object (backward compatibility)');
         const blobObj = payload.blob as Record<string, unknown>;
 
         // 古い形式のチェック
@@ -236,7 +236,7 @@ export function agentCorePayloadToMessage(payload: AgentCorePayload): Message {
       }
       // 4. 文字列の場合（base64 エンコードされた可能性）
       else if (typeof payload.blob === 'string') {
-        console.log('Processing as string');
+        // console.log('Processing as string');
         try {
           // base64 デコードを試行
           const decodedString = Buffer.from(payload.blob, 'base64').toString('utf8');
