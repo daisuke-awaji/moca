@@ -1,0 +1,83 @@
+# ============================================
+# Docker Ignore for CDK Asset Bundling
+# ============================================
+# This file optimizes CDK Docker asset bundling by excluding
+# unnecessary files from the build context.
+
+# Node modules & dependencies
+node_modules/
+.npm/
+.pnpm-store/
+.yarn/
+
+# Build outputs
+dist/
+build/
+cdk.out/
+.next/
+out/
+
+# Git
+.git/
+.github/
+.gitlab-ci.yml
+
+# IDE & editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Exclude unused packages from Docker context
+# Backend Dockerfile only needs backend & shared packages
+# Agent Dockerfile only needs agent & shared packages
+packages/frontend/
+packages/client/
+packages/lambda-tools/
+
+# Documentation
+docs/
+*.md
+!README.md
+!packages/*/README.md
+
+# Test files
+**/*.test.ts
+**/*.spec.ts
+**/*.test.js
+**/*.spec.js
+__tests__/
+coverage/
+.nyc_output/
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment files
+.env*
+!.env.example
+
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.bak
+*.swp
+
+# ESLint & Prettier cache
+.eslintcache
+.prettiercache
+
+# Lock files (yarn/pnpm only - keep package-lock.json for npm ci)
+yarn.lock
+pnpm-lock.yaml

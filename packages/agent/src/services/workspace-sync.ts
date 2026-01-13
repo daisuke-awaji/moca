@@ -25,8 +25,17 @@ const CONCURRENT_UPLOAD_LIMIT = 10;
 
 /**
  * 同時ダウンロード数の制限
+ * TODO: 並列数の最適化は今後検討したい。
+ * CONCURRENT_DOWNLOAD_LIMIT が 10並列の場合、
+ * [INFO] 2026-01-13T04:31:41.190Z [WORKSPACE_SYNC] Sync complete: 2116 downloaded, 0 deleted in 21471ms
+ * CONCURRENT_DOWNLOAD_LIMIT が 30並列の場合、
+ * [INFO] 2026-01-13T04:59:09.007Z [WORKSPACE_SYNC] Sync complete: 2116 downloaded, 0 deleted in 11405ms
+ * CONCURRENT_DOWNLOAD_LIMIT が 50並列の場合、
+ * [INFO] 2026-01-13T05:16:05.986Z [WORKSPACE_SYNC] Sync complete: 2116 downloaded, 0 deleted in 10224ms
+ * CONCURRENT_DOWNLOAD_LIMIT が 100並列の場合、
+ * [INFO] 2026-01-13T05:20:27.151Z [WORKSPACE_SYNC] Sync complete: 2116 downloaded, 0 deleted in 7276ms
  */
-const CONCURRENT_DOWNLOAD_LIMIT = 10;
+const CONCURRENT_DOWNLOAD_LIMIT = 50;
 
 /**
  * ファイル拡張子からContent-Typeを推測
