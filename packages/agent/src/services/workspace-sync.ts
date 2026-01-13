@@ -14,6 +14,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { pipeline } from 'stream/promises';
 import * as crypto from 'crypto';
+import pLimit from 'p-limit';
 import { SyncIgnoreFilter } from './sync-ignore-filter.js';
 
 const s3Client = new S3Client({ region: process.env.AWS_REGION });
@@ -26,6 +27,7 @@ const CONCURRENT_UPLOAD_LIMIT = 10;
 /**
  * 同時ダウンロード数の制限
  * TODO: 並列数の最適化は今後検討したい。
+ * p-limit を使わない場合
  * CONCURRENT_DOWNLOAD_LIMIT が 10並列の場合、
  * [INFO] 2026-01-13T04:31:41.190Z [WORKSPACE_SYNC] Sync complete: 2116 downloaded, 0 deleted in 21471ms
  * CONCURRENT_DOWNLOAD_LIMIT が 30並列の場合、
@@ -34,6 +36,12 @@ const CONCURRENT_UPLOAD_LIMIT = 10;
  * [INFO] 2026-01-13T05:16:05.986Z [WORKSPACE_SYNC] Sync complete: 2116 downloaded, 0 deleted in 10224ms
  * CONCURRENT_DOWNLOAD_LIMIT が 100並列の場合、
  * [INFO] 2026-01-13T05:20:27.151Z [WORKSPACE_SYNC] Sync complete: 2116 downloaded, 0 deleted in 7276ms
+ *
+ * p-limit を使う場合
+ * CONCURRENT_DOWNLOAD_LIMIT が 50並列の場合、
+ * [INFO] 2026-01-13T06:07:37.149Z [WORKSPACE_SYNC] Sync complete: 2116 downloaded, 0 deleted in 10008ms
+ * CONCURRENT_DOWNLOAD_LIMIT が 100並列の場合、
+ * [INFO] 2026-01-13T06:12:04.893Z [WORKSPACE_SYNC] Sync complete: 2116 downloaded, 0 deleted in 10341ms
  */
 const CONCURRENT_DOWNLOAD_LIMIT = 50;
 
@@ -276,11 +284,14 @@ export class WorkspaceSync {
         `[WORKSPACE_SYNC] Found ${downloadTasks.length} files to download (concurrency: ${CONCURRENT_DOWNLOAD_LIMIT})`
       );
 
-      // Phase 2: 並列ダウンロード
-      for (let i = 0; i < downloadTasks.length; i += CONCURRENT_DOWNLOAD_LIMIT) {
-        const chunk = downloadTasks.slice(i, i + CONCURRENT_DOWNLOAD_LIMIT);
+      // Phase 2: p-limit を使った効率的な並列ダウンロード
+      // 各タスクが完了次第、次のタスクを開始するため、常に最大並列数を維持
+      const limit = pLimit(CONCURRENT_DOWNLOAD_LIMIT);
+      let completedCount = 0;
+      const progressInterval = Math.max(1, Math.floor(downloadTasks.length / 20)); // 5%刻みで進捗表示
 
-        const downloadPromises = chunk.map(async (task) => {
+      const downloadPromises = downloadTasks.map((task) =>
+        limit(async () => {
           try {
             // ファイルをダウンロード
             await this.downloadFile(task.s3Key, task.localPath);
@@ -295,30 +306,30 @@ export class WorkspaceSync {
               hash,
             });
 
+            downloadedFiles++;
+            completedCount++;
+
+            // Progress log for large downloads (5%刻み)
+            if (downloadTasks.length > 100 && completedCount % progressInterval === 0) {
+              const percentage = Math.round((completedCount / downloadTasks.length) * 100);
+              logger.info(
+                `[WORKSPACE_SYNC] Download progress: ${completedCount}/${downloadTasks.length} (${percentage}%)`
+              );
+            }
+
             return { success: true, relativePath: task.relativePath };
           } catch (error) {
             const errorMsg = `Failed to download ${task.s3Key}: ${error}`;
             logger.error(`[WORKSPACE_SYNC] ${errorMsg}`);
+            errors.push(errorMsg);
+            completedCount++;
             return { success: false, relativePath: task.relativePath, error: errorMsg };
           }
-        });
+        })
+      );
 
-        const results = await Promise.all(downloadPromises);
-
-        for (const result of results) {
-          if (result.success) {
-            downloadedFiles++;
-          } else if (result.error) {
-            errors.push(result.error);
-          }
-        }
-
-        // Progress log for large downloads
-        if (downloadTasks.length > CONCURRENT_DOWNLOAD_LIMIT) {
-          const progress = Math.min(i + CONCURRENT_DOWNLOAD_LIMIT, downloadTasks.length);
-          logger.info(`[WORKSPACE_SYNC] Download progress: ${progress}/${downloadTasks.length}`);
-        }
-      }
+      // すべてのダウンロードが完了するまで待機
+      await Promise.all(downloadPromises);
 
       // ローカルにのみ存在するファイルを削除
       deletedFiles = await this.cleanupLocalOnlyFiles(s3FilePaths);
@@ -405,11 +416,13 @@ export class WorkspaceSync {
         `[WORKSPACE_SYNC] Uploading ${uploadTasks.length} files with concurrency limit ${CONCURRENT_UPLOAD_LIMIT}`
       );
 
-      // 同時実行数を制限して並列アップロード
-      for (let i = 0; i < uploadTasks.length; i += CONCURRENT_UPLOAD_LIMIT) {
-        const chunk = uploadTasks.slice(i, i + CONCURRENT_UPLOAD_LIMIT);
+      // p-limit を使った効率的な並列アップロード
+      const limit = pLimit(CONCURRENT_UPLOAD_LIMIT);
+      let completedCount = 0;
+      const progressInterval = Math.max(1, Math.floor(uploadTasks.length / 20)); // 5%刻みで進捗表示
 
-        const uploadPromises = chunk.map(async (task) => {
+      const uploadPromises = uploadTasks.map((task) =>
+        limit(async () => {
           try {
             await this.uploadFile(task.localPath, task.s3Key);
 
@@ -417,17 +430,28 @@ export class WorkspaceSync {
             this.fileSnapshot.set(task.relativePath, task.currentInfo);
 
             uploadedFiles++;
-            logger.debug(`[WORKSPACE_SYNC] Uploaded: ${task.relativePath}`);
+            completedCount++;
+
+            // Progress log for large uploads (5%刻み)
+            if (uploadTasks.length > 100 && completedCount % progressInterval === 0) {
+              const percentage = Math.round((completedCount / uploadTasks.length) * 100);
+              logger.info(
+                `[WORKSPACE_SYNC] Upload progress: ${completedCount}/${uploadTasks.length} (${percentage}%)`
+              );
+            } else {
+              logger.debug(`[WORKSPACE_SYNC] Uploaded: ${task.relativePath}`);
+            }
           } catch (error) {
             const errorMsg = `Failed to upload ${task.relativePath}: ${error}`;
             logger.error(`[WORKSPACE_SYNC] ${errorMsg}`);
             errors.push(errorMsg);
+            completedCount++;
           }
-        });
+        })
+      );
 
-        // チャンク内のファイルを並列アップロード
-        await Promise.all(uploadPromises);
-      }
+      // すべてのアップロードが完了するまで待機
+      await Promise.all(uploadPromises);
 
       const duration = Date.now() - startTime;
       logger.info(`[WORKSPACE_SYNC] Upload complete: ${uploadedFiles} files in ${duration}ms`);
