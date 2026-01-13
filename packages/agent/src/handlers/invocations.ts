@@ -18,6 +18,50 @@ import { validateImageData } from '../validation/index.js';
 import type { InvocationRequest } from './types.js';
 
 /**
+ * Resolve effective user ID based on authentication type
+ * - Machine user (Client Credentials Flow): Use targetUserId from request body
+ * - Regular user: Use userId from JWT
+ */
+export function resolveEffectiveUserId(
+  context: ReturnType<typeof getCurrentContext>,
+  targetUserId?: string
+): { userId: string; error?: { status: number; message: string } } {
+  const isMachineUser = context?.isMachineUser ?? false;
+
+  if (isMachineUser) {
+    // Machine user: targetUserId is required
+    if (!targetUserId) {
+      return {
+        userId: '',
+        error: {
+          status: 400,
+          message: 'targetUserId is required for machine user (Client Credentials Flow)',
+        },
+      };
+    }
+    logger.info('Machine user authentication detected:', {
+      clientId: context?.clientId,
+      targetUserId,
+      scopes: context?.scopes,
+    });
+    return { userId: targetUserId };
+  }
+
+  // Regular user: targetUserId is not allowed
+  if (targetUserId) {
+    return {
+      userId: '',
+      error: {
+        status: 403,
+        message: 'targetUserId is not allowed for regular users',
+      },
+    };
+  }
+
+  return { userId: context?.userId || 'anonymous' };
+}
+
+/**
  * Agent invocation endpoint (with streaming support)
  * Create Agent for each session and persist history
  */
@@ -34,6 +78,7 @@ export async function handleInvocation(req: Request, res: Response): Promise<voi
       memoryTopK,
       mcpConfig,
       images,
+      targetUserId,
     } = req.body as InvocationRequest;
 
     if (!prompt?.trim()) {
@@ -54,8 +99,21 @@ export async function handleInvocation(req: Request, res: Response): Promise<voi
 
     // Get context information (retrieve once)
     const context = getCurrentContext();
-    const actorId = context?.userId || 'anonymous';
     const requestId = context?.requestId || 'unknown';
+
+    // Resolve effective user ID based on authentication type
+    const userIdResult = resolveEffectiveUserId(context, targetUserId);
+    if (userIdResult.error) {
+      logger.warn('User ID resolution failed:', {
+        requestId,
+        error: userIdResult.error.message,
+        isMachineUser: context?.isMachineUser,
+        targetUserId,
+      });
+      res.status(userIdResult.error.status).json({ error: userIdResult.error.message });
+      return;
+    }
+    const actorId = userIdResult.userId;
 
     // Set storagePath in context
     if (context) {
@@ -72,6 +130,8 @@ export async function handleInvocation(req: Request, res: Response): Promise<voi
       prompt,
       actorId,
       sessionId: sessionId || 'none (sessionless mode)',
+      isMachineUser: context?.isMachineUser,
+      clientId: context?.clientId,
     });
 
     // Initialize workspace sync (if storagePath is specified)
