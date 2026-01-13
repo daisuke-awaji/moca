@@ -100,9 +100,12 @@ export async function handleInvocation(req: Request, res: Response): Promise<voi
     };
 
     // Create Agent (register all hooks)
-    const hooks = [sessionResult?.hook, workspaceSyncResult?.hook].filter(
-      (hook) => hook !== null && hook !== undefined
-    );
+    // Note: compactionHook runs on BeforeInvocationEvent to compact history before agent starts
+    const hooks = [
+      sessionResult?.compactionHook,
+      sessionResult?.hook,
+      workspaceSyncResult?.hook,
+    ].filter((hook) => hook !== null && hook !== undefined);
     const { agent, metadata } = await createAgent(hooks, agentOptions);
 
     // Log Agent creation completion

@@ -42,6 +42,20 @@ const envSchema = z.object({
     .default('true')
     .transform((val) => val === 'true'),
   CACHE_TYPE: z.enum(['default', 'ephemeral']).default('default'),
+
+  // Session Compaction Configuration
+  COMPACTION_ENABLED: z
+    .string()
+    .default('false')
+    .transform((val) => val === 'true'),
+  COMPACTION_THRESHOLD: z
+    .string()
+    .default('50')
+    .transform((val) => parseInt(val, 10)),
+  KEEP_RECENT_MESSAGES: z
+    .string()
+    .default('10')
+    .transform((val) => parseInt(val, 10)),
 });
 
 /**

@@ -10,7 +10,9 @@ export type { SessionConfig, SessionStorage } from './types.js';
 export { FileSessionStorage } from './file-session-storage.js';
 export { AgentCoreMemoryStorage } from './agentcore-memory-storage.js';
 export { SessionPersistenceHook } from './session-persistence-hook.js';
+export { SessionCompactionHook } from './session-compaction-hook.js';
 export { retrieveLongTermMemory } from './memory-retriever.js';
+export { CompactionConfig, DEFAULT_COMPACTION_CONFIG } from './compaction/index.js';
 
 /**
  * 環境変数に基づいてSessionStorageを作成する

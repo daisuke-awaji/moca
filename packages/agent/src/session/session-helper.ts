@@ -3,8 +3,11 @@
  */
 
 import { SessionPersistenceHook } from './session-persistence-hook.js';
+import { SessionCompactionHook } from './session-compaction-hook.js';
 import { createSessionStorage } from './index.js';
 import type { SessionConfig } from './types.js';
+import type { CompactionConfig } from './compaction/types.js';
+import { config } from '../config/index.js';
 
 /**
  * Result of session setup
@@ -12,16 +15,28 @@ import type { SessionConfig } from './types.js';
 export interface SessionSetupResult {
   config: SessionConfig;
   hook: SessionPersistenceHook;
+  compactionHook?: SessionCompactionHook;
 }
 
 // Initialize session storage once (shared across all sessions)
 const sessionStorage = createSessionStorage();
 
 /**
- * Setup session configuration and hook
+ * Get compaction config from environment variables
+ */
+function getCompactionConfig(): CompactionConfig {
+  return {
+    enabled: config.COMPACTION_ENABLED,
+    messageThreshold: config.COMPACTION_THRESHOLD,
+    keepRecentMessages: config.KEEP_RECENT_MESSAGES,
+  };
+}
+
+/**
+ * Setup session configuration and hooks
  * @param actorId User ID
  * @param sessionId Session ID from header
- * @returns Session configuration and hook, or null if no sessionId provided
+ * @returns Session configuration and hooks, or null if no sessionId provided
  */
 export function setupSession(
   actorId: string,
@@ -31,10 +46,23 @@ export function setupSession(
     return null;
   }
 
-  const config: SessionConfig = { actorId, sessionId };
-  const hook = new SessionPersistenceHook(sessionStorage, config);
+  const sessionConfig: SessionConfig = { actorId, sessionId };
+  const hook = new SessionPersistenceHook(sessionStorage, sessionConfig);
 
-  return { config, hook };
+  // Create compaction hook if enabled
+  const compactionConfig = getCompactionConfig();
+  let compactionHook: SessionCompactionHook | undefined;
+
+  if (compactionConfig.enabled) {
+    compactionHook = new SessionCompactionHook(
+      sessionStorage,
+      sessionConfig,
+      compactionConfig,
+      config.BEDROCK_REGION
+    );
+  }
+
+  return { config: sessionConfig, hook, compactionHook };
 }
 
 /**
