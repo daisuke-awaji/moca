@@ -259,7 +259,7 @@ export const AgentForm: React.FC<AgentFormProps> = ({ agent, onSubmit, isLoading
                   {t('agent.nameAndIcon')}
                 </label>
                 <p className="text-sm text-gray-500 mb-3">{t('agent.nameDescription')}</p>
-                <div className="flex items-center space-x-3">
+                <div className="flex flex-col md:flex-row md:items-center space-y-3 md:space-y-0 md:space-x-3">
                   <IconPicker
                     value={formData.icon}
                     onChange={(icon) => setFormData((prev) => ({ ...prev, icon }))}
@@ -277,7 +277,7 @@ export const AgentForm: React.FC<AgentFormProps> = ({ agent, onSubmit, isLoading
                     }}
                     disabled={isLoading || isGenerating}
                     placeholder={t('agent.namePlaceholder')}
-                    className={`flex-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed ${
+                    className={`flex-1 px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed ${
                       errors.name ? 'border-red-500' : 'border-gray-300'
                     }`}
                   />
@@ -310,8 +310,8 @@ export const AgentForm: React.FC<AgentFormProps> = ({ agent, onSubmit, isLoading
                   }}
                   disabled={isLoading || isGenerating}
                   placeholder={t('agent.descriptionPlaceholder2')}
-                  rows={2}
-                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed resize-none ${
+                  rows={3}
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed resize-none ${
                     errors.description ? 'border-red-500' : 'border-gray-300'
                   }`}
                 />

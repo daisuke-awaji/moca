@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect } from 'react';
 import { cn } from '../../../lib/utils';
+import { useUIStore } from '../../../stores/uiStore';
 import type { ModalProps, ModalContextType } from './types';
 
 const ModalContext = createContext<ModalContextType | undefined>(undefined);
@@ -22,6 +23,8 @@ export const Modal: React.FC<ModalProps> = ({
   className,
   children,
 }) => {
+  const { isMobileView } = useUIStore();
+
   // ESCキーでクローズ
   useEffect(() => {
     if (!isOpen || !closeOnEscape) return;
@@ -50,25 +53,33 @@ export const Modal: React.FC<ModalProps> = ({
 
   if (!isOpen) return null;
 
+  // モバイルでxlサイズの場合はフルスクリーン
+  const isMobileFullscreen = isMobileView && size === 'xl';
+
   // サイズごとのクラスマッピング
   const sizeClasses: Record<NonNullable<ModalProps['size']>, string> = {
     sm: 'max-w-sm',
     md: 'max-w-md',
     lg: 'max-w-lg',
-    xl: 'max-w-7xl min-h-[70vh] w-[90vw] md:max-w-7xl md:min-h-[70vh] md:w-[90vw] max-md:w-[95vw] max-md:max-h-[90vh] max-md:min-h-[80vh]',
+    xl: isMobileView ? 'w-full h-full' : 'max-w-7xl min-h-[70vh] w-[90vw]',
     full: 'max-w-none w-full h-full',
   };
 
   const sizeClass = sizeClasses[size];
-  const heightClass = size === 'full' ? 'h-full' : 'max-h-[calc(100vh-2rem)]';
+  const heightClass = size === 'full' || isMobileFullscreen ? 'h-full' : 'max-h-[calc(100vh-2rem)]';
+  const borderRadius = isMobileFullscreen ? 'rounded-none' : 'rounded-3xl';
+  const padding = isMobileFullscreen ? 'p-0' : 'p-4';
 
   return (
     <ModalContext.Provider value={{ onClose }}>
-      <div className="fixed inset-0 z-50 bg-black/10 flex items-center justify-center p-4">
+      <div
+        className={cn('fixed inset-0 z-50 bg-black/10 flex items-center justify-center', padding)}
+      >
         <div className="fixed inset-0" onClick={closeOnOverlayClick ? onClose : undefined} />
         <div
           className={cn(
-            'bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden relative',
+            'bg-white shadow-2xl flex flex-col overflow-hidden relative',
+            borderRadius,
             sizeClass,
             heightClass,
             className

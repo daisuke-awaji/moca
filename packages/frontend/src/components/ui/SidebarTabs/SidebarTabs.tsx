@@ -1,8 +1,10 @@
 import type { SidebarTabsProps, SidebarTabsLayoutProps } from './types';
+import { useUIStore } from '../../../stores/uiStore';
 
 /**
  * サイドバータブナビゲーションコンポーネント
- * 左側にタブのリストを表示し、クリックでアクティブなタブを切り替える
+ * デスクトップ: 左側に縦並びタブ
+ * モバイル: 上部に横並びタブ
  */
 export function SidebarTabs<T extends string>({
   tabs,
@@ -10,9 +12,41 @@ export function SidebarTabs<T extends string>({
   onTabChange,
   className = '',
 }: SidebarTabsProps<T>) {
+  const { isMobileView } = useUIStore();
+
+  if (isMobileView) {
+    // モバイル: 上部に横並びタブ
+    return (
+      <div className={`w-full border-b border-gray-200 flex-shrink-0 ${className}`}>
+        <nav className="flex space-x-1 px-4 py-2 overflow-x-auto">
+          {tabs.map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => onTabChange(tab.id)}
+                className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm whitespace-nowrap transition-colors ${
+                  isActive
+                    ? 'bg-blue-50 text-blue-700 font-medium'
+                    : 'text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                <Icon className="w-4 h-4 flex-shrink-0" />
+                <span>{tab.label}</span>
+              </button>
+            );
+          })}
+        </nav>
+      </div>
+    );
+  }
+
+  // デスクトップ: 左側に縦並びタブ
   return (
-    <div className={`w-16 md:w-48 border-r border-gray-200 flex-shrink-0 ${className}`}>
-      <nav className="p-2 md:p-4 space-y-1">
+    <div className={`w-48 border-r border-gray-200 flex-shrink-0 ${className}`}>
+      <nav className="p-4 space-y-1">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -21,13 +55,12 @@ export function SidebarTabs<T extends string>({
               key={tab.id}
               type="button"
               onClick={() => onTabChange(tab.id)}
-              className={`w-full flex items-center md:space-x-3 justify-center md:justify-start px-2 md:px-3 py-2 rounded-lg text-sm transition-colors ${
+              className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-sm transition-colors ${
                 isActive ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700 hover:bg-gray-50'
               }`}
-              title={tab.label}
             >
               <Icon className="w-5 h-5 flex-shrink-0" />
-              <span className="hidden md:inline">{tab.label}</span>
+              <span>{tab.label}</span>
             </button>
           );
         })}
@@ -38,7 +71,8 @@ export function SidebarTabs<T extends string>({
 
 /**
  * サイドバータブレイアウトコンポーネント
- * サイドバータブとコンテンツエリアを含む完全なレイアウト
+ * デスクトップ: サイドバータブ（左）+ コンテンツ（右）
+ * モバイル: タブ（上）+ コンテンツ（下）
  */
 export function SidebarTabsLayout<T extends string>({
   tabs,
@@ -46,8 +80,10 @@ export function SidebarTabsLayout<T extends string>({
   onTabChange,
   children,
 }: SidebarTabsLayoutProps<T>) {
+  const { isMobileView } = useUIStore();
+
   return (
-    <div className="flex">
+    <div className={`flex ${isMobileView ? 'flex-col' : 'flex-row'}`}>
       <SidebarTabs tabs={tabs} activeTab={activeTab} onTabChange={onTabChange} />
       <div className="flex-1 flex flex-col">{children}</div>
     </div>
