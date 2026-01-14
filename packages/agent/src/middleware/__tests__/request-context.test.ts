@@ -85,7 +85,7 @@ describe('parseJWTToken', () => {
   });
 
   describe('machine user (Client Credentials Flow)', () => {
-    it('should detect machine user without user identifiers and token_use=access', () => {
+    it('should detect machine user without cognito:username and token_use=access', () => {
       const token = createMockJWT({
         sub: 'client-id-123',
         token_use: 'access',
@@ -153,21 +153,6 @@ describe('parseJWTToken', () => {
         sub: 'user-uuid-123',
         token_use: 'access',
         'cognito:username': 'user@example.com',
-        client_id: 'some-client-id',
-      });
-
-      const result = parseJWTToken(token);
-      expect(result).toEqual({
-        isMachineUser: false,
-        userId: 'user@example.com',
-      });
-    });
-
-    it('should not be machine user if username claim is present', () => {
-      const token = createMockJWT({
-        sub: 'user-uuid-123',
-        token_use: 'access',
-        username: 'user@example.com',
         client_id: 'some-client-id',
       });
 

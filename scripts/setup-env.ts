@@ -8,6 +8,10 @@
  */
 
 import { CloudFormationClient, DescribeStacksCommand } from '@aws-sdk/client-cloudformation';
+import {
+  CognitoIdentityProviderClient,
+  DescribeUserPoolClientCommand,
+} from '@aws-sdk/client-cognito-identity-provider';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -15,6 +19,9 @@ interface StackOutputs {
   Region?: string;
   UserPoolId?: string;
   UserPoolClientId?: string;
+  MachineUserClientId?: string;
+  TokenEndpoint?: string;
+  DomainPrefix?: string;
   BackendApiUrl?: string;
   RuntimeInvocationEndpoint?: string;
   MemoryId?: string;
@@ -26,6 +33,29 @@ interface StackOutputs {
 
 const STACK_NAME = process.env.STACK_NAME || 'AgentCoreApp';
 const PROJECT_ROOT = path.resolve(__dirname, '..');
+
+/**
+ * Cognito App ClientからClient Secretを取得
+ */
+async function getMachineUserClientSecret(
+  userPoolId: string,
+  clientId: string,
+  region: string
+): Promise<string | undefined> {
+  try {
+    const client = new CognitoIdentityProviderClient({ region });
+    const command = new DescribeUserPoolClientCommand({
+      UserPoolId: userPoolId,
+      ClientId: clientId,
+    });
+
+    const response = await client.send(command);
+    return response.UserPoolClient?.ClientSecret;
+  } catch (error) {
+    console.warn('⚠️  Machine User Client Secretの取得に失敗しました:', error);
+    return undefined;
+  }
+}
 
 async function getStackOutputs(): Promise<StackOutputs> {
   const client = new CloudFormationClient({});
@@ -148,6 +178,32 @@ NODE_ENV=development
 `;
 }
 
+function createTestScriptEnv(
+  outputs: StackOutputs,
+  machineUserClientSecret?: string
+): string {
+  return `# Machine User Test Script Configuration
+# このファイルは自動生成されました
+
+# AWS Region
+AWS_REGION=${outputs.Region || ''}
+
+# Cognito OAuth Configuration
+COGNITO_DOMAIN=${outputs.DomainPrefix || ''}.auth.${outputs.Region || ''}.amazoncognito.com
+COGNITO_CLIENT_ID=${outputs.MachineUserClientId || ''}
+COGNITO_CLIENT_SECRET=${machineUserClientSecret || 'YOUR_CLIENT_SECRET_HERE'}
+
+# Agent API Endpoint (Local Development)
+AGENT_ENDPOINT=http://localhost:8080/invocations
+
+# Test Configuration
+TARGET_USER_ID=YOUR_USER_ID_HERE
+
+# Optional: Specific Agent ID to test
+# AGENT_ID=your-agent-id-here
+`;
+}
+
 async function writeEnvFile(filePath: string, content: string, packageName: string): Promise<void> {
   const dir = path.dirname(filePath);
 
@@ -208,6 +264,38 @@ async function main() {
       createAgentEnv(outputs),
       'Agent'
     );
+
+    // Machine User のクレデンシャルを取得してテストスクリプト用 .env を生成
+    if (outputs.MachineUserClientId && outputs.UserPoolId && outputs.Region) {
+      console.log('\n🔐 Machine User 認証情報を取得中...\n');
+
+      const clientSecret = await getMachineUserClientSecret(
+        outputs.UserPoolId,
+        outputs.MachineUserClientId,
+        outputs.Region
+      );
+
+      if (clientSecret) {
+        await writeEnvFile(
+          path.join(PROJECT_ROOT, 'scripts/test-machine-user.env'),
+          createTestScriptEnv(outputs, clientSecret),
+          'Machine User Test Script'
+        );
+        console.log('✅ Machine User テストスクリプト用の .env ファイルを生成しました');
+        console.log(
+          '   ⚠️  セキュリティ: .env ファイルには機密情報が含まれています。Gitにコミットしないでください\n'
+        );
+      } else {
+        console.warn(
+          '⚠️  Machine User Client Secret の取得に失敗しました。手動で設定してください。\n'
+        );
+        await writeEnvFile(
+          path.join(PROJECT_ROOT, 'scripts/test-machine-user.env'),
+          createTestScriptEnv(outputs),
+          'Machine User Test Script (without secret)'
+        );
+      }
+    }
 
     console.log('\n✨ セットアップが完了しました！\n');
     console.log('📌 次のステップ:');
