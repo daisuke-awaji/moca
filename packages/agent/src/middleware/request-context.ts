@@ -35,9 +35,12 @@ export function parseJWTToken(authHeader?: string): TokenInfo {
     const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
 
     // Client Credentials Flow detection:
-    // - cognito:username does not exist
+    // - No user identifier (cognito:username or username)
     // - token_use === "access"
-    const isMachineUser = !payload['cognito:username'] && payload['token_use'] === 'access';
+    // Note: Regular users may not have cognito:username in access tokens,
+    // but they will have the 'username' claim
+    const hasUserIdentifier = payload['cognito:username'] || payload['username'];
+    const isMachineUser = !hasUserIdentifier && payload['token_use'] === 'access';
 
     if (isMachineUser) {
       return {
@@ -52,10 +55,10 @@ export function parseJWTToken(authHeader?: string): TokenInfo {
       isMachineUser: false,
       userId:
         payload['cognito:username'] ||
+        payload['username'] ||
         payload['sub'] ||
         payload['userId'] ||
-        payload['user_id'] ||
-        payload['username'],
+        payload['user_id'],
     };
   } catch (error) {
     logger.warn('JWT parsing failed:', { error });
