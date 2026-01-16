@@ -184,7 +184,7 @@ export class BackendApi extends Construct {
         effect: iam.Effect.ALLOW,
         actions: ['iam:PassRole'],
         resources: [
-          `arn:aws:iam::${cdk.Stack.of(this).account}:role/*-scheduler-role`,
+          `arn:aws:iam::${cdk.Stack.of(this).account}:role/*`,
         ],
         conditions: {
           StringEquals: {
