@@ -1,0 +1,144 @@
+name: 'Strands Write Executor'
+description: 'Execute write GitHub operations from artifact files'
+inputs:
+  ref:
+    description: 'Ref to push changes to'
+    required: true
+  issue_id:
+    description: 'Issue ID for fallback operations'
+    required: false
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Check if ref is default branch
+      shell: bash
+      run: |
+        if [ "${{ inputs.ref }}" = "${{ github.event.repository.default_branch }}" ]; then
+          echo "🚫 Ref is default branch - skipping push to prevent direct commits"
+        else
+          echo "✅ Ref is '${{ inputs.ref }}' - push operations will proceed"
+        fi
+
+    - name: Download repository state artifact
+      if: inputs.ref != github.event.repository.default_branch
+      uses: actions/download-artifact@v4
+      with:
+        name: repository-state
+        path: ${{ runner.temp }}
+      continue-on-error: true
+
+    - name: Apply and push changes
+      if: inputs.ref != github.event.repository.default_branch
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+      run: |
+        if [ -f "$RUNNER_TEMP/repository_state.tar.gz" ]; then
+          echo "📝 Applying repository state"
+          mkdir -p "$RUNNER_TEMP/temp_git_repo"
+          tar -xzf "$RUNNER_TEMP/repository_state.tar.gz" -C "$RUNNER_TEMP/temp_git_repo"
+          rm "$RUNNER_TEMP/repository_state.tar.gz"
+
+          ORIGINAL_DIRECTORY=$(pwd)
+          cd "$RUNNER_TEMP/temp_git_repo"
+
+          git config --local user.name "Strands Agent"
+          git config --local user.email "strands-agent@users.noreply.github.com"
+          git config --local core.pager cat
+          git config --local http."https://github.com/".extraheader "AUTHORIZATION: basic $(echo -n x-access-token:${{ github.token }}| base64)"
+
+          git fetch origin ${{ inputs.ref }} 2>/dev/null || echo "Branch does not exist yet"
+
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "📝 Changes detected, staging all files"
+            git add -A
+            echo "📝 Committing changes"
+            git commit -m "Changes from Strands Agent" -n
+          fi
+
+          if git rev-parse origin/${{ inputs.ref }} >/dev/null 2>&1; then
+            if ! git diff --quiet HEAD origin/${{ inputs.ref }}; then
+              echo "📤 Pushing changes to ${{ inputs.ref }}"
+              git push --force origin HEAD:${{ inputs.ref }}
+            else
+              echo "📭 No changes to push"
+            fi
+          else
+            echo "📤 Creating new branch ${{ inputs.ref }}"
+            git push origin HEAD:${{ inputs.ref }}
+          fi
+
+          cd $ORIGINAL_DIRECTORY
+          rm -rf "$RUNNER_TEMP/temp_git_repo"
+        fi
+
+    - name: Download write operations artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: write-operations
+      continue-on-error: true
+
+    - name: Check write operations
+      id: check-write-ops
+      shell: bash
+      run: |
+        if [ -f "write_operations.jsonl" ]; then
+          echo "✅ Write operations artifact exists"
+          cp write_operations.jsonl ${{ runner.temp }}/
+          echo "exists=true" >> $GITHUB_OUTPUT
+        else
+          echo "❌ No write operations found"
+          echo "exists=false" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Set up Python
+      if: steps.check-write-ops.outputs.exists == 'true'
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.13'
+
+    - name: Execute write operations
+      if: steps.check-write-ops.outputs.exists == 'true'
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+        WRITE_OPERATIONS_FILE: ${{ runner.temp }}/write_operations.jsonl
+        ISSUE_ID: ${{ inputs.issue_id }}
+      run: |
+        python << 'EOF'
+        import json
+        import os
+        import subprocess
+
+        ops_file = os.environ.get('WRITE_OPERATIONS_FILE')
+        if not ops_file or not os.path.exists(ops_file):
+            print("No write operations to execute")
+            exit(0)
+
+        with open(ops_file, 'r') as f:
+            for line in f:
+                if not line.strip():
+                    continue
+                op = json.loads(line)
+                op_type = op.get('type')
+                print(f"Executing: {op_type}")
+
+                if op_type == 'github_api':
+                    endpoint = op.get('endpoint')
+                    method = op.get('method', 'POST')
+                    data = op.get('data', {})
+                    cmd = ['gh', 'api', '-X', method, endpoint]
+                    if data:
+                        cmd.extend(['-f', json.dumps(data)])
+                    subprocess.run(cmd, check=False)
+                elif op_type == 'comment':
+                    issue_id = op.get('issue_id') or os.environ.get('ISSUE_ID')
+                    body = op.get('body')
+                    if issue_id and body:
+                        subprocess.run([
+                            'gh', 'issue', 'comment', str(issue_id), '--body', body
+                        ], check=False)
+                else:
+                    print(f"Unknown operation type: {op_type}")
+        EOF

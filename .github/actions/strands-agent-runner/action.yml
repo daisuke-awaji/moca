@@ -1,0 +1,117 @@
+name: 'Strands Agent Runner'
+description: 'Execute a Strands agent with the given prompts and configuration'
+inputs:
+  ref:
+    description: 'ref to checkout'
+    required: true
+  system_prompt:
+    description: 'System prompt for the agent'
+    required: true
+  task_prompt:
+    description: 'Task prompt for the agent'
+    required: true
+  aws_role_arn:
+    description: 'AWS IAM role ARN for authentication'
+    required: true
+  write_permission:
+    description: 'If this action runs with write permission'
+    required: true
+    default: 'false'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        sparse-checkout: |
+          .github
+
+    - name: Copy .github to safe directory
+      shell: bash
+      run: |
+        mkdir -p ${{ runner.temp }}/strands-agent-runner
+        cp -r .github ${{ runner.temp }}/strands-agent-runner
+
+    - name: Checkout target branch
+      uses: actions/checkout@v4
+      with:
+        ref: ${{ inputs.ref }}
+      continue-on-error: true
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+
+    - name: Install dependencies
+      if: hashFiles('package.json') != ''
+      shell: bash
+      run: npm install
+      continue-on-error: true
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.13'
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
+      with:
+        enable-cache: true
+        cache-dependency-glob: '${{ runner.temp }}/strands-agent-runner/.github/scripts/python/requirements.txt'
+
+    - name: Install Python dependencies
+      shell: bash
+      run: |
+        uv pip install --system -r ${{ runner.temp }}/strands-agent-runner/.github/scripts/python/requirements.txt --quiet
+
+    - name: Configure Git
+      shell: bash
+      run: |
+        git config --global user.name "Strands Agent"
+        git config --global user.email "strands-agent@users.noreply.github.com"
+        git config --global core.pager cat
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        role-to-assume: ${{ inputs.aws_role_arn }}
+        role-session-name: GitHubActions-StrandsAgent-${{ github.run_id }}
+        aws-region: ap-northeast-1
+        mask-aws-account-id: true
+
+    - name: Run Strands Agent
+      shell: bash
+      env:
+        INPUT_SYSTEM_PROMPT: ${{ inputs.system_prompt }}
+        INPUT_TASK_PROMPT: ${{ inputs.task_prompt }}
+        WRITE_PERMISSION: ${{ inputs.write_permission }}
+        GITHUB_TOKEN: ${{ github.token }}
+      run: |
+        cd ${{ runner.temp }}/strands-agent-runner/.github/scripts/python
+        python agent_runner.py
+
+    - name: Save repository state
+      if: inputs.write_permission == 'false'
+      shell: bash
+      run: |
+        echo "📦 Saving repository state"
+        tar -czf ${{ runner.temp }}/repository_state.tar.gz -C ${{ github.workspace }} .
+
+    - name: Upload repository state artifact
+      if: inputs.write_permission == 'false'
+      uses: actions/upload-artifact@v4
+      with:
+        name: repository-state
+        path: ${{ runner.temp }}/repository_state.tar.gz
+        retention-days: 1
+
+    - name: Upload write operations artifact
+      if: inputs.write_permission == 'false'
+      uses: actions/upload-artifact@v4
+      with:
+        name: write-operations
+        path: ${{ runner.temp }}/strands-agent-runner/.github/scripts/python/write_operations.jsonl
+        retention-days: 1
+        if-no-files-found: ignore
