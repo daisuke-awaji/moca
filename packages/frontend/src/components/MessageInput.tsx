@@ -4,6 +4,7 @@ import { Send, Loader2, Paperclip } from 'lucide-react';
 import { nanoid } from 'nanoid';
 import { useChatStore } from '../stores/chatStore';
 import { useSettingsStore } from '../stores/settingsStore';
+import { useUIStore } from '../stores/uiStore';
 import { StoragePathDisplay } from './StoragePathDisplay';
 import { StorageManagementModal } from './StorageManagementModal';
 import { ModelSelector } from './ui/ModelSelector';
@@ -25,6 +26,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
   const { t } = useTranslation();
   const { sendPrompt } = useChatStore();
   const { sendBehavior } = useSettingsStore();
+  const isMobileView = useUIStore((state) => state.isMobileView);
   const sessionState = useChatStore((state) =>
     sessionId ? (state.sessions[sessionId] ?? null) : null
   );
@@ -294,6 +296,16 @@ export const MessageInput: React.FC<MessageInputProps> = ({
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     // Do nothing during IME composition
     if (e.nativeEvent.isComposing) {
+      return;
+    }
+
+    // On mobile, only send with Cmd/Ctrl+Enter to avoid accidental sends
+    // when pressing Enter for newline on software keyboard
+    if (isMobileView) {
+      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        handleSubmit(e);
+      }
       return;
     }
 
