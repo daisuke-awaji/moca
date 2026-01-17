@@ -3,11 +3,12 @@
  * Search and filter past conversation sessions
  */
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Search } from 'lucide-react';
 import { PageHeader } from '../components/ui/PageHeader';
+import { LoadingIndicator } from '../components/ui/LoadingIndicator';
 import { useSessionStore } from '../stores/sessionStore';
 
 /**
@@ -16,11 +17,20 @@ import { useSessionStore } from '../stores/sessionStore';
 export function SearchChatPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { sessions } = useSessionStore();
+  const { sessions, isLoadingSessions, isLoadingMoreSessions, loadAllSessions } = useSessionStore();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+
+  // Load all sessions on mount
+  useEffect(() => {
+    // Load all sessions for comprehensive search
+    loadAllSessions();
+  }, [loadAllSessions]);
+
+  // Check if still loading sessions
+  const isLoading = isLoadingSessions || isLoadingMoreSessions;
 
   // Filter sessions
   const filteredSessions = useMemo(() => {
@@ -104,16 +114,29 @@ export function SearchChatPage() {
           <div className="mb-4">
             <p className="text-sm text-gray-600">
               {t('chat.searchResults')}:{' '}
-              {t('chat.searchResultsCount', { count: filteredSessions.length })}
+              {isLoading ? (
+                <span className="text-gray-400">
+                  {t('chat.loadingSessions')} ({sessions.length}...)
+                </span>
+              ) : (
+                t('chat.searchResultsCount', { count: filteredSessions.length })
+              )}
             </p>
           </div>
 
+          {/* Loading State */}
+          {isLoading && sessions.length === 0 && (
+            <div className="py-12">
+              <LoadingIndicator message={t('chat.loadingSessions')} />
+            </div>
+          )}
+
           {/* Sessions Table */}
-          {filteredSessions.length === 0 ? (
+          {!isLoading && filteredSessions.length === 0 ? (
             <div className="text-center py-12 text-gray-500">
               <p>{t('chat.searchNoResults')}</p>
             </div>
-          ) : (
+          ) : filteredSessions.length > 0 ? (
             <div className="border border-gray-200 rounded-lg overflow-hidden">
               <table className="w-full">
                 <thead className="bg-gray-50 border-b border-gray-200">
@@ -143,8 +166,15 @@ export function SearchChatPage() {
                   ))}
                 </tbody>
               </table>
+
+              {/* Loading indicator for additional sessions */}
+              {isLoading && (
+                <div className="py-4 border-t border-gray-200 bg-gray-50">
+                  <LoadingIndicator message="" spacing="none" />
+                </div>
+              )}
             </div>
-          )}
+          ) : null}
         </div>
       </div>
     </>

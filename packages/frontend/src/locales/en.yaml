@@ -38,6 +38,8 @@ common:
   clickToSelectIcon: Click to select an icon
   success: Success
   errorStatus: Error
+  moreOptions: More options
+  deleting: Deleting...
 
 # Authentication
 auth:
@@ -157,6 +159,9 @@ chat:
   searchNoResults: 'No matching sessions found'
   updatedAt: 'Updated'
   searchNote: '※ Semantic search is not yet implemented. Only title search is available.'
+  deleteSession: Delete session
+  deleteSessionConfirm: 'Are you sure you want to delete "{{title}}"? This action cannot be undone.'
+  sessionDeleted: Session deleted
 
 # Agent
 agent:

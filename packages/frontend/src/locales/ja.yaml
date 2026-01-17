@@ -9,6 +9,8 @@ common:
   saving: 保存中...
   cancel: キャンセル
   delete: 削除
+  deleting: 削除中...
+  moreOptions: その他のオプション
   close: 閉じる
   confirm: 確認
   edit: 編集
@@ -159,6 +161,9 @@ chat:
   searchNoResults: '該当するセッションがありません'
   updatedAt: '更新日時'
   searchNote: '※ セマンティック検索は未実装です。タイトルのみ検索可能です。'
+  deleteSession: セッションを削除
+  deleteSessionConfirm: '「{{title}}」を削除してもよろしいですか？この操作は取り消せません。'
+  sessionDeleted: セッションを削除しました
 
 # エージェント
 agent:

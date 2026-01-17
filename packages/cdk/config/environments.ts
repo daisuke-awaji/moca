@@ -241,17 +241,21 @@ export const environments: Record<Environment, EnvironmentConfig> = {
       {
         id: 's3-upload',
         name: 'S3 File Upload',
-        description: 'Triggered when a file is uploaded to my-trigger-bucket',
-        icon: 'cloud-upload', // https://lucide.dev/icons/cloud-upload
+        description:
+          'Triggered when a file with a key matching "users/{userId}/event-test-*" is uploaded to the user storage S3 bucket. This rule monitors Object Created events and can be used to automatically process uploaded files, such as triggering data pipelines, file validation, or notification workflows.',
         eventPattern: {
           source: ['aws.s3'],
           detailType: ['Object Created'],
           detail: {
             bucket: {
-              name: ['agentcore-app-dev-user-storage-988417841316-ap-northeast-1'], // Specify your existing S3 bucket name
+              name: [{ prefix: 'agentcore-app-dev-user-storage-' }],
+            },
+            object: {
+              key: [{ wildcard: 'users/*/event-test-*' }],
             },
           },
         },
+        icon: 'cloud-upload', // https://lucide.dev/icons/cloud-upload
         enabled: true,
       },
     ],
@@ -288,16 +292,17 @@ export const environments: Record<Environment, EnvironmentConfig> = {
       {
         id: 's3-upload',
         name: 'S3 File Upload',
-        description: 'Triggered when a file with a key starting with "event-test" is uploaded to the S3 bucket (agentcore-app-dev-user-storage-988417841316-ap-northeast-1). This rule monitors Object Created events and can be used to automatically process uploaded files, such as triggering data pipelines, file validation, or notification workflows.',
+        description:
+          'Triggered when a file with a key matching "users/{userId}/event-test-*" is uploaded to the user storage S3 bucket. This rule monitors Object Created events and can be used to automatically process uploaded files, such as triggering data pipelines, file validation, or notification workflows.',
         eventPattern: {
           source: ['aws.s3'],
           detailType: ['Object Created'],
           detail: {
             bucket: {
-              name: ['agentcore-app-dev-user-storage-988417841316-ap-northeast-1'], // Specify your existing S3 bucket name
+              name: [{ prefix: 'agentcore-app-dev-user-storage-' }],
             },
             object: {
-              key: [{ prefix: 'event-test' }],
+              key: [{ wildcard: 'users/*/event-test-*' }],
             },
           },
         },
