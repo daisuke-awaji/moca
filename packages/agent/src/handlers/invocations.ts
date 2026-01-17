@@ -18,6 +18,99 @@ import { validateImageData } from '../validation/index.js';
 import type { InvocationRequest } from './types.js';
 
 /**
+ * Required OAuth scope for machine user invocation
+ */
+export const REQUIRED_MACHINE_USER_SCOPE = 'agent/invoke';
+
+/**
+ * Validate OAuth scopes for machine user
+ * @param scopes - Array of OAuth scopes from the token
+ * @returns Validation result with error if scopes are insufficient
+ */
+export function validateMachineUserScopes(scopes?: string[]): {
+  valid: boolean;
+  error?: { status: number; message: string };
+} {
+  if (!scopes || scopes.length === 0) {
+    return {
+      valid: false,
+      error: {
+        status: 403,
+        message: `Insufficient scope: '${REQUIRED_MACHINE_USER_SCOPE}' scope is required for machine user invocation`,
+      },
+    };
+  }
+
+  if (!scopes.includes(REQUIRED_MACHINE_USER_SCOPE)) {
+    return {
+      valid: false,
+      error: {
+        status: 403,
+        message: `Insufficient scope: '${REQUIRED_MACHINE_USER_SCOPE}' scope is required, but only [${scopes.join(', ')}] provided`,
+      },
+    };
+  }
+
+  return { valid: true };
+}
+
+/**
+ * Validate targetUserId format
+ * - Must be non-empty
+ * - Must be a valid email format (basic validation for Cognito username)
+ * @param targetUserId - Target user ID to validate
+ * @returns Validation result with error if invalid
+ */
+export function validateTargetUserId(targetUserId: string): {
+  valid: boolean;
+  error?: { status: number; message: string };
+} {
+  // Check for empty or whitespace-only
+  if (!targetUserId.trim()) {
+    return {
+      valid: false,
+      error: {
+        status: 400,
+        message: 'targetUserId cannot be empty or whitespace',
+      },
+    };
+  }
+
+  // Basic email format validation (Cognito typically uses email as username)
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(targetUserId)) {
+    return {
+      valid: false,
+      error: {
+        status: 400,
+        message: 'targetUserId must be a valid email format',
+      },
+    };
+  }
+
+  // Check for potential injection attempts (basic sanitization)
+  const dangerousPatterns = [
+    /[<>]/, // HTML injection
+    /[\r\n]/, // Header injection
+    /javascript:/i, // XSS attempt
+  ];
+
+  for (const pattern of dangerousPatterns) {
+    if (pattern.test(targetUserId)) {
+      return {
+        valid: false,
+        error: {
+          status: 400,
+          message: 'targetUserId contains invalid characters',
+        },
+      };
+    }
+  }
+
+  return { valid: true };
+}
+
+/**
  * Resolve effective user ID based on authentication type
  * - Machine user (Client Credentials Flow): Use targetUserId from request body
  * - Regular user: Use userId from JWT
@@ -29,6 +122,15 @@ export function resolveEffectiveUserId(
   const isMachineUser = context?.isMachineUser ?? false;
 
   if (isMachineUser) {
+    // Machine user: Validate OAuth scopes first
+    const scopeValidation = validateMachineUserScopes(context?.scopes);
+    if (!scopeValidation.valid && scopeValidation.error) {
+      return {
+        userId: '',
+        error: scopeValidation.error,
+      };
+    }
+
     // Machine user: targetUserId is required
     if (!targetUserId) {
       return {
@@ -39,6 +141,16 @@ export function resolveEffectiveUserId(
         },
       };
     }
+
+    // Validate targetUserId format
+    const targetUserIdValidation = validateTargetUserId(targetUserId);
+    if (!targetUserIdValidation.valid && targetUserIdValidation.error) {
+      return {
+        userId: '',
+        error: targetUserIdValidation.error,
+      };
+    }
+
     logger.info('Machine user authentication detected:', {
       clientId: context?.clientId,
       targetUserId,
