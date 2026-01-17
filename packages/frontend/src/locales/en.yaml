@@ -479,7 +479,7 @@ events:
 triggers:
   # Page
   pageTitle: Trigger Management
-  pageDescription: Automatically execute agents based on schedules
+  pageDescription: Create and manage triggers to automatically execute agents based on schedules or Amazon EventBridge events. Automate recurring tasks or trigger agents on external events such as S3 file uploads to perform data collection, report generation, and more.
 
   # Tabs
   tabs:
@@ -637,7 +637,7 @@ triggers:
     selectPlaceholder: Select event source...
     noSourcesAvailable: No event sources configured
     loadError: Failed to load event sources
-    helpText: Select which event should trigger this agent
+    helpText: Select which event should trigger this agent. To add new event sources, please contact your system administrator.
     eventSourceRequired: Please select an event source
     ruleDetails: EventBridge Rule Details
 
