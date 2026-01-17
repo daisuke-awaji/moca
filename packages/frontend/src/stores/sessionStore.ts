@@ -59,6 +59,7 @@ interface SessionActions {
   loadAllSessions: () => Promise<void>; // Load all sessions (for search page)
   selectSession: (sessionId: string) => Promise<void>;
   deleteSession: (sessionId: string) => Promise<void>; // Delete a session
+  deleteMultipleSessions: (sessionIds: string[]) => Promise<void>; // Delete multiple sessions
   setActiveSessionId: (sessionId: string) => void;
   clearActiveSession: () => void;
   setSessionsError: (error: string | null) => void;
@@ -286,6 +287,65 @@ export const useSessionStore = create<SessionStore>()(
           const errorMessage = error instanceof Error ? error.message : 'Failed to delete session';
           toast.error(errorMessage);
           throw error;
+        }
+      },
+
+      deleteMultipleSessions: async (sessionIds: string[]) => {
+        if (sessionIds.length === 0) return;
+
+        // 1. Save sessions for potential rollback
+        const { sessions, activeSessionId } = get();
+        const sessionsToDelete = sessions.filter((s) => sessionIds.includes(s.sessionId));
+        const sessionIdsSet = new Set(sessionIds);
+
+        // 2. Optimistically remove from local state immediately
+        const updatedSessions = sessions.filter((s) => !sessionIdsSet.has(s.sessionId));
+        set({ sessions: updatedSessions });
+
+        // Clear active session if it's one of the deleted ones
+        if (activeSessionId && sessionIdsSet.has(activeSessionId)) {
+          set({
+            activeSessionId: null,
+            sessionEvents: [],
+            eventsError: null,
+          });
+        }
+
+        console.log(`🗑️ Optimistically removed ${sessionIds.length} sessions`);
+
+        // 3. Call API to delete sessions (in parallel, in background)
+        const results = await Promise.allSettled(
+          sessionIds.map((sessionId) => deleteSessionApi(sessionId))
+        );
+
+        // 4. Check results
+        const failedCount = results.filter((r) => r.status === 'rejected').length;
+        const successCount = results.filter((r) => r.status === 'fulfilled').length;
+
+        if (failedCount > 0) {
+          console.error(`💥 ${failedCount} session deletions failed`);
+
+          // Rollback failed deletions
+          const failedIndices = results
+            .map((r, i) => (r.status === 'rejected' ? i : -1))
+            .filter((i) => i >= 0);
+          const failedSessionIds = failedIndices.map((i) => sessionIds[i]);
+          const sessionsToRestore = sessionsToDelete.filter((s) =>
+            failedSessionIds.includes(s.sessionId)
+          );
+
+          if (sessionsToRestore.length > 0) {
+            const currentSessions = get().sessions;
+            set({ sessions: [...sessionsToRestore, ...currentSessions] });
+          }
+
+          if (successCount > 0) {
+            toast.success(i18n.t('chat.sessionsDeleted', { count: successCount }));
+          }
+          toast.error(`${failedCount} sessions failed to delete`);
+        } else {
+          console.log(`✅ ${successCount} sessions deleted from server`);
+          toast.success(i18n.t('chat.sessionsDeleted', { count: successCount }));
         }
       },
 

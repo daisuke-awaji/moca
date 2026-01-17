@@ -164,6 +164,13 @@ chat:
   deleteSession: セッションを削除
   deleteSessionConfirm: '「{{title}}」を削除してもよろしいですか？この操作は取り消せません。'
   sessionDeleted: セッションを削除しました
+  selectedCount: '{{count}}件選択中'
+  selectAll: すべて選択
+  deselectAll: すべて解除
+  clearSelection: 選択解除
+  bulkDelete: 一括削除
+  bulkDeleteConfirm: '選択した{{count}}件のセッションを削除してもよろしいですか？この操作は取り消せません。'
+  sessionsDeleted: '{{count}}件のセッションを削除しました'
 
 # エージェント
 agent:
