@@ -24,6 +24,7 @@ import {
 import { useAuthStore } from '../stores/authStore';
 import { useSessionStore } from '../stores/sessionStore';
 import { useUIStore } from '../stores/uiStore';
+import { useSessionEventsSubscription } from '../hooks/useSessionEventsSubscription';
 import { LoadingIndicator } from './ui/LoadingIndicator';
 import { Tooltip } from './ui/Tooltip';
 import { ConfirmModal } from './ui/Modal';
@@ -146,6 +147,9 @@ function SessionItem({ session, isActive, isNew = false, onDeleteRequest }: Sess
  */
 export function SessionSidebar() {
   const { t } = useTranslation();
+
+  // Real-time session updates via AppSync Events
+  useSessionEventsSubscription();
 
   const { user, logout } = useAuthStore();
   const {

@@ -13,6 +13,8 @@ import { BackendApi } from './constructs/backend-api';
 import { CognitoAuth } from './constructs/cognito-auth';
 import { Frontend } from './constructs/frontend';
 import { UserStorage } from './constructs/user-storage';
+import { AppSyncEvents } from './constructs/appsync-events';
+import { SessionStreamHandler } from './constructs/session-stream-handler';
 import { EnvironmentConfig } from '../config';
 
 export interface AgentCoreStackProps extends cdk.StackProps {
@@ -273,14 +275,27 @@ export class AgentCoreStack extends cdk.Stack {
       pointInTimeRecovery: true,
     });
 
-    // 5.5. Create Sessions Table
+    // 5.5. Create Sessions Table (with DynamoDB Streams for real-time updates)
     this.sessionsTable = new SessionsTable(this, 'SessionsTable', {
       tableNamePrefix: resourcePrefix,
       removalPolicy: envConfig.s3RemovalPolicy, // Use same removal policy as S3
       pointInTimeRecovery: true,
+      enableStreams: true, // Enable DynamoDB Streams for real-time session updates
     });
 
-    // 5.6. Create Triggers Table
+    // 5.6. Create AppSync Events API for real-time session updates
+    const appsyncEvents = new AppSyncEvents(this, 'AppSyncEvents', {
+      apiName: `${resourcePrefix}-events`,
+      userPool: this.cognitoAuth.userPool,
+    });
+
+    // 5.7. Create Session Stream Handler Lambda (DynamoDB Streams -> AppSync Events)
+    new SessionStreamHandler(this, 'SessionStreamHandler', {
+      sessionsTable: this.sessionsTable.table,
+      appsyncEvents: appsyncEvents,
+    });
+
+    // 5.8. Create Triggers Table
     const triggersTable = new TriggersTable(this, 'TriggersTable', {
       tableNamePrefix: resourcePrefix,
       removalPolicy: envConfig.s3RemovalPolicy,
@@ -573,6 +588,24 @@ export class AgentCoreStack extends cdk.Stack {
     new cdk.CfnOutput(this, 'SessionsTableConfiguration', {
       value: `Sessions Table: ${this.sessionsTable.tableName} - User session storage`,
       description: 'Sessions Table configuration summary',
+    });
+
+    // AppSync Events-related outputs (for real-time session updates)
+    new cdk.CfnOutput(this, 'AppSyncEventsRealtimeEndpoint', {
+      value: appsyncEvents.realtimeEndpoint,
+      description: 'AppSync Events WebSocket endpoint for real-time subscriptions',
+      exportName: `${id}-AppSyncEventsRealtimeEndpoint`,
+    });
+
+    new cdk.CfnOutput(this, 'AppSyncEventsHttpEndpoint', {
+      value: appsyncEvents.httpEndpoint,
+      description: 'AppSync Events HTTP endpoint for publishing',
+      exportName: `${id}-AppSyncEventsHttpEndpoint`,
+    });
+
+    new cdk.CfnOutput(this, 'AppSyncEventsConfiguration', {
+      value: `AppSync Events: ${appsyncEvents.apiId} - Real-time session updates enabled`,
+      description: 'AppSync Events configuration summary',
     });
 
     // Note: Trigger-related outputs are already defined in construct files:
