@@ -37,6 +37,11 @@ export class AppSyncEvents extends Construct {
     public readonly channelNamespace: appsync.CfnChannelNamespace;
 
     /**
+     * The channel namespace for messages
+     */
+    public readonly messagesNamespace: appsync.CfnChannelNamespace;
+
+    /**
      * HTTP endpoint for publishing events
      */
     public readonly httpEndpoint: string;
@@ -87,6 +92,12 @@ export class AppSyncEvents extends Construct {
         this.channelNamespace = new appsync.CfnChannelNamespace(this, 'SessionsNamespace', {
             apiId: this.apiId,
             name: 'sessions',
+        });
+
+        // Create channel namespace for messages (real-time message events)
+        this.messagesNamespace = new appsync.CfnChannelNamespace(this, 'MessagesNamespace', {
+            apiId: this.apiId,
+            name: 'messages',
         });
 
         // Get DNS endpoints using CloudFormation intrinsic functions

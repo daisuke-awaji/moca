@@ -408,6 +408,7 @@ export class AgentCoreStack extends cdk.Stack {
       userStorageBucketName: this.userStorage.bucketName, // Pass User Storage bucket name
       sessionsTableName: this.sessionsTable.tableName, // Pass Sessions Table name
       backendApiUrl: this.backendApi.apiUrl, // Pass Backend API URL for call_agent tool
+      appsyncHttpEndpoint: appsyncEvents.httpEndpoint, // Pass AppSync Events HTTP endpoint for real-time messages
     });
 
     // Grant Memory access permissions to Runtime
@@ -432,8 +433,9 @@ export class AgentCoreStack extends cdk.Stack {
       userPoolClientId: this.cognitoAuth.clientId,
       runtimeEndpoint: `https://bedrock-agentcore.${this.region}.amazonaws.com/runtimes/${this.agentRuntime.runtimeArn}/invocations?qualifier=DEFAULT`,
       awsRegion: this.region,
-      backendApiUrl: this.backendApi.apiUrl, // Add Backend API URL
-      customDomain: envConfig.customDomain, // Add custom domain configuration
+      backendApiUrl: this.backendApi.apiUrl,
+      customDomain: envConfig.customDomain,
+      appsyncEventsEndpoint: appsyncEvents.realtimeEndpoint, // AppSync Events WebSocket endpoint for real-time updates
     });
 
     // 10. Additional CloudFormation outputs (authentication related)

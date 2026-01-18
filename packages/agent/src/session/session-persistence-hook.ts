@@ -121,6 +121,7 @@ export class SessionPersistenceHook implements HookProvider {
               sessionId,
               title,
               agentId: this.agentId,
+              sessionType: this.sessionConfig.sessionType,
             });
             logger.info('[SessionPersistenceHook] Created new session in DynamoDB:', {
               userId: actorId,

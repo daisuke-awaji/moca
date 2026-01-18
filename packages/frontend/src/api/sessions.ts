@@ -6,11 +6,17 @@
 import { backendGet, backendDelete } from './client/backend-client';
 
 /**
+ * Session type
+ */
+export type SessionType = 'user' | 'event' | 'subagent';
+
+/**
  * Session information type definition
  */
 export interface SessionSummary {
   sessionId: string;
   title: string;
+  sessionType?: SessionType;
   createdAt: string;
   updatedAt: string;
   agentId?: string;

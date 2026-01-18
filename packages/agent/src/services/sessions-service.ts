@@ -11,6 +11,11 @@ import { marshall, unmarshall } from '@aws-sdk/util-dynamodb';
 import { logger } from '../config/index.js';
 
 /**
+ * Session type
+ */
+export type SessionType = 'user' | 'event' | 'subagent';
+
+/**
  * Session data stored in DynamoDB
  */
 export interface SessionData {
@@ -18,6 +23,7 @@ export interface SessionData {
   sessionId: string;
   title: string;
   agentId?: string;
+  sessionType?: SessionType;
   createdAt: string;
   updatedAt: string;
 }
@@ -30,6 +36,7 @@ export interface CreateSessionOptions {
   sessionId: string;
   title: string;
   agentId?: string;
+  sessionType?: SessionType;
 }
 
 /**
@@ -93,6 +100,7 @@ export class SessionsService {
       sessionId: options.sessionId,
       title: options.title,
       agentId: options.agentId,
+      sessionType: options.sessionType,
       createdAt: now,
       updatedAt: now,
     };

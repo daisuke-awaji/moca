@@ -34,6 +34,7 @@ interface StackOutputs {
   SchedulerRoleArn?: string;
   EventSourcesConfig?: string;
   AppSyncEventsRealtimeEndpoint?: string;
+  AppSyncEventsHttpEndpoint?: string;
 }
 
 const STACK_NAME = process.env.STACK_NAME || 'AgentCoreApp';
@@ -191,6 +192,9 @@ USER_STORAGE_BUCKET_NAME=${outputs.UserStorageBucketName || ''}
 
 # Sessions Table
 SESSIONS_TABLE_NAME=${outputs.SessionsTableName || ''}
+
+# AppSync Events (for real-time message sync)
+APPSYNC_HTTP_ENDPOINT=${outputs.AppSyncEventsHttpEndpoint || ''}
 
 # Server Configuration
 PORT=8080

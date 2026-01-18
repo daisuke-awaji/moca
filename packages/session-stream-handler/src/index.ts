@@ -12,6 +12,11 @@ import https from 'https';
 import { URL } from 'url';
 
 /**
+ * Session type
+ */
+type SessionType = 'user' | 'event' | 'subagent';
+
+/**
  * Session event to publish
  */
 interface SessionEvent {
@@ -19,6 +24,7 @@ interface SessionEvent {
   sessionId: string;
   title?: string;
   agentId?: string;
+  sessionType?: SessionType;
   updatedAt?: string;
   createdAt?: string;
 }
@@ -47,6 +53,7 @@ function parseRecord(record: DynamoDBRecord): SessionEvent | null {
     sessionId: (image.sessionId as { S: string })?.S || '',
     title: (image.title as { S: string })?.S,
     agentId: (image.agentId as { S: string })?.S,
+    sessionType: (image.sessionType as { S: string })?.S as SessionType | undefined,
     updatedAt: (image.updatedAt as { S: string })?.S,
     createdAt: (image.createdAt as { S: string })?.S,
   };

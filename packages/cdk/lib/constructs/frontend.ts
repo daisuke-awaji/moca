@@ -56,6 +56,11 @@ export interface FrontendProps {
      */
     domainName: string;
   };
+
+  /**
+   * AppSync Events WebSocket endpoint for real-time updates (optional)
+   */
+  appsyncEventsEndpoint?: string;
 }
 
 export class Frontend extends Construct {
@@ -230,7 +235,8 @@ export class Frontend extends Construct {
         VITE_COGNITO_CLIENT_ID: props.userPoolClientId,
         VITE_AWS_REGION: props.awsRegion,
         VITE_AGENT_ENDPOINT: props.runtimeEndpoint,
-        VITE_BACKEND_URL: props.backendApiUrl || '', // Backend API URL を追加
+        VITE_BACKEND_URL: props.backendApiUrl || '',
+        VITE_APPSYNC_EVENTS_ENDPOINT: props.appsyncEventsEndpoint || '',
       },
       outputSourceDirectory: 'dist',
       destinationBucket: this.s3Bucket,

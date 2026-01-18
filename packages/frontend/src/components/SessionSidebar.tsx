@@ -45,9 +45,10 @@ function SessionItem({ session, isActive, isNew = false, onDeleteRequest }: Sess
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  // Check if this is a sub-agent session or event-triggered session
-  const isSubAgent = session.sessionId.endsWith('_subagent');
-  const isEventTriggered = session.sessionId.endsWith('_event');
+  // Check session type (default to 'user' for existing sessions without sessionType)
+  const sessionType = session.sessionType ?? 'user';
+  const isSubAgent = sessionType === 'subagent';
+  const isEventTriggered = sessionType === 'event';
 
   // Close menu on outside click
   useEffect(() => {
