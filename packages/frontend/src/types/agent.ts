@@ -92,6 +92,7 @@ export interface AgentActions {
 
   // 初期化・リセット (async)
   initializeStore: () => Promise<void>;
+  refreshAgents: () => Promise<void>;
   clearStore: () => void;
   clearError: () => void;
 }
