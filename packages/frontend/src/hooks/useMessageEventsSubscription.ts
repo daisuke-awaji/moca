@@ -8,13 +8,48 @@ import { useEffect, useRef, useCallback, useMemo } from 'react';
 import { useAuthStore } from '../stores/authStore';
 import { useChatStore } from '../stores/chatStore';
 import { useSessionStore } from '../stores/sessionStore';
-import { useAppSyncSubscription } from './useAppSyncConnection';
+import { useAppSyncSubscription } from './useAppSyncSubscription';
 import {
   useAppSyncConnectionState,
   useAppSyncConnectionStore,
 } from '../stores/appsyncConnectionStore';
 import type { MessageContent, Message } from '../types/index';
 import { nanoid } from 'nanoid';
+
+// ============================================================
+// Constants & Channel Configuration
+// ============================================================
+
+/**
+ * Channel prefix for message events
+ * Full channel path: /messages/{userId}/{sessionId}
+ */
+const CHANNEL_PREFIX = '/messages';
+
+/**
+ * Subscription ID prefix for message events
+ * Full subscription ID: message-subscription-{sessionId}
+ */
+const SUBSCRIPTION_ID_PREFIX = 'message-subscription';
+
+/**
+ * Build channel path for message subscription
+ */
+function buildChannel(userId: string, sessionId: string): string {
+  return `${CHANNEL_PREFIX}/${userId}/${sessionId}`;
+}
+
+/**
+ * Build subscription ID for message subscription
+ * Note: Each session has its own subscription
+ */
+function buildSubscriptionId(sessionId: string): string {
+  return `${SUBSCRIPTION_ID_PREFIX}-${sessionId}`;
+}
+
+// ============================================================
+// Types
+// ============================================================
 
 /**
  * Message event from Agent handler
@@ -30,6 +65,10 @@ interface MessageEvent {
   error?: string;
   requestId?: string;
 }
+
+// ============================================================
+// Content Conversion Helpers
+// ============================================================
 
 /**
  * Convert API content to local MessageContent type
@@ -90,6 +129,21 @@ function convertContent(apiContent: unknown): MessageContent {
 }
 
 /**
+ * Extract text content from message contents for comparison
+ */
+function getTextContent(msgContents: MessageContent[]): string {
+  return msgContents
+    .filter((c): c is MessageContent & { type: 'text'; text: string } => c.type === 'text')
+    .map((c) => c.text)
+    .join('')
+    .substring(0, 200);
+}
+
+// ============================================================
+// Hook
+// ============================================================
+
+/**
  * Custom hook for subscribing to real-time message updates
  *
  * @param sessionId - The active session ID to subscribe to
@@ -144,17 +198,6 @@ export function useMessageEventsSubscription(sessionId: string | null) {
 
           // Convert content first for comparison
           const contents: MessageContent[] = event.message.content.map(convertContent);
-
-          // Helper function to extract text content for comparison
-          const getTextContent = (msgContents: MessageContent[]): string => {
-            return msgContents
-              .filter(
-                (c): c is MessageContent & { type: 'text'; text: string } => c.type === 'text'
-              )
-              .map((c) => c.text)
-              .join('')
-              .substring(0, 200);
-          };
 
           // Check for duplicate by message content
           const eventText = getTextContent(contents);
@@ -255,11 +298,11 @@ export function useMessageEventsSubscription(sessionId: string | null) {
 
   // Build channel and subscription ID for current session
   const channel = useMemo(
-    () => (userId && sessionId ? `/messages/${userId}/${sessionId}` : null),
+    () => (userId && sessionId ? buildChannel(userId, sessionId) : null),
     [userId, sessionId]
   );
   const subscriptionId = useMemo(
-    () => (sessionId ? `message-subscription-${sessionId}` : null),
+    () => (sessionId ? buildSubscriptionId(sessionId) : null),
     [sessionId]
   );
 
@@ -269,7 +312,7 @@ export function useMessageEventsSubscription(sessionId: string | null) {
 
     // Unsubscribe from previous session if different
     if (prevSessionId && prevSessionId !== sessionId) {
-      unsubscribe(`message-subscription-${prevSessionId}`);
+      unsubscribe(buildSubscriptionId(prevSessionId));
     }
 
     // Update previous session ref

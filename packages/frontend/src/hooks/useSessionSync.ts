@@ -1,9 +1,10 @@
 /**
- * セッション同期カスタムフック
- * URL パラメータと sessionStore の状態を一元的に管理
+ * Session Sync Custom Hook
+ *
+ * Manages synchronization between URL parameters and sessionStore state.
  */
 
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSessionStore } from '../stores/sessionStore';
 import { useChatStore } from '../stores/chatStore';
@@ -15,16 +16,39 @@ export interface UseSessionSyncReturn {
 }
 
 /**
- * セッション同期フック
+ * Session Sync Hook
  *
- * URL の sessionId と Store の状態を同期し、
- * 新規セッション作成時のナビゲーションを管理します。
+ * Synchronizes URL sessionId with Store state and manages
+ * navigation when creating new sessions.
  *
- * @returns {UseSessionSyncReturn} セッション同期情報とアクション
+ * @returns {UseSessionSyncReturn} Session sync information and actions
  */
 export function useSessionSync(): UseSessionSyncReturn {
   const { sessionId: urlSessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
+
+  /**
+   * WHY: Track previous URL sessionId to detect actual URL changes
+   *
+   * React's useEffect with dependencies like urlSessionId can trigger multiple times
+   * during a single navigation event due to React's render cycle. This causes a race condition:
+   *
+   * 1. User clicks "New Chat" which calls navigate('/chat')
+   * 2. Before React Router updates the URL, useEffect fires with OLD urlSessionId
+   * 3. switchSession(OLD_SESSION_ID) is incorrectly called
+   * 4. URL finally updates to '/chat', useEffect fires again with urlSessionId = undefined
+   * 5. clearActiveSession() is called, but damage is done - chatStore already switched to old session
+   *
+   * By tracking the previous urlSessionId, we can:
+   * - Detect when URL has actually changed (prevRef !== current)
+   * - Only trigger session switching when URL genuinely changes
+   * - Prevent stale values from triggering incorrect state updates
+   *
+   * Using `undefined` as initial value to distinguish from:
+   * - `null` which means explicitly no session
+   * - `undefined` which means "not yet initialized"
+   */
+  const prevUrlSessionIdRef = useRef<string | undefined>(undefined);
 
   const {
     activeSessionId,
@@ -38,42 +62,95 @@ export function useSessionSync(): UseSessionSyncReturn {
 
   const { switchSession, loadSessionHistory } = useChatStore();
 
-  // URL → Store 同期
+  // URL → Store synchronization
   useEffect(() => {
-    // 新規セッション作成中の場合
+    /**
+     * WHY: Check if URL actually changed
+     *
+     * This comparison prevents the race condition described above.
+     * We only process URL changes when prevUrlSessionIdRef differs from current urlSessionId.
+     *
+     * On first render (prevUrlSessionIdRef.current === undefined), we treat it as a change
+     * to ensure initial synchronization works correctly.
+     */
+    const isInitialRender = prevUrlSessionIdRef.current === undefined;
+    const urlActuallyChanged = prevUrlSessionIdRef.current !== urlSessionId;
+
+    // Update the ref BEFORE processing to avoid infinite loops
+    const previousUrlSessionId = prevUrlSessionIdRef.current;
+    prevUrlSessionIdRef.current = urlSessionId;
+
+    // During new session creation
     if (isCreatingSession) {
-      // urlSessionId が activeSessionId と一致したら、URL同期が完了した証拠
+      // When urlSessionId matches activeSessionId, URL sync is complete
       if (urlSessionId && urlSessionId === activeSessionId) {
-        console.log('✅ 新規セッションのURL同期完了');
+        console.log('✅ New session URL sync complete');
         finalizeNewSession();
       } else {
-        console.log('⏳ 新規セッション作成中、URL同期をスキップ');
+        console.log('⏳ New session being created, skipping URL sync');
       }
-      return; // Return here in both cases
+      return; // Return in both cases during session creation
+    }
+
+    /**
+     * WHY: Skip processing if URL hasn't actually changed
+     *
+     * This is the key fix for the race condition. Without this check:
+     * - useEffect would fire multiple times with the same urlSessionId
+     * - Each fire would call switchSession/selectSession, causing unnecessary API calls
+     * - More critically, it would fire with STALE values before URL update completes
+     *
+     * Exception: On initial render (isInitialRender=true), we always process
+     * to ensure the initial page load works correctly.
+     */
+    if (!isInitialRender && !urlActuallyChanged) {
+      return;
     }
 
     if (!urlSessionId) {
-      // For /chat: prepare new chat
-      if (activeSessionId) {
-        console.log('🗑️ 新規チャット準備のためアクティブセッションをクリア');
+      /**
+       * WHY: Only clear session when URL actually changed to /chat
+       *
+       * Before this fix, when navigating from /chat/:sessionId to /chat:
+       * 1. useEffect fired with old sessionId (race condition)
+       * 2. Then fired again with urlSessionId = undefined
+       * 3. But by then, chatStore was already in wrong state
+       *
+       * Now we only clear when:
+       * - URL genuinely changed (urlActuallyChanged = true)
+       * - Previous URL had a sessionId (previousUrlSessionId exists)
+       * - Current URL has no sessionId (urlSessionId is undefined)
+       *
+       * This ensures clearActiveSession is called exactly once per navigation to /chat.
+       */
+      if (urlActuallyChanged && previousUrlSessionId) {
+        console.log('🗑️ Clearing active session for new chat preparation');
         clearActiveSession();
       }
       return;
     }
 
-    // すでに同期済みの場合はスキップ
+    // Skip if already synced to this session
     if (urlSessionId === activeSessionId) {
       return;
     }
 
-    // URL に sessionId がある場合は即座に events を取得（sessions 一覧の完了を待たない）
-    // これにより、リロード時のラグを解消し、sessions API と events API が並列実行される
-    console.log(`📥 セッション選択（並列取得）: ${urlSessionId}`);
+    /**
+     * WHY: Parallel fetch of session events
+     *
+     * When URL has sessionId, fetch events immediately without waiting
+     * for session list API. This enables parallel execution:
+     * - sessions API (list) running in background
+     * - events API (specific session) running in parallel
+     *
+     * This reduces perceived latency on page reload/direct URL access.
+     */
+    console.log(`📥 Selecting session (parallel fetch): ${urlSessionId}`);
 
-    // chatStore のアクティブセッションを切り替え
+    // Switch active session in chatStore
     switchSession(urlSessionId);
 
-    // sessionStore でイベント取得
+    // Fetch events in sessionStore
     selectSession(urlSessionId);
   }, [
     urlSessionId,
@@ -85,19 +162,19 @@ export function useSessionSync(): UseSessionSyncReturn {
     finalizeNewSession,
   ]);
 
-  // セッション履歴を chatStore に復元
+  // Restore session history to chatStore
   useEffect(() => {
     if (urlSessionId && activeSessionId === urlSessionId && sessionEvents.length > 0) {
-      console.log(`📖 セッション履歴を ChatStore に復元: ${urlSessionId}`);
+      console.log(`📖 Restoring session history to ChatStore: ${urlSessionId}`);
       loadSessionHistory(urlSessionId, sessionEvents);
     }
   }, [urlSessionId, activeSessionId, sessionEvents, loadSessionHistory]);
 
-  // 新規セッション作成 + ナビゲーション
+  // Create new session + navigate
   const createAndNavigateToNewSession = useCallback(() => {
     const newSessionId = createNewSession();
     navigate(`/chat/${newSessionId}`, { replace: true });
-    // setTimeout削除 - useEffect内でURL同期完了後にfinalizeする
+    // Note: finalizeNewSession is called in useEffect when URL sync completes
     return newSessionId;
   }, [navigate, createNewSession]);
 
