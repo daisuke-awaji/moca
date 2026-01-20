@@ -228,6 +228,32 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
     }
   },
 
+  refreshAgents: async () => {
+    // バックグラウンドで更新（ローディング状態を設定しない）
+    // 既存のキャッシュデータを即時表示し、裏でAPIを呼び出して更新
+    try {
+      console.log('🔄 エージェント一覧をバックグラウンド更新中...');
+      const agents = await agentsApi.listAgents();
+
+      set((state) => {
+        // 選択中のAgentが存在するか確認し、存在しない場合は選択を維持
+        const selectedAgent = state.selectedAgent
+          ? agents.find((a) => a.agentId === state.selectedAgent?.agentId) || state.selectedAgent
+          : null;
+
+        return {
+          agents,
+          selectedAgent,
+        };
+      });
+
+      console.log(`✅ エージェント一覧更新完了: ${agents.length}件`);
+    } catch (error) {
+      // エラーは静かに処理（既存データを維持）
+      console.error('💥 エージェント一覧更新エラー:', error);
+    }
+  },
+
   clearError: () => {
     set({ error: null });
   },

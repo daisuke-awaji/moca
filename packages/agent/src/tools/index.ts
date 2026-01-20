@@ -10,6 +10,7 @@ export { novaCanvasTool } from './nova-canvas/index.js';
 export { imageToTextTool } from './image-to-text/index.js';
 export { novaReelTool } from './nova-reel/index.js';
 export { callAgentTool } from './call-agent.js';
+export { createAgentTool } from './create-agent.js';
 
 // ローカルツール配列のインポート
 import { executeCommandTool } from './execute-command.js';
@@ -23,6 +24,7 @@ import { novaCanvasTool } from './nova-canvas/index.js';
 import { imageToTextTool } from './image-to-text/index.js';
 import { novaReelTool } from './nova-reel/index.js';
 import { callAgentTool } from './call-agent.js';
+import { createAgentTool } from './create-agent.js';
 
 /**
  * Agent に内蔵されるローカルツール一覧
@@ -40,4 +42,5 @@ export const localTools = [
   imageToTextTool,
   novaReelTool,
   callAgentTool,
+  createAgentTool,
 ];

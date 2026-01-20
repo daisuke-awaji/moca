@@ -32,6 +32,7 @@ export const AgentSelectorModal: React.FC<AgentSelectorModalProps> = ({
     updateAgent,
     deleteAgent,
     toggleShare,
+    refreshAgents,
     isLoading,
     error,
   } = useAgentStore();
@@ -59,6 +60,9 @@ export const AgentSelectorModal: React.FC<AgentSelectorModalProps> = ({
   // Initialize when modal opens
   useEffect(() => {
     if (isOpen) {
+      // Refresh agents list from API
+      refreshAgents();
+
       requestAnimationFrame(() => {
         setMode('list');
         setEditingAgent(null);
@@ -67,7 +71,7 @@ export const AgentSelectorModal: React.FC<AgentSelectorModalProps> = ({
         setSearchQuery('');
       });
     }
-  }, [isOpen]);
+  }, [isOpen, refreshAgents]);
 
   // Close on outside click
   useEffect(() => {
