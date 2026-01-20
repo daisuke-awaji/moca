@@ -118,7 +118,7 @@ export const Message: React.FC<MessageProps> = ({ message }) => {
           // Code blocks without language specification
           return (
             <code
-              className="block whitespace-pre-wrap bg-[#fafafa] text-gray-800 dark:text-gray-200 p-4 rounded-lg text-sm overflow-x-auto font-mono"
+              className="block whitespace-pre-wrap bg-[#fafafa] text-gray-800 p-4 rounded-lg text-sm overflow-x-auto font-mono"
               {...props}
             >
               {children}
@@ -128,7 +128,7 @@ export const Message: React.FC<MessageProps> = ({ message }) => {
 
         // Inline code
         return (
-          <code className="bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-1 py-0.5 rounded text-sm" {...props}>
+          <code className="bg-gray-100 text-gray-800 px-1 py-0.5 rounded text-sm" {...props}>
             {children}
           </code>
         );
@@ -137,7 +137,7 @@ export const Message: React.FC<MessageProps> = ({ message }) => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       table: ({ children, ...props }: any) => (
         <div className="overflow-x-auto my-4">
-          <table className="min-w-full border-collapse border border-gray-300 dark:border-gray-600" {...props}>
+          <table className="min-w-full border-collapse border border-gray-300" {...props}>
             {children}
           </table>
         </div>
@@ -145,7 +145,7 @@ export const Message: React.FC<MessageProps> = ({ message }) => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       th: ({ children, ...props }: any) => (
         <th
-          className="border border-gray-300 dark:border-gray-600 px-4 py-2 bg-gray-50 dark:bg-gray-800 font-semibold text-left"
+          className="border border-gray-300 px-4 py-2 bg-gray-50 font-semibold text-left"
           {...props}
         >
           {children}
@@ -153,7 +153,7 @@ export const Message: React.FC<MessageProps> = ({ message }) => {
       ),
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       td: ({ children, ...props }: any) => (
-        <td className="border border-gray-300 dark:border-gray-600 px-4 py-2" {...props}>
+        <td className="border border-gray-300 px-4 py-2" {...props}>
           {children}
         </td>
       ),
@@ -161,7 +161,7 @@ export const Message: React.FC<MessageProps> = ({ message }) => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       blockquote: ({ children, ...props }: any) => (
         <blockquote
-          className="border-l-4 border-gray-300 dark:border-gray-600 pl-4 py-2 my-4 bg-gray-50 dark:bg-gray-800 italic"
+          className="border-l-4 border-gray-300 pl-4 py-2 my-4 bg-gray-50 italic"
           {...props}
         >
           {children}
@@ -267,7 +267,7 @@ export const Message: React.FC<MessageProps> = ({ message }) => {
                         <img
                           src={imageSrc}
                           alt={content.image.fileName || 'Attached image'}
-                          className="max-w-xs max-h-48 object-contain rounded-lg border border-gray-200 dark:border-gray-700"
+                          className="max-w-xs max-h-48 object-contain rounded-lg border border-gray-200"
                         />
                       </div>
                     ) : null;
@@ -275,7 +275,7 @@ export const Message: React.FC<MessageProps> = ({ message }) => {
 
                   default:
                     return (
-                      <div key={`unknown-${index}`} className="text-gray-500 dark:text-gray-400 dark:text-gray-500 text-sm">
+                      <div key={`unknown-${index}`} className="text-gray-500 text-sm">
                         {t('common.unsupportedContentType', { type: content.type })}
                       </div>
                     );

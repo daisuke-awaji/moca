@@ -81,8 +81,8 @@ export const ToolSelector: React.FC<ToolSelectorProps> = ({
     <div className="space-y-4">
       {/* ヘッダー */}
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">{t('tool.selector.availableTools')}</h3>
-        <span className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">
+        <h3 className="text-sm font-medium text-gray-900">{t('tool.selector.availableTools')}</h3>
+        <span className="text-xs text-gray-500">
           {t('tool.selector.selectedCount', {
             selected: selectedTools.length,
             total: tools.length,
@@ -92,19 +92,19 @@ export const ToolSelector: React.FC<ToolSelectorProps> = ({
 
       {/* 検索ボックス */}
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 w-4 h-4" />
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
         <input
           type="text"
           placeholder={t('tool.selector.searchPlaceholder')}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           disabled={disabled || isLoading}
-          className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 dark:bg-gray-700 disabled:cursor-not-allowed"
+          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
         />
         {searchQuery && (
           <button
             onClick={() => setSearchQuery('')}
-            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-400"
+            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
           >
             <X className="w-4 h-4" />
           </button>
@@ -116,7 +116,7 @@ export const ToolSelector: React.FC<ToolSelectorProps> = ({
         <button
           onClick={toggleAllTools}
           disabled={disabled || isLoading}
-          className="text-sm text-blue-600 hover:text-blue-800 disabled:text-gray-400 dark:text-gray-500 disabled:cursor-not-allowed"
+          className="text-sm text-blue-600 hover:text-blue-800 disabled:text-gray-400 disabled:cursor-not-allowed"
         >
           {allFilteredSelected
             ? t('tool.selector.deselectAllVisible')
@@ -137,9 +137,9 @@ export const ToolSelector: React.FC<ToolSelectorProps> = ({
 
       {/* ツール一覧 */}
       {!isLoading && !error && (
-        <div className="space-y-2 max-h-[30vh] overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg">
+        <div className="space-y-2 max-h-[30vh] overflow-y-auto border border-gray-200 rounded-lg">
           {filteredTools.length === 0 ? (
-            <div className="p-4 text-center text-gray-500 dark:text-gray-400 dark:text-gray-500">
+            <div className="p-4 text-center text-gray-500">
               {searchQuery ? t('tool.selector.noSearchResults') : t('tool.selector.noTools')}
             </div>
           ) : (
@@ -166,9 +166,9 @@ export const ToolSelector: React.FC<ToolSelectorProps> = ({
 
                   {/* ツール情報 */}
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{tool.name}</div>
+                    <div className="text-sm font-medium text-gray-900">{tool.name}</div>
                     {tool.description && (
-                      <div className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">{tool.description}</div>
+                      <div className="text-xs text-gray-500 mt-1">{tool.description}</div>
                     )}
                   </div>
                 </div>

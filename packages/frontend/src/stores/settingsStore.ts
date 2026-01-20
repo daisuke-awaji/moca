@@ -15,14 +15,6 @@ import { DEFAULT_MODEL_ID } from '../config/models';
 export type SendBehavior = 'enter' | 'cmdEnter';
 
 /**
- * テーマ設定値
- * - 'light': ライトモード
- * - 'dark': ダークモード
- * - 'system': システム設定に連動
- */
-export type Theme = 'light' | 'dark' | 'system';
-
-/**
  * Settings Store の状態
  */
 interface SettingsState {
@@ -32,13 +24,9 @@ interface SettingsState {
   // 選択中のモデルID
   selectedModelId: string;
 
-  // テーマ設定
-  theme: Theme;
-
   // アクション
   setSendBehavior: (behavior: SendBehavior) => void;
   setSelectedModelId: (modelId: string) => void;
-  setTheme: (theme: Theme) => void;
 }
 
 /**
@@ -52,9 +40,6 @@ export const useSettingsStore = create<SettingsState>()(
 
       // 初期状態: デフォルトモデル
       selectedModelId: DEFAULT_MODEL_ID,
-
-      // 初期状態: システム設定に連動
-      theme: 'system',
 
       /**
        * Enter キーの動作設定を変更
@@ -70,14 +55,6 @@ export const useSettingsStore = create<SettingsState>()(
       setSelectedModelId: (modelId: string) => {
         set({ selectedModelId: modelId });
         console.log(`[SettingsStore] Model changed to: ${modelId}`);
-      },
-
-      /**
-       * テーマ設定を変更
-       */
-      setTheme: (theme: Theme) => {
-        set({ theme });
-        console.log(`[SettingsStore] Theme changed to: ${theme}`);
       },
     }),
     {

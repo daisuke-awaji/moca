@@ -314,7 +314,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
 
   return (
     <div
-      className="sticky bottom-0 left-0 right-0 z-30 bg-white dark:bg-gray-900 p-4"
+      className="sticky bottom-0 left-0 right-0 z-30 bg-white p-4"
       style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
     >
       {/* Storage path display */}
@@ -350,7 +350,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
             onKeyDown={handleKeyDown}
             onPaste={handlePaste}
             placeholder={t('chat.messageInputPlaceholder')}
-            className="w-full px-4 py-3 pr-12 pb-12 border border-gray-200 dark:border-gray-700 rounded-2xl focus:outline-none focus:ring-1 focus:ring-gray-200 focus:border-transparent resize-none min-h-[72px] max-h-[200px] bg-white dark:bg-gray-900"
+            className="w-full px-4 py-3 pr-12 pb-12 border border-gray-200 rounded-2xl focus:outline-none focus:ring-1 focus:ring-gray-200 focus:border-transparent resize-none min-h-[72px] max-h-[200px] bg-white"
             rows={2}
             style={{ height: 'auto' }}
           />

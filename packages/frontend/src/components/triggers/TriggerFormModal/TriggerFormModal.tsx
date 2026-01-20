@@ -279,7 +279,7 @@ export function TriggerFormModal({ isOpen, onClose, trigger, onSave }: TriggerFo
             {/* Basic Settings Tab */}
             {activeTab === 'basic' && (
               <div className="space-y-6 max-w-5xl mx-auto">
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-6">
+                <h2 className="text-lg font-semibold text-gray-900 mb-6">
                   {t('triggers.tabs.basic')}
                 </h2>
 
@@ -319,7 +319,7 @@ export function TriggerFormModal({ isOpen, onClose, trigger, onSave }: TriggerFo
             {/* Trigger Configuration Tab */}
             {activeTab === 'trigger' && (
               <div className="space-y-6 max-w-5xl mx-auto">
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-6">
+                <h2 className="text-lg font-semibold text-gray-900 mb-6">
                   {t('triggers.tabs.trigger')}
                 </h2>
 
@@ -364,7 +364,7 @@ export function TriggerFormModal({ isOpen, onClose, trigger, onSave }: TriggerFo
             type="button"
             onClick={handleCancel}
             disabled={isSaving}
-            className="px-5 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-600 bg-gray-100 dark:bg-gray-700 rounded-xl hover:bg-gray-200 dark:bg-gray-600 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 shadow-sm"
+            className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-xl hover:bg-gray-200 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 shadow-sm"
           >
             {t('triggers.form.cancel')}
           </button>

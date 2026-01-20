@@ -102,13 +102,13 @@ export function AgentDirectoryPage() {
       {/* メインコンテンツ */}
       <div className="flex-1 overflow-y-auto p-6">
         {/* Description文 */}
-        <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 mb-6">{t('agentDirectory.description')}</p>
+        <p className="text-sm text-gray-600 mb-6">{t('agentDirectory.description')}</p>
 
         {/* 検索セクション */}
-        <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-6">
+        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
           <div className="flex items-center gap-2 mb-3">
-            <Search className="w-4 h-4 text-gray-600 dark:text-gray-400 dark:text-gray-500" />
-            <h2 className="text-sm font-medium text-gray-900 dark:text-gray-100">{t('agentDirectory.searchTitle')}</h2>
+            <Search className="w-4 h-4 text-gray-600" />
+            <h2 className="text-sm font-medium text-gray-900">{t('agentDirectory.searchTitle')}</h2>
           </div>
 
           <div className="flex gap-3">
@@ -119,12 +119,12 @@ export function AgentDirectoryPage() {
                 onChange={(e) => setLocalSearchQuery(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder={t('agentDirectory.searchPlaceholder')}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
               />
               {localSearchQuery && (
                 <button
                   onClick={handleClearSearch}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-400"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                 >
                   <XCircle className="w-4 h-4" />
                 </button>
@@ -157,11 +157,11 @@ export function AgentDirectoryPage() {
         {/* エージェント一覧 */}
         {!isLoading && filteredAgents.length === 0 && (
           <div className="text-center py-20">
-            <Bot className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-6" />
-            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
+            <Bot className="w-16 h-16 text-gray-300 mx-auto mb-6" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
               {t('agentDirectory.noAgentsFound')}
             </h3>
-            <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500">
+            <p className="text-gray-500">
               {localSearchQuery
                 ? t('agentDirectory.noAgentsDescription')
                 : t('agentDirectory.noAgentsEmpty')}
@@ -179,27 +179,27 @@ export function AgentDirectoryPage() {
                   <div
                     key={`${agent.createdBy}-${agent.agentId}`}
                     onClick={() => handleAgentClick(agent)}
-                    className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-4 hover:border-gray-300 dark:border-gray-600 hover:shadow-md transition-all cursor-pointer"
+                    className="bg-white rounded-xl border border-gray-200 p-4 hover:border-gray-300 hover:shadow-md transition-all cursor-pointer"
                   >
                     {/* アイコンと名前 */}
                     <div className="flex items-start gap-3 mb-3">
-                      <div className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center flex-shrink-0">
-                        <AgentIcon className="w-5 h-5 text-gray-600 dark:text-gray-400 dark:text-gray-500" />
+                      <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+                        <AgentIcon className="w-5 h-5 text-gray-600" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-medium text-gray-900 dark:text-gray-100 truncate">
+                        <h3 className="font-medium text-gray-900 truncate">
                           {translateIfKey(agent.name, t)}
                         </h3>
                       </div>
                     </div>
 
                     {/* Description */}
-                    <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 line-clamp-2 mb-3">
+                    <p className="text-sm text-gray-600 line-clamp-2 mb-3">
                       {translateIfKey(agent.description, t)}
                     </p>
 
                     {/* 作成者 */}
-                    <div className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">
+                    <div className="text-xs text-gray-500">
                       {t('agentDirectory.createdBy')}:{' '}
                       <span className="font-medium">{agent.createdBy}</span>
                     </div>
@@ -210,11 +210,11 @@ export function AgentDirectoryPage() {
 
             {/* ページネーション: もっと読み込むボタン */}
             {hasMore && (
-              <div className="flex justify-center mt-8 pt-6 border-t border-gray-100 dark:border-gray-700">
+              <div className="flex justify-center mt-8 pt-6 border-t border-gray-100">
                 <button
                   onClick={loadMoreAgents}
                   disabled={isLoadingMore}
-                  className="flex items-center gap-2 px-6 py-3 bg-gray-50 dark:bg-gray-8000 text-white text-sm font-medium rounded-lg hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="flex items-center gap-2 px-6 py-3 bg-gray-500 text-white text-sm font-medium rounded-lg hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   {isLoadingMore ? (
                     <>
@@ -229,7 +229,7 @@ export function AgentDirectoryPage() {
             )}
 
             {/* 表示件数情報 */}
-            <p className="text-center text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-4">
+            <p className="text-center text-xs text-gray-500 mt-4">
               {filteredAgents.length}
               {t('agentDirectory.itemsDisplayed')}{' '}
               {hasMore ? `/ ${t('agentDirectory.hasMore')}` : `/ ${t('agentDirectory.allLoaded')}`}

@@ -128,7 +128,7 @@ function SessionItem({ session, isActive, isNew = false, onDeleteRequest }: Sess
       {isMenuOpen && (
         <div
           ref={menuRef}
-          className="absolute right-0 top-full mt-1 bg-white dark:bg-gray-900 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-50 min-w-[120px]"
+          className="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50 min-w-[120px]"
         >
           <button
             onClick={handleDeleteClick}
@@ -328,10 +328,10 @@ export function SessionSidebar() {
 
   return (
     <div
-      className={`h-full bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 flex flex-col ${shouldShowExpanded ? 'w-80' : 'w-16'}`}
+      className={`h-full bg-white border-r border-gray-200 flex flex-col ${shouldShowExpanded ? 'w-80' : 'w-16'}`}
     >
       {/* Header */}
-      <div className={`p-4 ${shouldShowExpanded ? 'border-b border-gray-200 dark:border-gray-700' : ''} bg-white dark:bg-gray-900`}>
+      <div className={`p-4 ${shouldShowExpanded ? 'border-b border-gray-200' : ''} bg-white`}>
         <div
           className={`flex items-center mb-3 ${shouldShowExpanded ? 'justify-between' : 'justify-center'}`}
         >
@@ -342,8 +342,8 @@ export function SessionSidebar() {
                 className="flex items-center gap-2 rounded-lg p-2 pb-1 pt-1 transition-colors group no-underline"
                 title="Return to home page"
               >
-                <Donut className="w-5 h-5 text-gray-700 dark:text-gray-300 dark:text-gray-600 group-hover:text-amber-600 transition-colors" />
-                <span className="text-lg font-semibold text-gray-900 dark:text-gray-100 group-hover:text-amber-700 transition-colors">
+                <Donut className="w-5 h-5 text-gray-700 group-hover:text-amber-600 transition-colors" />
+                <span className="text-lg font-semibold text-gray-900 group-hover:text-amber-700 transition-colors">
                   {t('auth.welcomeTitle')}
                 </span>
               </Link>
@@ -351,7 +351,7 @@ export function SessionSidebar() {
               {/* × button on mobile, PanelRight button on desktop */}
               <button
                 onClick={handleToggleSidebar}
-                className="p-2 text-gray-600 dark:text-gray-400 dark:text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-700 rounded-lg transition-colors"
+                className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
                 title={isMobileView ? 'Close sidebar' : 'Close sidebar'}
               >
                 {isMobileView ? <X className="w-5 h-5" /> : <PanelRight className="w-5 h-5" />}
@@ -360,7 +360,7 @@ export function SessionSidebar() {
           ) : (
             <button
               onClick={handleToggleSidebar}
-              className="p-2 text-gray-600 dark:text-gray-400 dark:text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-700 rounded-lg transition-colors group"
+              className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors group"
               title="Open sidebar"
             >
               <Donut className="w-5 h-5 text-amber-600 group-hover:hidden" />
@@ -474,9 +474,9 @@ export function SessionSidebar() {
           )}
 
           {!isLoadingSessions && sessions.length === 0 && !sessionsError && (
-            <div className="p-4 text-center text-gray-500 dark:text-gray-400 dark:text-gray-500">
+            <div className="p-4 text-center text-gray-500">
               <svg
-                className="w-12 h-12 mx-auto mb-3 text-gray-300 dark:text-gray-600"
+                className="w-12 h-12 mx-auto mb-3 text-gray-300"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -489,7 +489,7 @@ export function SessionSidebar() {
                 />
               </svg>
               <p className="text-sm">{t('chat.noConversations')}</p>
-              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{t('chat.startNewChat')}</p>
+              <p className="text-xs text-gray-400 mt-1">{t('chat.startNewChat')}</p>
             </div>
           )}
 
@@ -532,11 +532,11 @@ export function SessionSidebar() {
                 shouldShowExpanded ? 'w-full text-left' : 'w-auto'
               }`}
             >
-              <div className="w-8 h-8 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center">
-                <User className="w-4 h-4 text-gray-600 dark:text-gray-400 dark:text-gray-500" />
+              <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+                <User className="w-4 h-4 text-gray-600" />
               </div>
               {shouldShowExpanded && (
-                <span className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{user.username}</span>
+                <span className="text-sm font-medium text-gray-900 truncate">{user.username}</span>
               )}
             </button>
           </Tooltip>
@@ -544,7 +544,7 @@ export function SessionSidebar() {
           {/* Dropdown menu */}
           {isUserDropdownOpen && (
             <div
-              className={`absolute bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 py-2 z-50 ${
+              className={`absolute bg-white rounded-2xl shadow-lg border border-gray-200 py-2 z-50 ${
                 shouldShowExpanded
                   ? 'bottom-full left-0 right-0 mb-2'
                   : 'bottom-full left-0 mb-2 w-48'
@@ -552,17 +552,17 @@ export function SessionSidebar() {
             >
               {/* User info - Display only when expanded */}
               {shouldShowExpanded && (
-                <div className="px-4 py-2 border-b border-gray-100 dark:border-gray-700">
-                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{user.username}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">{t('auth.authenticated')}</p>
+                <div className="px-4 py-2 border-b border-gray-100">
+                  <p className="text-sm font-medium text-gray-900">{user.username}</p>
+                  <p className="text-xs text-gray-500">{t('auth.authenticated')}</p>
                 </div>
               )}
 
               {/* Also show username when collapsed */}
               {!shouldShowExpanded && (
-                <div className="px-4 py-2 border-b border-gray-100 dark:border-gray-700">
-                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{user.username}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">{t('auth.authenticated')}</p>
+                <div className="px-4 py-2 border-b border-gray-100">
+                  <p className="text-sm font-medium text-gray-900">{user.username}</p>
+                  <p className="text-xs text-gray-500">{t('auth.authenticated')}</p>
                 </div>
               )}
 
@@ -570,7 +570,7 @@ export function SessionSidebar() {
               <Link
                 to="/settings"
                 onClick={() => setIsUserDropdownOpen(false)}
-                className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 dark:text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-800 flex items-center gap-2 no-underline"
+                className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 no-underline"
               >
                 <Settings className="w-4 h-4" />
                 {t('navigation.settings')}
@@ -579,7 +579,7 @@ export function SessionSidebar() {
               {/* Logout */}
               <button
                 onClick={handleLogout}
-                className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 dark:text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-800 flex items-center gap-2"
+                className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
               >
                 <LogOut className="w-4 h-4" />
                 {t('auth.signOut')}

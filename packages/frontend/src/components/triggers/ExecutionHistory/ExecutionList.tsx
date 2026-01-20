@@ -62,7 +62,7 @@ export function ExecutionList({ executions, isLoading, hasMore, onLoadMore }: Ex
         };
       default:
         return {
-          icon: <Clock className="w-5 h-5 text-gray-600 dark:text-gray-400 dark:text-gray-500" />,
+          icon: <Clock className="w-5 h-5 text-gray-600" />,
           label: status || 'Unknown',
           textColor: 'text-gray-700',
         };
@@ -80,7 +80,7 @@ export function ExecutionList({ executions, isLoading, hasMore, onLoadMore }: Ex
   if (executions.length === 0) {
     return (
       <div className="text-center py-12">
-        <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500">{t('triggers.history.noHistory')}</p>
+        <p className="text-gray-500">{t('triggers.history.noHistory')}</p>
       </div>
     );
   }
@@ -88,28 +88,28 @@ export function ExecutionList({ executions, isLoading, hasMore, onLoadMore }: Ex
   return (
     <div className="space-y-4">
       {/* Executions Table */}
-      <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+      <div className="border border-gray-200 rounded-lg overflow-hidden">
         <table className="w-full">
-          <thead className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+          <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 {t('triggers.history.status')}
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 {t('triggers.history.startedAt')}
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 {t('triggers.history.completedAt')}
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 {t('triggers.history.duration')}
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 {t('triggers.history.executionId')}
               </th>
             </tr>
           </thead>
-          <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200">
+          <tbody className="bg-white divide-y divide-gray-200">
             {executions.map((execution) => {
               const statusDisplay = getStatusDisplay(execution.status);
               const duration =
@@ -118,7 +118,7 @@ export function ExecutionList({ executions, isLoading, hasMore, onLoadMore }: Ex
                   : execution.duration;
 
               return (
-                <tr key={execution.executionId} className="hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-800 transition-colors">
+                <tr key={execution.executionId} className="hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center gap-2">
                       {statusDisplay.icon}
@@ -128,18 +128,18 @@ export function ExecutionList({ executions, isLoading, hasMore, onLoadMore }: Ex
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900 dark:text-gray-100">{formatDate(execution.startTime)}</div>
+                    <div className="text-sm text-gray-900">{formatDate(execution.startTime)}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">
+                    <div className="text-sm text-gray-500">
                       {execution.endTime ? formatDate(execution.endTime) : '-'}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{formatDuration(duration)}</div>
+                    <div className="text-sm text-gray-500">{formatDuration(duration)}</div>
                   </td>
                   <td className="px-6 py-4">
-                    <div className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 font-mono truncate max-w-xs">
+                    <div className="text-xs text-gray-500 font-mono truncate max-w-xs">
                       {execution.executionId}
                     </div>
                   </td>
@@ -157,7 +157,7 @@ export function ExecutionList({ executions, isLoading, hasMore, onLoadMore }: Ex
             type="button"
             onClick={onLoadMore}
             disabled={isLoading}
-            className="flex items-center gap-2 px-6 py-3 bg-gray-50 dark:bg-gray-8000 text-white text-sm font-medium rounded-lg hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="flex items-center gap-2 px-6 py-3 bg-gray-500 text-white text-sm font-medium rounded-lg hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {isLoading ? (
               <>

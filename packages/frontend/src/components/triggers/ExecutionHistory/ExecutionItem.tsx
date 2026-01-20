@@ -65,7 +65,7 @@ export function ExecutionItem({ execution }: ExecutionItemProps) {
         };
       default:
         return {
-          icon: <Clock className="w-5 h-5 text-gray-600 dark:text-gray-400 dark:text-gray-500" />,
+          icon: <Clock className="w-5 h-5 text-gray-600" />,
           bgColor: 'bg-gray-50',
           borderColor: 'border-gray-200',
           textColor: 'text-gray-700',
@@ -93,31 +93,31 @@ export function ExecutionItem({ execution }: ExecutionItemProps) {
               <span className={`text-sm font-medium ${statusDisplay.textColor}`}>
                 {statusDisplay.label}
               </span>
-              <span className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">{formatDuration(execution.duration)}</span>
+              <span className="text-xs text-gray-500">{formatDuration(execution.duration)}</span>
             </div>
-            <p className="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-500 mt-1">
+            <p className="text-xs text-gray-600 mt-1">
               {t('triggers.history.executedAt')}: {formatDate(execution.startTime)}
             </p>
           </div>
         </div>
         {isExpanded ? (
-          <ChevronUp className="w-5 h-5 text-gray-400 dark:text-gray-500" />
+          <ChevronUp className="w-5 h-5 text-gray-400" />
         ) : (
-          <ChevronDown className="w-5 h-5 text-gray-400 dark:text-gray-500" />
+          <ChevronDown className="w-5 h-5 text-gray-400" />
         )}
       </button>
 
       {/* Details (expandable) */}
       {isExpanded && (
-        <div className="px-4 pb-4 space-y-3 border-t bg-white dark:bg-gray-900">
+        <div className="px-4 pb-4 space-y-3 border-t bg-white">
           {/* Input */}
           {execution.input && (
             <div>
-              <p className="text-xs font-medium text-gray-700 dark:text-gray-300 dark:text-gray-600 mb-1">
+              <p className="text-xs font-medium text-gray-700 mb-1">
                 {t('triggers.history.input')}
               </p>
-              <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-md">
-                <pre className="text-xs text-gray-800 dark:text-gray-200 whitespace-pre-wrap font-mono">
+              <div className="p-3 bg-gray-50 rounded-md">
+                <pre className="text-xs text-gray-800 whitespace-pre-wrap font-mono">
                   {execution.input}
                 </pre>
               </div>
@@ -127,11 +127,11 @@ export function ExecutionItem({ execution }: ExecutionItemProps) {
           {/* Output (for success) */}
           {execution.status === 'success' && execution.output && (
             <div>
-              <p className="text-xs font-medium text-gray-700 dark:text-gray-300 dark:text-gray-600 mb-1">
+              <p className="text-xs font-medium text-gray-700 mb-1">
                 {t('triggers.history.output')}
               </p>
-              <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-md max-h-60 overflow-y-auto">
-                <pre className="text-xs text-gray-800 dark:text-gray-200 whitespace-pre-wrap font-mono">
+              <div className="p-3 bg-gray-50 rounded-md max-h-60 overflow-y-auto">
+                <pre className="text-xs text-gray-800 whitespace-pre-wrap font-mono">
                   {execution.output}
                 </pre>
               </div>
@@ -152,7 +152,7 @@ export function ExecutionItem({ execution }: ExecutionItemProps) {
 
           {/* Metadata */}
           <div className="pt-2 border-t">
-            <div className="grid grid-cols-2 gap-2 text-xs text-gray-600 dark:text-gray-400 dark:text-gray-500">
+            <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
               <div>
                 <span className="font-medium">{t('triggers.history.executionId')}:</span>
                 <br />

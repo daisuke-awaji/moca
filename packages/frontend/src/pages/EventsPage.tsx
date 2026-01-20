@@ -47,7 +47,7 @@ export function EventsPage() {
     setMobileHeaderAction(
       <button
         onClick={handleCreate}
-        className="p-2 text-gray-600 dark:text-gray-400 dark:text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-700 rounded-lg transition-colors flex-shrink-0"
+        className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
         aria-label={t('triggers.create')}
       >
         <CalendarPlus className="w-5 h-5" />
@@ -137,7 +137,7 @@ export function EventsPage() {
             {/* Desktop: Icon + Text */}
             <button
               onClick={handleCreate}
-              className="hidden md:flex items-center gap-2 px-4 py-2 text-gray-700 dark:text-gray-300 dark:text-gray-600 font-medium rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-700 transition-colors"
+              className="hidden md:flex items-center gap-2 px-4 py-2 text-gray-700 font-medium rounded-lg hover:bg-gray-100 transition-colors"
             >
               <CalendarPlus className="w-5 h-5" />
               {t('triggers.create')}
@@ -145,7 +145,7 @@ export function EventsPage() {
             {/* Mobile: Icon Only - not shown in PageHeader (handled by MainLayout) */}
             <button
               onClick={handleCreate}
-              className="md:hidden p-2 text-gray-600 dark:text-gray-400 dark:text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-700 rounded-lg transition-colors"
+              className="md:hidden p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
               aria-label={t('triggers.create')}
             >
               <CalendarPlus className="w-5 h-5" />
@@ -158,7 +158,7 @@ export function EventsPage() {
       <div className="flex-1 overflow-y-auto p-6">
         {/* Description Section */}
         <div className="mb-6">
-          <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 leading-relaxed">{t('triggers.pageDescription')}</p>
+          <p className="text-sm text-gray-600 leading-relaxed">{t('triggers.pageDescription')}</p>
         </div>
 
         <TriggerList

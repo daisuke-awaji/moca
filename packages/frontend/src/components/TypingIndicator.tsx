@@ -5,8 +5,8 @@ import React from 'react';
  */
 export const TypingIndicator: React.FC = () => {
   return (
-    <div className="text-gray-500 dark:text-gray-400 dark:text-gray-500 italic pt-2">
-      <div className="flex items-center text-gray-500 dark:text-gray-400 dark:text-gray-500">
+    <div className="text-gray-500 italic pt-2">
+      <div className="flex items-center text-gray-500">
         <div className="flex space-x-1">
           <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
           <div

@@ -51,25 +51,25 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({ sessionId, onCreat
     <div className="chat-container">
       {/* ヘッダー - デスクトップ時のみ表示 */}
       {!isMobileView && (
-        <header className="flex items-center justify-between p-4 bg-white dark:bg-gray-900">
+        <header className="flex items-center justify-between p-4 bg-white">
           <div className="flex items-center">
             {isAgentLoading ? (
               <div className="flex items-center space-x-3 p-2">
-                <div className="w-6 h-6 bg-gray-200 dark:bg-gray-600 rounded animate-pulse" />
-                <div className="h-6 bg-gray-200 dark:bg-gray-600 rounded animate-pulse w-32" />
+                <div className="w-6 h-6 bg-gray-200 rounded animate-pulse" />
+                <div className="h-6 bg-gray-200 rounded animate-pulse w-32" />
               </div>
             ) : (
               <button
                 onClick={() => setIsAgentModalOpen(true)}
-                className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-800 transition-colors group"
+                className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-50 transition-colors group"
               >
                 {(() => {
                   const AgentIcon = selectedAgent?.icon
                     ? (icons[selectedAgent.icon as keyof typeof icons] as LucideIcon) || Bot
                     : Bot;
-                  return <AgentIcon className="w-6 h-6 text-gray-700 dark:text-gray-300 dark:text-gray-600" />;
+                  return <AgentIcon className="w-6 h-6 text-gray-700" />;
                 })()}
-                <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                <h1 className="text-lg font-semibold text-gray-900">
                   {selectedAgent ? translateIfKey(selectedAgent.name, t) : '汎用アシスタント'}
                 </h1>
               </button>

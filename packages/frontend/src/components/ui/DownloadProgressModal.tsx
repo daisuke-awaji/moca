@@ -38,13 +38,13 @@ export const DownloadProgressModal: React.FC<DownloadProgressModalProps> = ({
     <Modal isOpen={isOpen} onClose={canClose ? onClose : () => {}}>
       <div className="w-full max-w-md min-w-[400px]">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div className="flex items-center gap-3">
             {status === 'downloading' && <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />}
             {status === 'success' && <CheckCircle className="w-5 h-5 text-green-600" />}
             {status === 'error' && <XCircle className="w-5 h-5 text-red-600" />}
-            {status === 'cancelled' && <XCircle className="w-5 h-5 text-gray-600 dark:text-gray-400 dark:text-gray-500" />}
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+            {status === 'cancelled' && <XCircle className="w-5 h-5 text-gray-600" />}
+            <h2 className="text-xl font-semibold text-gray-900">
               {status === 'downloading' && t('storage.downloadProgress.downloading')}
               {status === 'success' && t('storage.downloadProgress.success')}
               {status === 'error' && t('storage.downloadProgress.error')}
@@ -54,7 +54,7 @@ export const DownloadProgressModal: React.FC<DownloadProgressModalProps> = ({
           {canClose && (
             <button
               onClick={onClose}
-              className="p-2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-700 rounded-lg transition-colors"
+              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
               aria-label={t('common.close')}
             >
               <X className="w-5 h-5" />
@@ -67,13 +67,13 @@ export const DownloadProgressModal: React.FC<DownloadProgressModalProps> = ({
           {/* Progress Bar */}
           {(status === 'downloading' || status === 'success') && (
             <div className="space-y-2">
-              <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500">
+              <div className="flex justify-between text-sm text-gray-600">
                 <span>
                   {progress.current} / {progress.total} {t('storage.downloadProgress.files')}
                 </span>
                 <span>{progress.percentage}%</span>
               </div>
-              <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2.5 overflow-hidden">
+              <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
                 <div
                   className={`h-full rounded-full transition-all duration-300 ${
                     status === 'success' ? 'bg-green-600' : 'bg-blue-600'
@@ -87,9 +87,9 @@ export const DownloadProgressModal: React.FC<DownloadProgressModalProps> = ({
           {/* Current File */}
           {status === 'downloading' && (
             <div className="space-y-1 min-h-[52px]">
-              <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t('storage.downloadProgress.currentFile')}</p>
+              <p className="text-sm text-gray-500">{t('storage.downloadProgress.currentFile')}</p>
               <p
-                className="text-sm text-gray-900 dark:text-gray-100 font-mono truncate max-w-full overflow-hidden"
+                className="text-sm text-gray-900 font-mono truncate max-w-full overflow-hidden"
                 title={progress.currentFile}
               >
                 {progress.currentFile}
@@ -99,7 +99,7 @@ export const DownloadProgressModal: React.FC<DownloadProgressModalProps> = ({
 
           {/* Success Message */}
           {status === 'success' && (
-            <div className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500">
+            <div className="text-sm text-gray-600">
               <p>{t('storage.downloadProgress.successMessage')}</p>
             </div>
           )}
@@ -113,18 +113,18 @@ export const DownloadProgressModal: React.FC<DownloadProgressModalProps> = ({
 
           {/* Cancelled Message */}
           {status === 'cancelled' && (
-            <div className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500">
+            <div className="text-sm text-gray-600">
               <p>{t('storage.downloadProgress.cancelledMessage')}</p>
             </div>
           )}
         </div>
 
         {/* Footer */}
-        <div className="flex justify-end gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
+        <div className="flex justify-end gap-3 p-6 border-t border-gray-200">
           {status === 'downloading' && onCancel && (
             <button
               onClick={onCancel}
-              className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-600 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-800 transition-colors"
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
             >
               {t('common.cancel')}
             </button>

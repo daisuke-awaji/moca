@@ -132,7 +132,7 @@ export const ConfirmSignUpForm: React.FC<ConfirmSignUpFormProps> = ({
           <h2 className="text-3xl font-bold text-amber-900 mb-2">
             {t('auth.welcomeTitle')} - {t('auth.emailVerification')}
           </h2>
-          <p className="text-gray-600 dark:text-gray-400 dark:text-gray-500">
+          <p className="text-gray-600">
             <strong>{username}</strong> {t('auth.enterCodeSentTo')}
           </p>
         </div>
@@ -140,7 +140,7 @@ export const ConfirmSignUpForm: React.FC<ConfirmSignUpFormProps> = ({
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4">
             <div>
-              <label htmlFor="code" className="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-600 mb-2">
+              <label htmlFor="code" className="block text-sm font-medium text-gray-700 mb-2">
                 {t('auth.verificationCodeLabel')} <span className="text-red-500">*</span>
               </label>
               <input
@@ -161,7 +161,7 @@ export const ConfirmSignUpForm: React.FC<ConfirmSignUpFormProps> = ({
               {validationErrors.code && (
                 <p className="mt-2 text-sm text-red-600">{validationErrors.code}</p>
               )}
-              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">{t('auth.verificationCodeDescription')}</p>
+              <p className="mt-1 text-xs text-gray-500">{t('auth.verificationCodeDescription')}</p>
             </div>
           </div>
 
@@ -241,7 +241,7 @@ export const ConfirmSignUpForm: React.FC<ConfirmSignUpFormProps> = ({
               type="button"
               onClick={handleResendCode}
               disabled={isLoading}
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-2xl text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-600 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="w-full px-4 py-2 border border-gray-300 rounded-2xl text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {t('auth.resendCode')}
             </button>
@@ -252,11 +252,11 @@ export const ConfirmSignUpForm: React.FC<ConfirmSignUpFormProps> = ({
           <button
             type="button"
             onClick={onBack}
-            className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:text-gray-600 transition-colors"
+            className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
           >
             {t('common.backArrow')} {t('auth.backToSignUp')}
           </button>
-          <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500">
+          <p className="text-sm text-gray-600">
             {t('auth.hasAccount')}{' '}
             <button
               type="button"

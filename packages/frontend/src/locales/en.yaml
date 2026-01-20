@@ -447,7 +447,6 @@ settings:
   languageEn: English
   themeLight: Light
   themeDark: Dark
-  themeSystem: System
   themeAuto: Auto
   advanced: Advanced Settings
   enterBehaviorDescription: 'When typing a message, pressing '

@@ -78,7 +78,7 @@ export const Modal: React.FC<ModalProps> = ({
         <div className="fixed inset-0" onClick={closeOnOverlayClick ? onClose : undefined} />
         <div
           className={cn(
-            'bg-white dark:bg-gray-800 shadow-2xl flex flex-col overflow-hidden relative',
+            'bg-white shadow-2xl flex flex-col overflow-hidden relative',
             borderRadius,
             sizeClass,
             heightClass,

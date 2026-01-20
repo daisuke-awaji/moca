@@ -49,15 +49,15 @@ export function CronPreview({ expression, timezone, isValid }: CronPreviewProps)
 
       {/* Next execution times */}
       {nextExecutions.length > 0 && (
-        <div className="p-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+        <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
           <div className="flex items-center gap-2 mb-3">
-            <Clock className="w-4 h-4 text-gray-600 dark:text-gray-400 dark:text-gray-500" />
-            <p className="text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-600">{t('triggers.cron.nextExecutions')}</p>
+            <Clock className="w-4 h-4 text-gray-600" />
+            <p className="text-sm font-medium text-gray-700">{t('triggers.cron.nextExecutions')}</p>
           </div>
           <div className="space-y-2">
             {nextExecutions.map((date, index) => (
-              <div key={index} className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 pl-6">
-                <span className="text-gray-400 dark:text-gray-500">{index + 1}.</span>
+              <div key={index} className="flex items-center gap-2 text-sm text-gray-600 pl-6">
+                <span className="text-gray-400">{index + 1}.</span>
                 <span className="font-mono">{formatExecutionTime(date, i18n.language)}</span>
               </div>
             ))}

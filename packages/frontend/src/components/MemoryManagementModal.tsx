@@ -41,11 +41,11 @@ function MemoryRecordItem({ record, onDelete, isDeleting }: MemoryRecordItemProp
   const canDelete = Boolean(record.recordId && record.recordId.trim());
 
   return (
-    <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-800 transition-colors">
+    <div className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
       <div className="flex justify-between items-start gap-3">
         <div className="flex-1 min-w-0">
-          <p className="text-sm text-gray-900 dark:text-gray-100 leading-relaxed mb-2">{truncatedContent}</p>
-          <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">
+          <p className="text-sm text-gray-900 leading-relaxed mb-2">{truncatedContent}</p>
+          <div className="flex items-center gap-4 text-xs text-gray-500">
             <span>
               {t('memory.created')}: {new Date(record.createdAt).toLocaleDateString()}
             </span>
@@ -58,7 +58,7 @@ function MemoryRecordItem({ record, onDelete, isDeleting }: MemoryRecordItemProp
         <button
           onClick={handleDelete}
           disabled={isDeleting || !canDelete}
-          className="flex-shrink-0 p-2 text-gray-400 dark:text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex-shrink-0 p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           title={canDelete ? t('common.delete') : t('memory.cannotDeleteTooltip')}
         >
           {isDeleting ? (
@@ -141,28 +141,28 @@ export function MemoryManagementModal({ isOpen, onClose }: MemoryManagementModal
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="xl" className="max-w-4xl h-[70vh] flex flex-col">
       {/* ヘッダー */}
-      <div className="border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex-shrink-0">
+      <div className="border-b border-gray-200 px-6 py-4 flex-shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Brain className="w-5 h-5 text-gray-700 dark:text-gray-300 dark:text-gray-600" />
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t('memory.savedMemories')}</h2>
+            <Brain className="w-5 h-5 text-gray-700" />
+            <h2 className="text-lg font-semibold text-gray-900">{t('memory.savedMemories')}</h2>
           </div>
           <button
             onClick={onClose}
-            className="rounded-md p-2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-700 transition-colors"
+            className="rounded-md p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
-        <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 mt-2">{t('memory.description')}</p>
+        <p className="text-sm text-gray-600 mt-2">{t('memory.description')}</p>
       </div>
 
       {/* 検索セクション */}
-      <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex-shrink-0">
+      <div className="px-6 py-4 border-b border-gray-100 flex-shrink-0">
         <div className="flex gap-3">
           <div className="flex-1 relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search className="w-4 h-4 text-gray-400 dark:text-gray-500" />
+              <Search className="w-4 h-4 text-gray-400" />
             </div>
             <input
               type="text"
@@ -170,14 +170,14 @@ export function MemoryManagementModal({ isOpen, onClose }: MemoryManagementModal
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder={t('memory.searchPlaceholder')}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
             />
             {searchQuery && (
               <button
                 onClick={handleClearSearch}
                 className="absolute inset-y-0 right-0 pr-3 flex items-center"
               >
-                <X className="w-4 h-4 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-400" />
+                <X className="w-4 h-4 text-gray-400 hover:text-gray-600" />
               </button>
             )}
           </div>
@@ -212,8 +212,8 @@ export function MemoryManagementModal({ isOpen, onClose }: MemoryManagementModal
         {/* ローディング */}
         {isLoading && (
           <div className="flex items-center justify-center py-8">
-            <Loader2 className="w-6 h-6 animate-spin text-gray-400 dark:text-gray-500" />
-            <span className="ml-2 text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500">{t('common.loading')}</span>
+            <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+            <span className="ml-2 text-sm text-gray-600">{t('common.loading')}</span>
           </div>
         )}
 
@@ -222,7 +222,7 @@ export function MemoryManagementModal({ isOpen, onClose }: MemoryManagementModal
           <>
             {searchQuery && (
               <div className="mb-4">
-                <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500">
+                <p className="text-sm text-gray-600">
                   {t('memory.searchResults')}: {searchQuery} (
                   {t('memory.searchResultsCount', { count: searchResults.length })})
                 </p>
@@ -231,8 +231,8 @@ export function MemoryManagementModal({ isOpen, onClose }: MemoryManagementModal
 
             {displayRecords.length === 0 ? (
               <div className="text-center py-8">
-                <Brain className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
-                <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 mb-2">
+                <Brain className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                <p className="text-sm text-gray-600 mb-2">
                   {searchQuery
                     ? t('memory.noSearchResults')
                     : records.length === 0
@@ -240,7 +240,7 @@ export function MemoryManagementModal({ isOpen, onClose }: MemoryManagementModal
                       : t('memory.noMemories')}
                 </p>
                 {!searchQuery && records.length === 0 && (
-                  <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">{t('memory.autoAccumulate')}</p>
+                  <p className="text-xs text-gray-500">{t('memory.autoAccumulate')}</p>
                 )}
               </div>
             ) : (
@@ -260,14 +260,14 @@ export function MemoryManagementModal({ isOpen, onClose }: MemoryManagementModal
       </div>
 
       {/* フッター */}
-      <div className="border-t border-gray-200 dark:border-gray-700 px-6 py-4 bg-gray-50 dark:bg-gray-800 flex-shrink-0">
+      <div className="border-t border-gray-200 px-6 py-4 bg-gray-50 flex-shrink-0">
         <div className="flex justify-between items-center">
-          <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">
+          <p className="text-xs text-gray-500">
             {t('memory.totalCount', { count: records.length })}
           </p>
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-600 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-800 transition-colors"
+            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
           >
             {t('common.close')}
           </button>

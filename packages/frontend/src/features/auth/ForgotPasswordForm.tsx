@@ -73,7 +73,7 @@ export const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-800">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="max-w-md w-full space-y-8 p-8">
         <div className="text-center">
           {/* メインアイコン */}
@@ -84,13 +84,13 @@ export const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({
           <h2 className="text-3xl font-bold text-amber-900 mb-2">
             {t('auth.forgotPassword.title')}
           </h2>
-          <p className="text-gray-600 dark:text-gray-400 dark:text-gray-500 text-sm">{t('auth.forgotPassword.description')}</p>
+          <p className="text-gray-600 text-sm">{t('auth.forgotPassword.description')}</p>
         </div>
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4">
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-600 mb-2">
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
                 {t('auth.email')}
               </label>
               <input
@@ -168,7 +168,7 @@ export const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({
             <button
               type="button"
               onClick={onSwitchToLogin}
-              className="flex items-center justify-center w-full text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 hover:text-gray-900 dark:hover:text-gray-100 dark:text-gray-100 transition-colors"
+              className="flex items-center justify-center w-full text-sm text-gray-600 hover:text-gray-900 transition-colors"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
               {t('auth.forgotPassword.backToLogin')}

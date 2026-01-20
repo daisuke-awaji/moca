@@ -151,29 +151,29 @@ export function SearchChatPage() {
                 placeholder={t('chat.searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
-              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{t('chat.searchNote')}</p>
+              <p className="text-xs text-gray-400 mt-1">{t('chat.searchNote')}</p>
             </div>
 
             {/* Date Range Filter */}
             <div className="flex items-center gap-4">
-              <span className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 whitespace-nowrap">
+              <span className="text-sm text-gray-600 whitespace-nowrap">
                 {t('chat.searchDateRange')}:
               </span>
               <input
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder={t('chat.searchDateStart')}
               />
-              <span className="text-gray-400 dark:text-gray-500">-</span>
+              <span className="text-gray-400">-</span>
               <input
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder={t('chat.searchDateEnd')}
               />
             </div>
@@ -181,10 +181,10 @@ export function SearchChatPage() {
 
           {/* Results Count and Actions */}
           <div className="mb-4 flex items-center justify-between">
-            <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500">
+            <p className="text-sm text-gray-600">
               {t('chat.searchResults')}:{' '}
               {isLoading ? (
-                <span className="text-gray-400 dark:text-gray-500">
+                <span className="text-gray-400">
                   {t('chat.loadingSessions')} ({sessions.length}...)
                 </span>
               ) : (
@@ -195,12 +195,12 @@ export function SearchChatPage() {
             {/* Selection Actions - shows when items are selected */}
             {selectedCount > 0 && (
               <div className="flex items-center gap-3">
-                <span className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500">
+                <span className="text-sm text-gray-600">
                   {t('chat.selectedCount', { count: selectedCount })}
                 </span>
                 <button
                   onClick={clearSelection}
-                  className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:text-gray-600 transition-colors"
+                  className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
                 >
                   {t('chat.clearSelection')}
                 </button>
@@ -224,32 +224,32 @@ export function SearchChatPage() {
 
           {/* Sessions Table */}
           {!isLoading && filteredSessions.length === 0 ? (
-            <div className="text-center py-12 text-gray-500 dark:text-gray-400 dark:text-gray-500">
+            <div className="text-center py-12 text-gray-500">
               <p>{t('chat.searchNoResults')}</p>
             </div>
           ) : filteredSessions.length > 0 ? (
-            <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+            <div className="border border-gray-200 rounded-lg overflow-hidden">
               <table className="w-full">
-                <thead className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+                <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
                     <th className="px-4 py-3 text-left w-12">
                       <input
                         type="checkbox"
                         checked={allFilteredSelected}
                         onChange={toggleSelectAll}
-                        className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 cursor-pointer"
+                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
                         title={allFilteredSelected ? t('chat.deselectAll') : t('chat.selectAll')}
                       />
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       {t('chat.sessionName')}
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       {t('chat.updatedAt')}
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200">
+                <tbody className="bg-white divide-y divide-gray-200">
                   {filteredSessions.map((session) => {
                     const isSelected = selectedSessionIds.has(session.sessionId);
                     return (
@@ -266,14 +266,14 @@ export function SearchChatPage() {
                             type="checkbox"
                             checked={isSelected}
                             onChange={() => {}}
-                            className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 pointer-events-none"
+                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 pointer-events-none"
                           />
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900 dark:text-gray-100">{session.title}</div>
+                          <div className="text-sm text-gray-900">{session.title}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">
+                          <div className="text-sm text-gray-500">
                             {formatDate(session.updatedAt)}
                           </div>
                         </td>
@@ -285,7 +285,7 @@ export function SearchChatPage() {
 
               {/* Loading indicator for additional sessions */}
               {isLoading && (
-                <div className="py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+                <div className="py-4 border-t border-gray-200 bg-gray-50">
                   <LoadingIndicator message="" spacing="none" />
                 </div>
               )}
