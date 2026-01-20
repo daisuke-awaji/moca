@@ -17,6 +17,11 @@ export interface SessionsTableProps {
    * Point-in-time recovery enabled (default: true)
    */
   readonly pointInTimeRecovery?: boolean;
+
+  /**
+   * Enable DynamoDB Streams for real-time updates (default: false)
+   */
+  readonly enableStreams?: boolean;
 }
 
 /**
@@ -38,6 +43,11 @@ export class SessionsTable extends Construct {
    */
   public readonly tableArn: string;
 
+  /**
+   * The table stream ARN (if streams enabled)
+   */
+  public readonly tableStreamArn?: string;
+
   constructor(scope: Construct, id: string, props: SessionsTableProps) {
     super(scope, id);
 
@@ -56,6 +66,8 @@ export class SessionsTable extends Construct {
       removalPolicy: props.removalPolicy || cdk.RemovalPolicy.RETAIN,
       pointInTimeRecovery: props.pointInTimeRecovery ?? true,
       encryption: dynamodb.TableEncryption.AWS_MANAGED,
+      // Enable streams for real-time updates if requested
+      stream: props.enableStreams ? dynamodb.StreamViewType.NEW_AND_OLD_IMAGES : undefined,
     });
 
     // Add GSI for querying sessions by updatedAt (newest first)
@@ -74,6 +86,7 @@ export class SessionsTable extends Construct {
 
     this.tableName = this.table.tableName;
     this.tableArn = this.table.tableArn;
+    this.tableStreamArn = this.table.tableStreamArn;
 
     // Add tags
     cdk.Tags.of(this.table).add('Component', 'SessionManagement');

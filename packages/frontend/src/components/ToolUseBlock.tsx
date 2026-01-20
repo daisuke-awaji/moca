@@ -101,7 +101,7 @@ export const ToolUseBlock: React.FC<ToolUseBlockProps> = ({ toolUse }) => {
   const inputString = JSON.stringify(toolUse.input, null, 2);
 
   return (
-    <div className="tool-use-block my-1 w-full">
+    <div className="tool-use-block w-full">
       {/* 白背景・グレー枠線のメインコンテナ */}
       <div className="bg-white border border-gray-300 rounded-lg text-sm hover:shadow-sm transition-shadow">
         {/* ヘッダー部分（全体クリック可能） */}

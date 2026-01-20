@@ -1,4 +1,12 @@
 /**
+ * セッションタイプ
+ * - user: ユーザーによる通常の会話セッション
+ * - event: イベント駆動（EventBridge等）による自動実行セッション
+ * - subagent: サブエージェントによる委譲実行セッション
+ */
+export type SessionType = 'user' | 'event' | 'subagent';
+
+/**
  * セッション設定
  * AgentCore Memory の actor_id + session_id パターンに準拠
  */
@@ -7,6 +15,8 @@ export interface SessionConfig {
   actorId: string;
   /** セッションを一意に識別する ID (例: "python_study_20250817") */
   sessionId: string;
+  /** セッションタイプ (デフォルト: 'user') */
+  sessionType?: SessionType;
 }
 
 /**

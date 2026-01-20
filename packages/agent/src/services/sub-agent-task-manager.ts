@@ -33,21 +33,14 @@ import type { HookProvider } from '@strands-agents/sdk';
  * 3. Partition Distribution (Critical for Performance):
  *    - AgentCore Memory partitions data by sessionId prefix
  *    - Random first characters ensure even distribution across partitions
- *    - Previous format (task_xxx_subagent) caused clustering:
- *      * All sub-agent sessions started with 't', creating hotspot
- *      * listSessions API returns only first 100 sessions without pagination
- *      * Sub-agent sessions were often not visible in the first 100 results
  *
  * 4. Sub-agent Identification:
- *    - Suffix '_subagent' added to distinguish from regular sessions
- *    - Enables filtering and special handling in UI
- *    - Format: <33-char-alphanumeric>_subagent
- *    - Example: ABCdefGHIjklMNOpqrSTUvwxYZ012345_subagent
+ *    - sessionType: 'subagent' attribute distinguishes from regular sessions
+ *    - Enables filtering and special handling in UI via DynamoDB Sessions table
  *
  * Why 33 characters?
  * - Matches frontend session ID length for consistency
  * - Provides sufficient entropy for unique IDs (62^33 possibilities)
- * - Keeps total length manageable: 33 + 10 ('_subagent') = 43 chars
  */
 const generateSessionId = customAlphabet(
   'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789',
@@ -126,8 +119,8 @@ class SubAgentTaskManager {
     }
 
     const taskId = this.generateTaskId();
-    // Generate sessionId if not provided (format: <33-char-alphanumeric>_subagent)
-    const sessionId = options.sessionId || `${generateSessionId()}_subagent`;
+    // Generate sessionId if not provided (pure alphanumeric, sessionType identifies it as subagent)
+    const sessionId = options.sessionId || generateSessionId();
 
     const task: SubAgentTask = {
       taskId,
@@ -232,6 +225,7 @@ class SubAgentTaskManager {
         sessionConfig = {
           actorId: userId,
           sessionId: task.sessionId,
+          sessionType: 'subagent' as const,
         };
 
         // Add session persistence hook

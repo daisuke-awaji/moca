@@ -8,6 +8,7 @@ import { useUIStore } from '../stores/uiStore';
 import { MessageList } from './MessageList';
 import { MessageInput } from './MessageInput';
 import { AgentSelectorModal } from './AgentSelectorModal';
+import { useMessageEventsSubscription } from '../hooks/useMessageEventsSubscription';
 import type { Agent } from '../types/agent';
 import { translateIfKey } from '../utils/agent-translation';
 
@@ -23,6 +24,9 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({ sessionId, onCreat
   const { isMobileView } = useUIStore();
   const [isAgentModalOpen, setIsAgentModalOpen] = useState(false);
   const [selectedScenarioPrompt, setSelectedScenarioPrompt] = useState<string | null>(null);
+
+  // Subscribe to real-time message updates for cross-tab/cross-device sync
+  useMessageEventsSubscription(sessionId);
 
   // Handle scenario click
   const handleScenarioClick = (prompt: string) => {

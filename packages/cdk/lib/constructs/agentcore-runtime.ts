@@ -104,6 +104,12 @@ export interface AgentCoreRuntimeProps {
    * 例: https://api.example.com
    */
   readonly backendApiUrl?: string;
+
+  /**
+   * AppSync Events HTTP Endpoint（オプション）
+   * リアルタイムメッセージ配信のために使用
+   */
+  readonly appsyncHttpEndpoint?: string;
 }
 
 /**
@@ -208,6 +214,11 @@ export class AgentCoreRuntime extends Construct {
     // Backend API URL の設定
     if (props.backendApiUrl) {
       environmentVariables.BACKEND_API_URL = props.backendApiUrl;
+    }
+
+    // AppSync Events HTTP Endpoint の設定
+    if (props.appsyncHttpEndpoint) {
+      environmentVariables.APPSYNC_HTTP_ENDPOINT = props.appsyncHttpEndpoint;
     }
 
     // AgentCore Runtime を作成
@@ -375,6 +386,18 @@ export class AgentCoreRuntime extends Construct {
             `arn:aws:s3:::${props.userStorageBucketName}`,
             `arn:aws:s3:::${props.userStorageBucketName}/*`,
           ],
+        })
+      );
+    }
+
+    // AppSync Events 権限（リアルタイムメッセージ配信用）
+    if (props.appsyncHttpEndpoint) {
+      this.runtime.addToRolePolicy(
+        new iam.PolicyStatement({
+          sid: 'AppSyncEventsPublish',
+          effect: iam.Effect.ALLOW,
+          actions: ['appsync:EventPublish'],
+          resources: [`arn:aws:appsync:${region}:${account}:apis/*/channelNamespace/*`],
         })
       );
     }

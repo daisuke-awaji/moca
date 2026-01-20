@@ -201,22 +201,6 @@
     animation: fadeIn 0.2s ease-out;
   }
 
-  /* メッセージコンテンツの間隔調整 - コンパクト化 */
-  .message-contents > .tool-use-block:not(:last-child),
-  .message-contents > .tool-result-block:not(:last-child) {
-    @apply mb-1;
-  }
-
-  /* ツールブロック内のテキストコンテンツとの間隔 - コンパクト化 */
-  .message-contents .markdown-content + .tool-use-block,
-  .message-contents .markdown-content + .tool-result-block {
-    @apply mt-2;
-  }
-
-  .message-contents .tool-use-block + .markdown-content,
-  .message-contents .tool-result-block + .markdown-content {
-    @apply mt-2;
-  }
 }
 
 @layer utilities {

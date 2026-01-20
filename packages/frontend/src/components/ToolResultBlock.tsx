@@ -64,7 +64,7 @@ export const ToolResultBlock: React.FC<ToolResultBlockProps> = ({ toolResult }) 
   })();
 
   return (
-    <div className="tool-result-block my-1 w-full">
+    <div className="tool-result-block w-full">
       {/* 白背景・グレー枠線のメインコンテナ */}
       <div className="bg-white border border-gray-300 rounded-lg text-sm hover:shadow-sm transition-shadow">
         {/* ヘッダー部分（全体クリック可能） */}

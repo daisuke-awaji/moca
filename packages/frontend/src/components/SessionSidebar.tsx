@@ -24,6 +24,7 @@ import {
 import { useAuthStore } from '../stores/authStore';
 import { useSessionStore } from '../stores/sessionStore';
 import { useUIStore } from '../stores/uiStore';
+import { useSessionEventsSubscription } from '../hooks/useSessionEventsSubscription';
 import { LoadingIndicator } from './ui/LoadingIndicator';
 import { Tooltip } from './ui/Tooltip';
 import { ConfirmModal } from './ui/Modal';
@@ -44,9 +45,10 @@ function SessionItem({ session, isActive, isNew = false, onDeleteRequest }: Sess
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  // Check if this is a sub-agent session or event-triggered session
-  const isSubAgent = session.sessionId.endsWith('_subagent');
-  const isEventTriggered = session.sessionId.endsWith('_event');
+  // Check session type (default to 'user' for existing sessions without sessionType)
+  const sessionType = session.sessionType ?? 'user';
+  const isSubAgent = sessionType === 'subagent';
+  const isEventTriggered = sessionType === 'event';
 
   // Close menu on outside click
   useEffect(() => {
@@ -146,6 +148,9 @@ function SessionItem({ session, isActive, isNew = false, onDeleteRequest }: Sess
  */
 export function SessionSidebar() {
   const { t } = useTranslation();
+
+  // Real-time session updates via AppSync Events
+  useSessionEventsSubscription();
 
   const { user, logout } = useAuthStore();
   const {

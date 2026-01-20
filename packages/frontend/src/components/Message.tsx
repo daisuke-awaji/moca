@@ -198,7 +198,7 @@ export const Message: React.FC<MessageProps> = ({ message }) => {
 
   return (
     <div
-      className={`flex mb-6 ${hasToolContent ? 'justify-start' : isUser ? 'justify-end' : 'justify-start'}`}
+      className={`flex ${hasToolContent ? 'mb-2' : 'mb-6'} ${hasToolContent ? 'justify-start' : isUser ? 'justify-end' : 'justify-start'}`}
     >
       <div
         className={`flex flex-row items-start w-full ${

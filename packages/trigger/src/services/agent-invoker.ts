@@ -130,8 +130,8 @@ export class AgentInvoker {
       hasMcpConfig: !!request.mcpConfig,
     });
 
-    // Generate session ID if not provided (with _event suffix for event-triggered sessions)
-    const actualSessionId = payload.sessionId || `${randomUUID()}_event`;
+    // Generate session ID if not provided
+    const actualSessionId = payload.sessionId || randomUUID();
 
     try {
       const response = await fetch(this.agentApiUrl, {
@@ -140,6 +140,7 @@ export class AgentInvoker {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${authToken}`,
           'X-Amzn-Bedrock-AgentCore-Runtime-Session-Id': actualSessionId,
+          'X-Amzn-Bedrock-AgentCore-Runtime-Session-Type': 'event',
           'X-Amzn-Trace-Id': `trigger-${Date.now()}`,
         },
         body: JSON.stringify(request),

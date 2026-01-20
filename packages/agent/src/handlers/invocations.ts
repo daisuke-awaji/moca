@@ -16,7 +16,9 @@ import {
 } from '../utils/index.js';
 import { validateImageData } from '../validation/index.js';
 import { resolveEffectiveUserId } from './auth-resolver.js';
+import { publishMessageEvent } from '../services/appsync-events-publisher.js';
 import type { InvocationRequest } from './types.js';
+import type { SessionType } from '../session/types.js';
 
 /**
  * Agent invocation endpoint (with streaming support)
@@ -83,11 +85,18 @@ export async function handleInvocation(req: Request, res: Response): Promise<voi
       | string
       | undefined;
 
+    // Get session type from header (optional, default: 'user')
+    const sessionTypeHeader = req.headers['x-amzn-bedrock-agentcore-runtime-session-type'] as
+      | string
+      | undefined;
+    const sessionType: SessionType | undefined = sessionTypeHeader as SessionType | undefined;
+
     logger.info('Request received:', {
       requestId,
       prompt,
       actorId,
       sessionId: sessionId || 'none (sessionless mode)',
+      sessionType: sessionType || 'user',
       isMachineUser: context?.isMachineUser,
       clientId: context?.clientId,
     });
@@ -96,7 +105,7 @@ export async function handleInvocation(req: Request, res: Response): Promise<voi
     const workspaceSyncResult = initializeWorkspaceSync(actorId, storagePath, context);
 
     // Setup session (if sessionId exists)
-    const sessionResult = setupSession(actorId, sessionId);
+    const sessionResult = setupSession(actorId, sessionId, sessionType);
     const sessionStorage = getSessionStorage();
 
     // Agent creation options
@@ -152,6 +161,19 @@ export async function handleInvocation(req: Request, res: Response): Promise<voi
             logger.info('Message saved in real-time:', {
               role: event.message.role,
               contentBlocks: event.message.content.length,
+            });
+
+            // Publish to AppSync Events for cross-tab/cross-device sync
+            publishMessageEvent(actorId, sessionResult.config.sessionId, {
+              type: 'MESSAGE_ADDED',
+              sessionId: sessionResult.config.sessionId,
+              message: {
+                role: event.message.role as 'user' | 'assistant',
+                content: event.message.content,
+                timestamp: new Date().toISOString(),
+              },
+            }).catch((err) => {
+              logger.warn('AppSync Events publish failed (non-critical):', err);
             });
           } catch (saveError) {
             logger.error('Message save failed (streaming continues):', saveError);
