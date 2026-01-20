@@ -449,6 +449,7 @@ settings:
   languageEn: English
   themeLight: ライト
   themeDark: ダーク
+  themeSystem: システム設定
   themeAuto: 自動
   advanced: 詳細設定
   enterBehaviorDescription: メッセージを書いているとき、

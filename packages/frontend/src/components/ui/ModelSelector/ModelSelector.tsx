@@ -43,11 +43,11 @@ export const ModelSelector: React.FC = () => {
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors"
+        className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 hover:text-gray-900 dark:hover:text-gray-100 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-800 rounded-lg transition-colors"
       >
-        <Sparkles className="w-4 h-4 text-gray-400" />
+        <Sparkles className="w-4 h-4 text-gray-400 dark:text-gray-500" />
         <span className="font-medium">{selectedModel ? selectedModel.name : 'Select Model'}</span>
-        {selectedModel && <span className="text-gray-400">({selectedModel.provider})</span>}
+        {selectedModel && <span className="text-gray-400 dark:text-gray-500">({selectedModel.provider})</span>}
         <ChevronDown
           className={`w-4 h-4 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`}
         />
@@ -55,7 +55,7 @@ export const ModelSelector: React.FC = () => {
 
       {/* Dropdown Menu */}
       {isOpen && (
-        <div className="absolute bottom-full left-0 mb-2 w-72 bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-50">
+        <div className="absolute bottom-full left-0 mb-2 w-72 bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 py-2 z-50">
           <div className="max-h-64 overflow-y-auto">
             {AVAILABLE_MODELS.map((model) => (
               <button
@@ -68,8 +68,8 @@ export const ModelSelector: React.FC = () => {
               >
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
-                    <div className="text-sm font-medium text-gray-900">{model.name}</div>
-                    <div className="text-xs text-gray-500 mt-0.5">{model.provider}</div>
+                    <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{model.name}</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-0.5">{model.provider}</div>
                   </div>
                   {model.id === selectedModelId && (
                     <div className="w-2 h-2 rounded-full bg-blue-600 ml-2" />

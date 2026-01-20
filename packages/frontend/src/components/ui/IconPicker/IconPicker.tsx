@@ -106,34 +106,34 @@ export const IconPicker: React.FC<IconPickerProps> = ({
         )}
         title={t('common.clickToSelectIcon')}
       >
-        <SelectedIcon className="w-6 h-6 text-gray-700" />
+        <SelectedIcon className="w-6 h-6 text-gray-700 dark:text-gray-300 dark:text-gray-600" />
       </button>
 
       {/* ポップオーバー */}
       {isOpen && (
-        <div className="absolute top-14 left-0 z-50 w-[520px] bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden">
+        <div className="absolute top-14 left-0 z-50 w-[520px] bg-white dark:bg-gray-900 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
           {/* 検索バー */}
-          <div className="p-3 border-b border-gray-200 bg-gray-50">
+          <div className="p-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
               <input
                 ref={searchInputRef}
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder={t('common.searchIconsPlaceholder')}
-                className="w-full pl-9 pr-9 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full pl-9 pr-9 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-400"
                 >
                   <X className="w-4 h-4" />
                 </button>
               )}
             </div>
-            <p className="text-xs text-gray-500 mt-2">
+            <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-2">
               {t('common.iconsCount', { count: filteredIcons.length })}
             </p>
           </div>
@@ -199,7 +199,7 @@ export const IconPicker: React.FC<IconPickerProps> = ({
                 })}
               </div>
             ) : (
-              <div className="text-center py-8 text-gray-400 text-sm">
+              <div className="text-center py-8 text-gray-400 dark:text-gray-500 text-sm">
                 {t('common.noIconsFound', { query: searchQuery })}
               </div>
             )}

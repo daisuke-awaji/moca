@@ -174,7 +174,7 @@ export const AgentSelectorModal: React.FC<AgentSelectorModalProps> = ({
                   setEditingAgent(null);
                 }}
                 disabled={isLoading}
-                className="px-6 py-3 text-sm md:text-base font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[48px]"
+                className="px-6 py-3 text-sm md:text-base font-medium text-gray-700 dark:text-gray-300 dark:text-gray-600 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[48px]"
               >
                 {t('common.cancel')}
               </button>
@@ -209,19 +209,19 @@ export const AgentSelectorModal: React.FC<AgentSelectorModalProps> = ({
                   <div className="mb-6 flex items-center gap-4">
                     {/* 検索バー（左側） */}
                     <div className="relative flex-1">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
                       <input
                         type="text"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         placeholder={t('agent.searchPlaceholder')}
-                        className="w-full pl-10 pr-10 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                        className="w-full pl-10 pr-10 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                       />
                       {searchQuery && (
                         <button
                           type="button"
                           onClick={() => setSearchQuery('')}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-400"
                         >
                           <X className="w-4 h-4" />
                         </button>
@@ -247,11 +247,11 @@ export const AgentSelectorModal: React.FC<AgentSelectorModalProps> = ({
                 {/* Agent一覧 */}
                 {!isLoading && agents.length === 0 ? (
                   <div className="text-center py-20">
-                    <Bot className="w-16 h-16 text-gray-300 mx-auto mb-6" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                    <Bot className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-6" />
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
                       {t('agent.noAgentsTitle')}
                     </h3>
-                    <p className="text-gray-500 mb-6">{t('agent.noAgentsDescription')}</p>
+                    <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-6">{t('agent.noAgentsDescription')}</p>
                     <button
                       onClick={() => setMode('create')}
                       className="text-blue-600 hover:text-blue-800 font-medium"
@@ -261,11 +261,11 @@ export const AgentSelectorModal: React.FC<AgentSelectorModalProps> = ({
                   </div>
                 ) : !isLoading && filteredAgents.length === 0 ? (
                   <div className="text-center py-20">
-                    <Search className="w-16 h-16 text-gray-300 mx-auto mb-6" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                    <Search className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-6" />
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
                       {t('agent.noSearchResults')}
                     </h3>
-                    <p className="text-gray-500 mb-6">{t('agent.noSearchResultsDescription')}</p>
+                    <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-6">{t('agent.noSearchResultsDescription')}</p>
                     <button
                       onClick={() => setSearchQuery('')}
                       className="text-blue-600 hover:text-blue-800 font-medium"
@@ -309,11 +309,11 @@ export const AgentSelectorModal: React.FC<AgentSelectorModalProps> = ({
                                   </div>
                                   <div className="flex-1">
                                     <div className="flex items-center space-x-2">
-                                      <h3 className="font-medium text-gray-900">
+                                      <h3 className="font-medium text-gray-900 dark:text-gray-100">
                                         {translateIfKey(agent.name, t)}
                                       </h3>
                                     </div>
-                                    <p className="text-sm text-gray-500 mt-1 line-clamp-2">
+                                    <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1 line-clamp-2">
                                       {translateIfKey(agent.description, t)}
                                     </p>
                                   </div>
@@ -322,14 +322,14 @@ export const AgentSelectorModal: React.FC<AgentSelectorModalProps> = ({
                                 <div className="relative ml-2">
                                   <button
                                     onClick={(e) => toggleMenu(agent.agentId, e)}
-                                    className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
+                                    className="p-1.5 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-700 rounded transition-colors"
                                   >
                                     <MoreHorizontal className="w-5 h-5" />
                                   </button>
 
                                   {/* ドロップダウンメニュー */}
                                   {openMenuId === agent.agentId && (
-                                    <div className="absolute right-0 top-full mt-1 w-40 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10">
+                                    <div className="absolute right-0 top-full mt-1 w-40 bg-white dark:bg-gray-900 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-10">
                                       <button
                                         onMouseDown={(e) => {
                                           e.stopPropagation();
@@ -340,7 +340,7 @@ export const AgentSelectorModal: React.FC<AgentSelectorModalProps> = ({
                                           setMode('edit');
                                           setOpenMenuId(null);
                                         }}
-                                        className="w-full px-3 py-1.5 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-2"
+                                        className="w-full px-3 py-1.5 text-left text-sm text-gray-700 dark:text-gray-300 dark:text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-800 flex items-center space-x-2"
                                       >
                                         <Edit2 className="w-3 h-3" />
                                         <span>{t('common.edit')}</span>
@@ -369,7 +369,7 @@ export const AgentSelectorModal: React.FC<AgentSelectorModalProps> = ({
                                           }
                                           setOpenMenuId(null);
                                         }}
-                                        className="w-full px-3 py-1.5 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-2"
+                                        className="w-full px-3 py-1.5 text-left text-sm text-gray-700 dark:text-gray-300 dark:text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-800 flex items-center space-x-2"
                                       >
                                         <Share2 className="w-3 h-3" />
                                         <span>

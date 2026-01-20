@@ -69,7 +69,7 @@ export function EventTypeSelector({
     return (
       <div>
         <div className="mb-3 flex items-center justify-between">
-          <h3 className="text-sm font-medium text-gray-700">{t('triggers.eventTypes.title')}</h3>
+          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-600">{t('triggers.eventTypes.title')}</h3>
           <button
             type="button"
             onClick={() => onSelect(null)}
@@ -80,14 +80,14 @@ export function EventTypeSelector({
           </button>
         </div>
 
-        <div className="flex items-center gap-3 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+        <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
           <div className="flex-shrink-0">
             <div className="w-8 h-8 bg-gray-600 rounded-lg flex items-center justify-center">
               <Icon className="w-4 h-4 text-white" />
             </div>
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-gray-900">{selected.label}</p>
+            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{selected.label}</p>
           </div>
         </div>
       </div>
@@ -98,10 +98,10 @@ export function EventTypeSelector({
   return (
     <div>
       <div className="mb-4">
-        <h3 className="text-base font-semibold text-gray-900">
+        <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">
           {t('triggers.eventTypes.selectTitle')}
         </h3>
-        <p className="text-sm text-gray-500 mt-1">{t('triggers.eventTypes.selectDescription')}</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">{t('triggers.eventTypes.selectDescription')}</p>
       </div>
 
       <div className="grid grid-cols-1 gap-3">
@@ -138,21 +138,21 @@ export function EventTypeSelector({
               {/* Content */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <p className="text-sm font-semibold text-gray-900">{eventType.label}</p>
+                  <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{eventType.label}</p>
                   {!eventType.isAvailable && (
-                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-200 text-gray-700">
+                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 dark:text-gray-600">
                       {t('triggers.eventTypes.comingSoonBadge')}
                     </span>
                   )}
                 </div>
-                <p className="text-xs text-gray-600 mt-1">{eventType.description}</p>
+                <p className="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-500 mt-1">{eventType.description}</p>
               </div>
 
               {/* Arrow indicator for available types */}
               {eventType.isAvailable && (
                 <div className="flex-shrink-0">
                   <svg
-                    className="w-5 h-5 text-gray-400"
+                    className="w-5 h-5 text-gray-400 dark:text-gray-500"
                     fill="none"
                     strokeLinecap="round"
                     strokeLinejoin="round"

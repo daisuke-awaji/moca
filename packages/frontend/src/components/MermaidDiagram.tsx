@@ -165,7 +165,7 @@ const MermaidDiagramComponent: React.FC<MermaidDiagramProps> = ({ chart, classNa
 
       {/* 構文エラーの場合 */}
       {isValidSyntax === false && chart.trim() && !isRendering && (
-        <div className="text-gray-400 text-sm italic py-2">{t('common.diagramLoading')}</div>
+        <div className="text-gray-400 dark:text-gray-500 text-sm italic py-2">{t('common.diagramLoading')}</div>
       )}
 
       {/* SVGコンテンツを表示（React管理下で） */}

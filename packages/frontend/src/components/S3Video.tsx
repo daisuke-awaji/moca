@@ -39,7 +39,7 @@ export const S3Video: React.FC<S3VideoProps> = ({ path, className = '' }) => {
         className={`flex items-center justify-center bg-gray-100 rounded-lg ${className}`}
         style={{ minHeight: '300px' }}
       >
-        <div className="text-center text-gray-500">
+        <div className="text-center text-gray-500 dark:text-gray-400 dark:text-gray-500">
           <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2" />
           <div className="text-sm">{t('storage.loadingVideo')}</div>
         </div>
@@ -56,7 +56,7 @@ export const S3Video: React.FC<S3VideoProps> = ({ path, className = '' }) => {
         <div className="text-center text-red-600">
           <AlertTriangle className="w-8 h-8 mx-auto mb-2" />
           <div className="text-sm">{t('storage.failedToLoadVideo')}</div>
-          {error && <div className="text-xs mt-1 text-gray-600">{error}</div>}
+          {error && <div className="text-xs mt-1 text-gray-600 dark:text-gray-400 dark:text-gray-500">{error}</div>}
         </div>
       </div>
     );

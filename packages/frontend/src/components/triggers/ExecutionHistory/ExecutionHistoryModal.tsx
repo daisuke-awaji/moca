@@ -88,8 +88,8 @@ export function ExecutionHistoryModal({
     <Modal isOpen={isOpen} onClose={onClose} size="xl">
       <ModalHeader>
         <div>
-          <h2 className="text-xl font-bold text-gray-900">{t('triggers.history.title')}</h2>
-          <p className="text-sm text-gray-600 mt-1">{triggerName}</p>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">{t('triggers.history.title')}</h2>
+          <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 mt-1">{triggerName}</p>
         </div>
         <ModalCloseButton />
       </ModalHeader>

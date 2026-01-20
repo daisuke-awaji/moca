@@ -53,14 +53,14 @@ export function CronBuilder({
     <div className="space-y-6">
       {/* Timezone Selector */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-600 mb-2">
           {t('triggers.cron.timezone')}
         </label>
         <select
           value={timezone}
           onChange={(e) => onTimezoneChange(e.target.value)}
           disabled={disabled}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 dark:bg-gray-700 disabled:cursor-not-allowed"
         >
           {TIMEZONES.map((tz) => (
             <option key={tz.value} value={tz.value}>
@@ -72,7 +72,7 @@ export function CronBuilder({
 
       {/* Preset Buttons */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-600 mb-2">
           {t('triggers.cron.preset')}
         </label>
         <CronPresetButtons
@@ -90,7 +90,7 @@ export function CronBuilder({
           isCustom ? 'opacity-100' : 'opacity-0 h-0 overflow-hidden'
         }`}
       >
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-600 mb-2">
           {t('triggers.cron.customExpression')}
         </label>
         <input
@@ -99,14 +99,14 @@ export function CronBuilder({
           onChange={(e) => handleCustomInput(e.target.value)}
           disabled={disabled || !isCustom}
           placeholder="0 0 * * ? *"
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed font-mono text-sm"
+          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 dark:bg-gray-700 disabled:cursor-not-allowed font-mono text-sm"
         />
-        <p className="mt-1 text-xs text-gray-500">{t('triggers.cron.customExpressionHint')}</p>
+        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">{t('triggers.cron.customExpressionHint')}</p>
       </div>
 
       {/* Preview */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-600 mb-2">
           {t('triggers.cron.preview')}
         </label>
         <CronPreview expression={value} timezone={timezone} isValid={isValid} />

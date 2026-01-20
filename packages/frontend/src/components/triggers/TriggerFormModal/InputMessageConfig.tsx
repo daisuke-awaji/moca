@@ -22,10 +22,10 @@ export function InputMessageConfig({
   return (
     <div>
       <div className="mb-4">
-        <h3 className="text-base font-semibold text-gray-900">
+        <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">
           {t('triggers.form.inputMessage')} <span className="text-red-500">*</span>
         </h3>
-        <p className="text-sm text-gray-500 mt-1">{t('triggers.form.inputMessageDescription')}</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">{t('triggers.form.inputMessageDescription')}</p>
       </div>
 
       <div>
@@ -36,10 +36,10 @@ export function InputMessageConfig({
           disabled={disabled}
           maxLength={2000}
           rows={6}
-          className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none disabled:bg-gray-100 disabled:cursor-not-allowed font-mono text-sm"
+          className="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none disabled:bg-gray-100 dark:bg-gray-700 disabled:cursor-not-allowed font-mono text-sm"
         />
         <div className="flex justify-end items-center mt-2">
-          <p className="text-xs text-gray-500">{inputMessage.length} / 2000</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">{inputMessage.length} / 2000</p>
         </div>
       </div>
     </div>

@@ -249,16 +249,16 @@ export const AgentForm: React.FC<AgentFormProps> = ({ agent, onSubmit, isLoading
           {/* 基本設定パネル */}
           {activeTab === 'basic' && (
             <div className="space-y-6 max-w-5xl mx-auto">
-              <h2 className="text-lg font-semibold text-gray-900 mb-6">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-6">
                 {t('agent.basicSettings')}
               </h2>
 
               {/* Agent name */}
               <div>
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-600 mb-2">
                   {t('agent.nameAndIcon')}
                 </label>
-                <p className="text-sm text-gray-500 mb-3">{t('agent.nameDescription')}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-3">{t('agent.nameDescription')}</p>
                 <div className="flex flex-col md:flex-row md:items-center space-y-3 md:space-y-0 md:space-x-3">
                   <IconPicker
                     value={formData.icon}
@@ -294,11 +294,11 @@ export const AgentForm: React.FC<AgentFormProps> = ({ agent, onSubmit, isLoading
               <div>
                 <label
                   htmlFor="description"
-                  className="block text-sm font-medium text-gray-700 mb-2"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-600 mb-2"
                 >
                   {t('agent.descriptionLabel')}
                 </label>
-                <p className="text-sm text-gray-500 mb-3">{t('agent.descriptionDescription')}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-3">{t('agent.descriptionDescription')}</p>
                 <textarea
                   id="description"
                   value={formData.description}
@@ -326,7 +326,7 @@ export const AgentForm: React.FC<AgentFormProps> = ({ agent, onSubmit, isLoading
               {/* System prompt */}
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <label htmlFor="systemPrompt" className="text-sm font-medium text-gray-700">
+                  <label htmlFor="systemPrompt" className="text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-600">
                     {t('agent.systemPromptRequired')}
                   </label>
                   {/* AI自動生成ボタン */}
@@ -339,13 +339,13 @@ export const AgentForm: React.FC<AgentFormProps> = ({ agent, onSubmit, isLoading
                       !formData.name.trim() ||
                       !formData.description.trim()
                     }
-                    className="inline-flex items-center space-x-1 px-3 py-1.5 text-xs text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="inline-flex items-center space-x-1 px-3 py-1.5 text-xs text-gray-600 dark:text-gray-400 dark:text-gray-500 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-800 hover:text-gray-700 dark:text-gray-300 dark:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     <Sparkles className="w-3.5 h-3.5" />
                     <span>{isGenerating ? t('agent.aiGenerating') : t('agent.aiGenerate')}</span>
                   </button>
                 </div>
-                <p className="text-sm text-gray-500 mb-3">{t('agent.systemPromptDescription')}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-3">{t('agent.systemPromptDescription')}</p>
                 <textarea
                   id="systemPrompt"
                   value={formData.systemPrompt}
@@ -379,21 +379,21 @@ export const AgentForm: React.FC<AgentFormProps> = ({ agent, onSubmit, isLoading
               {/* シナリオ管理 */}
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <label className="text-sm font-medium text-gray-700">
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-600">
                     {t('agent.scenarios')}
                   </label>
                   <button
                     type="button"
                     onClick={addScenario}
                     disabled={isLoading || isGenerating}
-                    className="inline-flex items-center space-x-1 text-sm text-blue-600 hover:text-blue-800 disabled:text-gray-400 disabled:cursor-not-allowed"
+                    className="inline-flex items-center space-x-1 text-sm text-blue-600 hover:text-blue-800 disabled:text-gray-400 dark:text-gray-500 disabled:cursor-not-allowed"
                   >
                     <Plus className="w-4 h-4" />
                     <span>{t('agent.addScenario')}</span>
                   </button>
                 </div>
 
-                <p className="text-sm text-gray-500 mb-4">{t('agent.scenariosDescription')}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-4">{t('agent.scenariosDescription')}</p>
 
                 <div className="space-y-3">
                   {formData.scenarios.map((scenario, index) => (
@@ -449,7 +449,7 @@ export const AgentForm: React.FC<AgentFormProps> = ({ agent, onSubmit, isLoading
                         type="button"
                         onClick={() => removeScenario(index)}
                         disabled={isLoading || isGenerating}
-                        className="flex-shrink-0 p-1 text-gray-400 hover:text-red-500 disabled:text-gray-300 disabled:cursor-not-allowed transition-colors"
+                        className="flex-shrink-0 p-1 text-gray-400 dark:text-gray-500 hover:text-red-500 disabled:text-gray-300 dark:text-gray-600 disabled:cursor-not-allowed transition-colors"
                       >
                         <X className="w-4 h-4" />
                       </button>
@@ -459,7 +459,7 @@ export const AgentForm: React.FC<AgentFormProps> = ({ agent, onSubmit, isLoading
 
                 {/* 空の状態 */}
                 {formData.scenarios.length === 0 && (
-                  <div className="text-center py-6 text-gray-400 text-sm bg-gray-50 rounded-lg border border-gray-200 border-dashed">
+                  <div className="text-center py-6 text-gray-400 dark:text-gray-500 text-sm bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 border-dashed">
                     {t('agent.emptyScenarios')}
                   </div>
                 )}
@@ -470,7 +470,7 @@ export const AgentForm: React.FC<AgentFormProps> = ({ agent, onSubmit, isLoading
           {/* ツールパネル */}
           {activeTab === 'tools' && (
             <div className="space-y-6 max-w-5xl mx-auto">
-              <h2 className="text-lg font-semibold text-gray-900 mb-6">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-6">
                 {t('agent.toolSelection')}
               </h2>
               <ToolSelector
@@ -486,7 +486,7 @@ export const AgentForm: React.FC<AgentFormProps> = ({ agent, onSubmit, isLoading
           {/* MCP パネル */}
           {activeTab === 'mcp' && (
             <div className="space-y-6 max-w-5xl mx-auto">
-              <h2 className="text-lg font-semibold text-gray-900 mb-6">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-6">
                 {t('agent.mcpServerSettings')}
               </h2>
               <MCPConfigEditor

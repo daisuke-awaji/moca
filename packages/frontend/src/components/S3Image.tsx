@@ -40,7 +40,7 @@ export const S3Image: React.FC<S3ImageProps> = ({ path, alt, className = '' }) =
         className={`flex items-center justify-center bg-gray-100 rounded ${className}`}
         style={{ minHeight: '200px' }}
       >
-        <div className="text-center text-gray-500">
+        <div className="text-center text-gray-500 dark:text-gray-400 dark:text-gray-500">
           <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2" />
           <div className="text-sm">{t('storage.loadingImage')}</div>
         </div>
@@ -57,7 +57,7 @@ export const S3Image: React.FC<S3ImageProps> = ({ path, alt, className = '' }) =
         <div className="text-center text-red-600">
           <AlertTriangle className="w-8 h-8 mx-auto mb-2" />
           <div className="text-sm">{t('storage.failedToLoadImage')}</div>
-          {error && <div className="text-xs mt-1 text-gray-600">{error}</div>}
+          {error && <div className="text-xs mt-1 text-gray-600 dark:text-gray-400 dark:text-gray-500">{error}</div>}
         </div>
       </div>
     );

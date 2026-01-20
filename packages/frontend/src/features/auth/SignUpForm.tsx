@@ -91,13 +91,13 @@ export const SignUpForm: React.FC<SignUpFormProps> = ({ onSwitchToLogin }) => {
             <Donut className="w-16 h-16 text-amber-600 mx-auto" />
           </div>
           <h2 className="text-3xl font-bold text-amber-900 mb-2">{t('auth.welcomeTitle')}</h2>
-          <p className="text-gray-600">{t('auth.createAccountDescription')}</p>
+          <p className="text-gray-600 dark:text-gray-400 dark:text-gray-500">{t('auth.createAccountDescription')}</p>
         </div>
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4">
             <div>
-              <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="username" className="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-600 mb-2">
                 {t('auth.username')} <span className="text-red-500">*</span>
               </label>
               <input
@@ -119,7 +119,7 @@ export const SignUpForm: React.FC<SignUpFormProps> = ({ onSwitchToLogin }) => {
             </div>
 
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-600 mb-2">
                 {t('auth.email')} <span className="text-red-500">*</span>
               </label>
               <input
@@ -141,7 +141,7 @@ export const SignUpForm: React.FC<SignUpFormProps> = ({ onSwitchToLogin }) => {
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-600 mb-2">
                 {t('auth.password')} <span className="text-red-500">*</span>
               </label>
               <input
@@ -160,13 +160,13 @@ export const SignUpForm: React.FC<SignUpFormProps> = ({ onSwitchToLogin }) => {
               {validationErrors.password && (
                 <p className="mt-2 text-sm text-red-600">{validationErrors.password}</p>
               )}
-              <p className="mt-1 text-xs text-gray-500">{t('auth.passwordRequirements')}</p>
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">{t('auth.passwordRequirements')}</p>
             </div>
 
             <div>
               <label
                 htmlFor="confirmPassword"
-                className="block text-sm font-medium text-gray-700 mb-2"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-600 mb-2"
               >
                 {t('auth.confirmPassword')} <span className="text-red-500">*</span>
               </label>
@@ -243,7 +243,7 @@ export const SignUpForm: React.FC<SignUpFormProps> = ({ onSwitchToLogin }) => {
         </form>
 
         <div className="text-center">
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500">
             {t('auth.hasAccount')}{' '}
             <button
               type="button"

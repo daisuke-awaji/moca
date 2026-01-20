@@ -87,12 +87,12 @@ export function EventSourceSelector({
   if (loading) {
     return (
       <div className="space-y-2">
-        <label className="block text-sm font-medium text-gray-700">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-600">
           {t('triggers.eventSource.label')}
         </label>
-        <div className="flex items-center justify-center p-8 bg-gray-50 rounded-lg border border-gray-200">
-          <LucideIcons.Loader2 className="w-6 h-6 text-gray-400 animate-spin" />
-          <span className="ml-2 text-sm text-gray-500">{t('common.loading')}</span>
+        <div className="flex items-center justify-center p-8 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+          <LucideIcons.Loader2 className="w-6 h-6 text-gray-400 dark:text-gray-500 animate-spin" />
+          <span className="ml-2 text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">{t('common.loading')}</span>
         </div>
       </div>
     );
@@ -102,7 +102,7 @@ export function EventSourceSelector({
   if (error) {
     return (
       <div className="space-y-2">
-        <label className="block text-sm font-medium text-gray-700">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-600">
           {t('triggers.eventSource.label')}
         </label>
         <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
@@ -116,11 +116,11 @@ export function EventSourceSelector({
   if (eventSources.length === 0) {
     return (
       <div className="space-y-2">
-        <label className="block text-sm font-medium text-gray-700">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-600">
           {t('triggers.eventSource.label')}
         </label>
-        <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
-          <p className="text-sm text-gray-600">{t('triggers.eventSource.noSourcesAvailable')}</p>
+        <div className="p-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+          <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500">{t('triggers.eventSource.noSourcesAvailable')}</p>
         </div>
       </div>
     );
@@ -155,7 +155,7 @@ export function EventSourceSelector({
         <button
           type="button"
           onClick={(e) => toggleDetails(source.id, e)}
-          className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-700 transition-colors w-full"
+          className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:text-gray-600 transition-colors w-full"
         >
           <LucideIcons.ChevronRight
             className={`w-3.5 h-3.5 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
@@ -164,7 +164,7 @@ export function EventSourceSelector({
         </button>
 
         {isExpanded && (
-          <pre className="mt-2 p-3 bg-gray-50 rounded text-xs font-mono text-gray-700 overflow-x-auto animate-subtle-fade-in">
+          <pre className="mt-2 p-3 bg-gray-50 dark:bg-gray-800 rounded text-xs font-mono text-gray-700 dark:text-gray-300 dark:text-gray-600 overflow-x-auto animate-subtle-fade-in">
             {JSON.stringify(source.eventPattern, null, 2)}
           </pre>
         )}
@@ -175,7 +175,7 @@ export function EventSourceSelector({
   // Grid card selector
   return (
     <div className="space-y-3">
-      <label className="block text-sm font-medium text-gray-700">
+      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-600">
         {t('triggers.eventSource.label')}
       </label>
 
@@ -222,10 +222,10 @@ export function EventSourceSelector({
                   {/* Content */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <p className="text-sm font-semibold text-gray-900">{source.name}</p>
+                      <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{source.name}</p>
                       {isSelected && <LucideIcons.Check className="w-4 h-4 text-blue-600" />}
                     </div>
-                    <p className="text-xs text-gray-600 mt-1">{source.description}</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-500 mt-1">{source.description}</p>
                   </div>
                 </div>
               </button>
@@ -240,7 +240,7 @@ export function EventSourceSelector({
       </div>
 
       {/* Help text */}
-      <p className="text-xs text-gray-500">{t('triggers.eventSource.helpText')}</p>
+      <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">{t('triggers.eventSource.helpText')}</p>
     </div>
   );
 }

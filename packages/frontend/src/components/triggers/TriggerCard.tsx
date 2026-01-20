@@ -68,13 +68,13 @@ export function TriggerCard({
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 p-6 hover:shadow-sm transition-shadow flex flex-col h-full">
+    <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 hover:shadow-sm transition-shadow flex flex-col h-full">
       {/* Header with Toggle */}
       <div className="flex items-start justify-between mb-4">
         <div className="flex-1 min-w-0 pr-4">
-          <h3 className="text-lg font-semibold text-gray-900 truncate mb-2">{trigger.name}</h3>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 truncate mb-2">{trigger.name}</h3>
           {trigger.description && (
-            <p className="text-sm text-gray-600 line-clamp-2">{trigger.description}</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 line-clamp-2">{trigger.description}</p>
           )}
         </div>
 
@@ -110,14 +110,14 @@ export function TriggerCard({
         {trigger.type === 'schedule' ? (
           <>
             {/* Schedule Type */}
-            <div className="flex items-center gap-2 text-sm text-gray-700">
-              <Clock className="w-4 h-4 text-gray-400 flex-shrink-0" />
+            <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 dark:text-gray-600">
+              <Clock className="w-4 h-4 text-gray-400 dark:text-gray-500 flex-shrink-0" />
               <span className="font-medium">{t('triggers.card.schedule')}:</span>
               <span className="truncate">{scheduleConfig?.expression || 'N/A'}</span>
             </div>
 
-            <div className="flex items-center gap-2 text-sm text-gray-700">
-              <Calendar className="w-4 h-4 text-gray-400 flex-shrink-0" />
+            <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 dark:text-gray-600">
+              <Calendar className="w-4 h-4 text-gray-400 dark:text-gray-500 flex-shrink-0" />
               <span className="font-medium">{t('triggers.card.timezone')}:</span>
               <span className="truncate">{scheduleConfig?.timezone || 'N/A'}</span>
             </div>
@@ -125,16 +125,16 @@ export function TriggerCard({
         ) : (
           <>
             {/* Event Type */}
-            <div className="flex items-center gap-2 text-sm text-gray-700">
-              <Zap className="w-4 h-4 text-gray-400 flex-shrink-0" />
+            <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 dark:text-gray-600">
+              <Zap className="w-4 h-4 text-gray-400 dark:text-gray-500 flex-shrink-0" />
               <span className="font-medium">{t('triggers.card.eventSource')}:</span>
               <span className="truncate">
                 {eventSourceName || eventConfig?.eventSourceId || 'N/A'}
               </span>
             </div>
 
-            <div className="flex items-center gap-2 text-sm text-gray-700">
-              <Bell className="w-4 h-4 text-gray-400 flex-shrink-0" />
+            <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 dark:text-gray-600">
+              <Bell className="w-4 h-4 text-gray-400 dark:text-gray-500 flex-shrink-0" />
               <span className="font-medium">{t('triggers.card.triggerCondition')}:</span>
               <span className="truncate">{t('triggers.card.onEventReceived')}</span>
             </div>
@@ -142,8 +142,8 @@ export function TriggerCard({
         )}
 
         {/* Common: Agent */}
-        <div className="flex items-center gap-2 text-sm text-gray-700">
-          <Bot className="w-4 h-4 text-gray-400 flex-shrink-0" />
+        <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 dark:text-gray-600">
+          <Bot className="w-4 h-4 text-gray-400 dark:text-gray-500 flex-shrink-0" />
           <span className="font-medium">{t('triggers.card.agent')}:</span>
           <span className="truncate">
             {agent ? translateIfKey(agent.name, t) : trigger.agentId}
@@ -153,19 +153,19 @@ export function TriggerCard({
 
       {/* Last Execution */}
       {trigger.lastExecutedAt && (
-        <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-          <p className="text-xs text-gray-600">
+        <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+          <p className="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-500">
             {t('triggers.card.lastExecution')}: {formatLastExecution(trigger.lastExecutedAt)}
           </p>
         </div>
       )}
 
       {/* Action Buttons */}
-      <div className="flex items-center gap-2 pt-4 border-t border-gray-100">
+      <div className="flex items-center gap-2 pt-4 border-t border-gray-100 dark:border-gray-700">
         {/* Edit Button */}
         <button
           onClick={() => onEdit(trigger)}
-          className="flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors whitespace-nowrap flex-1 lg:flex-initial"
+          className="flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-600 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-800 transition-colors whitespace-nowrap flex-1 lg:flex-initial"
           aria-label={t('triggers.edit')}
         >
           <Edit className="w-4 h-4 flex-shrink-0" />
@@ -175,7 +175,7 @@ export function TriggerCard({
         {/* History Button */}
         <button
           onClick={() => onViewHistory(trigger.id)}
-          className="flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors whitespace-nowrap flex-1 lg:flex-initial"
+          className="flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-600 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-800 transition-colors whitespace-nowrap flex-1 lg:flex-initial"
           aria-label={t('triggers.viewHistory')}
         >
           <History className="w-4 h-4 flex-shrink-0" />
@@ -185,7 +185,7 @@ export function TriggerCard({
         {/* Delete Button */}
         <button
           onClick={() => onDelete(trigger.id)}
-          className="flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium text-red-600 bg-white border border-red-300 rounded-lg hover:bg-red-50 transition-colors whitespace-nowrap flex-1 lg:flex-initial lg:ml-auto"
+          className="flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium text-red-600 bg-white dark:bg-gray-900 border border-red-300 rounded-lg hover:bg-red-50 transition-colors whitespace-nowrap flex-1 lg:flex-initial lg:ml-auto"
           aria-label={t('triggers.delete')}
         >
           <Trash2 className="w-4 h-4 flex-shrink-0" />

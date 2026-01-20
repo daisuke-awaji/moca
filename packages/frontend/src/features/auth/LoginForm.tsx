@@ -75,7 +75,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-800">
       <div className="max-w-md w-full space-y-8 p-8">
         <div className="text-center">
           {/* メインアイコン */}
@@ -84,14 +84,14 @@ export const LoginForm: React.FC<LoginFormProps> = ({
             <Donut className="w-16 h-16 text-amber-600 mx-auto" />
           </div>
           <h2 className="text-3xl font-bold text-amber-900 mb-2">{t('auth.welcomeTitle')}</h2>
-          <p className="text-gray-600 text-sm">{t('auth.welcomeDescription')}</p>
-          <p className="text-gray-600 text-sm">{t('auth.welcomeDescriptionLine2')}</p>
+          <p className="text-gray-600 dark:text-gray-400 dark:text-gray-500 text-sm">{t('auth.welcomeDescription')}</p>
+          <p className="text-gray-600 dark:text-gray-400 dark:text-gray-500 text-sm">{t('auth.welcomeDescriptionLine2')}</p>
         </div>
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4">
             <div>
-              <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="username" className="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-600 mb-2">
                 {t('auth.username')}
               </label>
               <input
@@ -113,7 +113,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-600 mb-2">
                 {t('auth.password')}
               </label>
               <input
@@ -189,7 +189,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
         </form>
 
         <div className="text-center space-y-2">
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500">
             {t('auth.noAccount')}{' '}
             {onSwitchToSignUp && (
               <button
@@ -206,7 +206,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
               <button
                 type="button"
                 onClick={onSwitchToForgotPassword}
-                className="text-gray-600 hover:text-indigo-600 transition-colors"
+                className="text-gray-600 dark:text-gray-400 dark:text-gray-500 hover:text-indigo-600 transition-colors"
               >
                 {t('auth.forgotPassword.link')}
               </button>

@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { useAuthStore } from './stores/authStore';
+import { useSettingsStore } from './stores/settingsStore';
 import { AuthContainer } from './features/auth/AuthContainer';
 import { MainLayout } from './layouts/MainLayout';
 import { HomePage } from './pages/HomePage';
@@ -20,6 +21,7 @@ import { initializeErrorHandler } from './utils/errorHandler';
 function App() {
   const { user, isAuthenticated, setUser, setLoading, setError, logout } = useAuthStore();
   const { initializeStore, clearStore } = useAgentStore();
+  const { theme } = useSettingsStore();
 
   // Initialize error handler and check existing session
   useEffect(() => {
@@ -53,6 +55,34 @@ function App() {
       clearStore();
     }
   }, [user, initializeStore, clearStore]);
+
+  // Apply theme to document
+  useEffect(() => {
+    const root = document.documentElement;
+    
+    const applyTheme = (isDark: boolean) => {
+      if (isDark) {
+        root.classList.add('dark');
+      } else {
+        root.classList.remove('dark');
+      }
+    };
+
+    if (theme === 'system') {
+      // システム設定に連動
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      applyTheme(mediaQuery.matches);
+
+      // システム設定変更を監視
+      const listener = (e: MediaQueryListEvent) => applyTheme(e.matches);
+      mediaQuery.addEventListener('change', listener);
+
+      return () => mediaQuery.removeEventListener('change', listener);
+    } else {
+      // 明示的なテーマ設定
+      applyTheme(theme === 'dark');
+    }
+  }, [theme]);
 
   return (
     <ErrorBoundary>

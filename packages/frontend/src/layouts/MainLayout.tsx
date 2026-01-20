@@ -56,7 +56,7 @@ export function MainLayout() {
     // Return agent icon for chat page
     if (path.startsWith('/chat') && selectedAgent?.icon) {
       const AgentIcon = (icons[selectedAgent.icon as keyof typeof icons] as LucideIcon) || Bot;
-      return <AgentIcon className="w-5 h-5 text-gray-700 flex-shrink-0" />;
+      return <AgentIcon className="w-5 h-5 text-gray-700 dark:text-gray-300 dark:text-gray-600 dark:text-gray-300 flex-shrink-0" />;
     }
 
     return null;
@@ -154,10 +154,10 @@ export function MainLayout() {
     <div className="flex h-full w-full relative">
       {/* モバイル時のハンバーガーメニュー */}
       {isMobileView && !isSidebarOpen && (
-        <header className="fixed top-0 left-0 right-0 z-30 bg-white border-b border-gray-200 px-3 py-2 flex items-center gap-2">
+        <header className="fixed top-0 left-0 right-0 z-30 bg-white dark:bg-gray-900 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 dark:border-gray-700 px-3 py-2 flex items-center gap-2">
           <button
             onClick={() => setSidebarOpen(true)}
-            className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
+            className="p-2 text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 dark:text-gray-200 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-800 rounded-lg transition-colors flex-shrink-0"
             aria-label="サイドバーを開く"
           >
             <Menu className="w-5 h-5" />
@@ -165,8 +165,8 @@ export function MainLayout() {
 
           {showSkeleton ? (
             <div className="flex items-center gap-2 flex-1 min-w-0 p-2">
-              <div className="w-5 h-5 bg-gray-200 rounded animate-pulse flex-shrink-0" />
-              <div className="h-5 bg-gray-200 rounded animate-pulse w-32" />
+              <div className="w-5 h-5 bg-gray-200 dark:bg-gray-600 dark:bg-gray-700 rounded animate-pulse flex-shrink-0" />
+              <div className="h-5 bg-gray-200 dark:bg-gray-600 dark:bg-gray-700 rounded animate-pulse w-32" />
             </div>
           ) : (
             pageTitle && (
@@ -174,13 +174,13 @@ export function MainLayout() {
                 onClick={handleTitleClick}
                 className={`flex items-center gap-2 flex-1 min-w-0 ${
                   isChatPage
-                    ? 'hover:bg-gray-50 rounded-lg p-2 transition-colors'
+                    ? 'hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg p-2 transition-colors'
                     : 'cursor-default'
                 }`}
                 disabled={!isChatPage}
               >
                 {pageIcon}
-                <h1 className="text-base font-semibold text-gray-900 truncate">{pageTitle}</h1>
+                <h1 className="text-base font-semibold text-gray-900 dark:text-gray-100 dark:text-gray-100 truncate">{pageTitle}</h1>
               </button>
             )
           )}
@@ -189,7 +189,7 @@ export function MainLayout() {
             <Link
               to="/chat"
               onClick={handleNewChat}
-              className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
+              className="p-2 text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 dark:text-gray-200 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-800 rounded-lg transition-colors flex-shrink-0"
               aria-label={t('sidebar.newChat')}
               title={t('sidebar.newChat')}
             >
@@ -232,7 +232,7 @@ export function MainLayout() {
 
       {/* メインコンテンツエリア */}
       <div
-        className={`flex-1 flex flex-col min-w-0 bg-white ${isMobileView && !isSidebarOpen ? 'pt-12' : ''}`}
+        className={`flex-1 flex flex-col min-w-0 bg-white dark:bg-gray-900 ${isMobileView && !isSidebarOpen ? 'pt-12' : ''}`}
       >
         <Outlet />
       </div>

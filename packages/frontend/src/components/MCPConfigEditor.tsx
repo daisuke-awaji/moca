@@ -204,13 +204,13 @@ export const MCPConfigEditor: React.FC<MCPConfigEditorProps> = ({
   return (
     <div className="space-y-4">
       {/* Description */}
-      <div className="text-sm text-gray-600">
+      <div className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500">
         <p>{t('tool.mcp.description')}</p>
       </div>
 
       {/* JSON エディター */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-600 mb-2">
           {t('tool.mcp.configLabel')}
         </label>
         <textarea
@@ -219,7 +219,7 @@ export const MCPConfigEditor: React.FC<MCPConfigEditorProps> = ({
           disabled={disabled}
           placeholder={`{\n  "mcpServers": {\n    "github": {\n      "command": "uvx",\n      "args": ["mcp-server-github"],\n      "env": {\n        "GITHUB_TOKEN": "your_token"\n      }\n    }\n  }\n}`}
           rows={12}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed resize-none font-mono text-sm"
+          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 dark:bg-gray-700 disabled:cursor-not-allowed resize-none font-mono text-sm"
         />
       </div>
 
@@ -231,7 +231,7 @@ export const MCPConfigEditor: React.FC<MCPConfigEditorProps> = ({
             type="button"
             onClick={() => setShowSampleDropdown(!showSampleDropdown)}
             disabled={disabled}
-            className="inline-flex items-center space-x-2 px-3 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="inline-flex items-center space-x-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 dark:text-gray-600 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             <span>{t('tool.mcp.insertSample')}</span>
             <ChevronDown className="w-4 h-4" />
@@ -240,7 +240,7 @@ export const MCPConfigEditor: React.FC<MCPConfigEditorProps> = ({
           {showSampleDropdown && (
             <>
               <div className="fixed inset-0 z-10" onClick={() => setShowSampleDropdown(false)} />
-              <div className="absolute left-0 top-full mt-1 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20">
+              <div className="absolute left-0 top-full mt-1 w-56 bg-white dark:bg-gray-900 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-20">
                 {Object.entries(SAMPLE_CONFIGS(t)).map(([key, sample]) => (
                   <button
                     key={key}
@@ -248,7 +248,7 @@ export const MCPConfigEditor: React.FC<MCPConfigEditorProps> = ({
                     onClick={() =>
                       handleInsertSample(key as keyof ReturnType<typeof SAMPLE_CONFIGS>)
                     }
-                    className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                    className="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 dark:text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-800 transition-colors"
                   >
                     {sample.label}
                   </button>
@@ -294,7 +294,7 @@ export const MCPConfigEditor: React.FC<MCPConfigEditorProps> = ({
       {/* ツールプレビューとエラー */}
       {(toolsPreview.length > 0 || serverErrors.length > 0) && (
         <div className="space-y-3">
-          <h3 className="text-sm font-medium text-gray-700">{t('tool.mcp.connectionResults')}</h3>
+          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-600">{t('tool.mcp.connectionResults')}</h3>
 
           {/* 接続成功したサーバー */}
           {toolsPreview.length > 0 && (
@@ -314,9 +314,9 @@ export const MCPConfigEditor: React.FC<MCPConfigEditorProps> = ({
                         className="flex items-start space-x-2 text-sm"
                       >
                         <div>
-                          <span className="font-mono text-gray-900">{tool.name}</span>
+                          <span className="font-mono text-gray-900 dark:text-gray-100">{tool.name}</span>
                           {tool.description && (
-                            <span className="text-gray-600"> - {tool.description}</span>
+                            <span className="text-gray-600 dark:text-gray-400 dark:text-gray-500"> - {tool.description}</span>
                           )}
                         </div>
                       </div>
