@@ -233,10 +233,6 @@ export const environments: Record<Environment, EnvironmentConfig> = {
     tavilyApiKeySecretName: 'agentcore/default/tavily-api-key',
     githubTokenSecretName: 'agentcore/default/github-token',
     allowedSignUpEmailDomains: ['amazon.com', 'amazon.co.jp'],
-    customDomain: {
-      hostName: "agentchat",
-      domainName: "geeawa.net"
-    },
     eventRules: [
       {
         id: 's3-upload',
@@ -283,10 +279,6 @@ export const environments: Record<Environment, EnvironmentConfig> = {
       username: 'testuser',
       email: 'testuser@amazon.com',
       password: 'TestPassword123!',
-    },
-    customDomain: {
-      hostName: "agentcore-dev",
-      domainName: "geeawa.net"
     },
     eventRules: [
       {
