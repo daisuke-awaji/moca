@@ -1509,20 +1509,3 @@ defaultAgents:
       presentationCreation:
         title: Presentation Creation Package
         prompt: "Please create presentation materials on the following theme:\n\nTheme: \nAudience: \n\nCoordinate research, summarization, slide creation, and review."
-
-  agentBuilder:
-    name: Agent Builder
-    description: Creates custom AI agents through conversational interaction - guides you through requirements, tool selection, and system prompt design
-    scenarios:
-      createCustom:
-        title: Create Custom Agent
-        prompt: "I want to create a new custom agent. Let's start from scratch.\n\nPlease help me:\n1. Define what the agent should do\n2. Select appropriate tools\n3. Design an effective system prompt\n4. Set up useful scenarios"
-      cloneModify:
-        title: Clone & Modify Existing Agent
-        prompt: "I want to create a new agent based on an existing one.\n\nPlease:\n1. Show me the list of available agents\n2. Help me choose one as a starting point\n3. Guide me through modifications to better fit my needs"
-      domainExpert:
-        title: Create Domain Expert Agent
-        prompt: "I want to create a domain expert agent.\n\nDomain/Industry: \nKey expertise areas: \nTypical tasks: \n\nPlease research best practices for this domain and design an appropriate agent."
-      taskAutomation:
-        title: Create Task Automation Agent
-        prompt: "I want to create an agent that automates specific tasks.\n\nTask to automate: \nInput format: \nExpected output: \nFrequency: \n\nPlease design an agent optimized for this workflow."

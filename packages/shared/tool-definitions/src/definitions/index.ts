@@ -9,7 +9,6 @@ export * from './nova-canvas.js';
 export * from './image-to-text.js';
 export * from './call-agent.js';
 export * from './nova-reel.js';
-export * from './create-agent.js';
 
 import { executeCommandDefinition } from './execute-command.js';
 import { fileEditorDefinition } from './file-editor.js';
@@ -22,7 +21,6 @@ import { novaCanvasDefinition } from './nova-canvas.js';
 import { imageToTextDefinition } from './image-to-text.js';
 import { callAgentDefinition } from './call-agent.js';
 import { novaReelDefinition } from './nova-reel.js';
-import { createAgentDefinition } from './create-agent.js';
 
 /**
  * All tool definitions array
@@ -39,7 +37,6 @@ export const allToolDefinitions = [
   imageToTextDefinition,
   callAgentDefinition,
   novaReelDefinition,
-  createAgentDefinition,
 ];
 
 /**
