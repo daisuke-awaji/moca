@@ -262,9 +262,31 @@ pre.mermaid {
 `;
 
 /**
+ * Generate KaTeX initialization script
+ * Using string concatenation to avoid template literal issues with $ characters
+ */
+function getKatexScript(): string {
+  const dollar = '$';
+  const doubleDollar = '$$';
+  return `
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      renderMathInElement(document.body, {
+        delimiters: [
+          {left: "${doubleDollar}", right: "${doubleDollar}", display: true},
+          {left: "${dollar}", right: "${dollar}", display: false}
+        ],
+        throwOnError: false
+      });
+    });
+  </script>`;
+}
+
+/**
  * Generate complete HTML document
  */
 export function generateHtmlDocument(title: string, bodyContent: string): string {
+  const katexScript = getKatexScript();
   return `<!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -275,46 +297,7 @@ export function generateHtmlDocument(title: string, bodyContent: string): string
   <!-- KaTeX for LaTeX math rendering -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Ber8A78D7Y6q4L9lAMh8Bqgq0f1LQOAkA0Z0xQp7" crossorigin="anonymous"></script>
-  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"></script>
-  <script>
-    document.addEventListener("DOMContentLoaded", function() {
-      renderMathInElement(document.body, {
-        delimiters: [
-          {left: '$', right: '$', display: true},
-          {left: '
-}
-
-/**
- * Escape HTML special characters
- */
-export function escapeHtml(text: string): string {
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
-, right: '
-}
-
-/**
- * Escape HTML special characters
- */
-export function escapeHtml(text: string): string {
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
-, display: false}
-        ],
-        throwOnError: false
-      });
-    });
-  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"></script>${katexScript}
   <!-- Mermaid for diagram rendering -->
   <script type="module">
     import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
