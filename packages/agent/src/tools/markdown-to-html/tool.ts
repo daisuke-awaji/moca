@@ -9,6 +9,7 @@ import { dirname, basename, extname, join } from 'path';
 import { logger } from '../../config/index.js';
 import { getCurrentContext } from '../../context/request-context.js';
 import { convertMarkdownToHtml } from './converter.js';
+import { replaceWithPresignedUrls } from './presigned-url.js';
 
 /**
  * Generate default output path with timestamp
@@ -36,9 +37,16 @@ export const markdownToHtmlTool = tool({
   description: markdownToHtmlDefinition.description,
   inputSchema: markdownToHtmlDefinition.zodSchema,
   callback: async (input) => {
-    const { inputPath, title, outputPath } = input;
+    const {
+      inputPath,
+      title,
+      outputPath,
+      embedMedia = 'relative',
+      presignedUrlExpiry = 86400,
+    } = input;
 
     logger.info(`📄 Markdown to HTML conversion started: ${inputPath}`);
+    logger.info(`📄 embedMedia: ${embedMedia}, presignedUrlExpiry: ${presignedUrlExpiry}s`);
 
     try {
       // Wait for workspace sync to complete
@@ -84,17 +92,29 @@ export const markdownToHtmlTool = tool({
       }
 
       // Convert Markdown to HTML
-      const htmlContent = convertMarkdownToHtml(markdownContent, documentTitle);
+      let htmlContent = convertMarkdownToHtml(markdownContent, documentTitle);
+
+      // Process media URLs if embedMedia is 'presigned'
+      if (embedMedia === 'presigned') {
+        logger.info('🔗 Converting media paths to presigned URLs...');
+        htmlContent = await replaceWithPresignedUrls(htmlContent, presignedUrlExpiry);
+      }
 
       // Write HTML file
       writeFileSync(finalOutputPath, htmlContent, 'utf8');
+
+      const expiryInfo =
+        embedMedia === 'presigned'
+          ? ` Media URLs are valid for ${Math.floor(presignedUrlExpiry / 3600)} hour(s).`
+          : '';
 
       logger.info(`✅ Successfully converted Markdown to HTML: ${finalOutputPath}`);
 
       return JSON.stringify({
         success: true,
         outputPath: finalOutputPath,
-        message: `Successfully converted Markdown to HTML. Output saved to: ${finalOutputPath}`,
+        embedMedia,
+        message: `Successfully converted Markdown to HTML. Output saved to: ${finalOutputPath}${expiryInfo}`,
       });
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'Unknown error';
