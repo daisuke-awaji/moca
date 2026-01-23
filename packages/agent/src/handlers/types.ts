@@ -13,6 +13,7 @@ export interface InvocationRequest {
   enabledTools?: string[]; // Optional: Array of tool names to enable (undefined=all, []=none)
   systemPrompt?: string; // Optional: Custom system prompt
   storagePath?: string; // Optional: S3 directory path selected by user
+  agentId?: string; // Optional: Agent ID for session tracking
   memoryEnabled?: boolean; // Optional: Whether to enable long-term memory (default: false)
   memoryTopK?: number; // Optional: Number of long-term memories to retrieve (default: 10)
   mcpConfig?: Record<string, unknown>; // Optional: User-defined MCP server configuration

@@ -298,6 +298,7 @@ export const useChatStore = create<ChatStore>()(
                 systemPrompt: selectedAgent.systemPrompt,
                 enabledTools: selectedAgent.enabledTools,
                 storagePath: agentWorkingDirectory,
+                agentId: selectedAgent.agentId,
                 memoryEnabled: isMemoryEnabled,
                 mcpConfig: selectedAgent.mcpConfig as Record<string, unknown> | undefined,
                 images: imageData,

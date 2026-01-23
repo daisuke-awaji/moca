@@ -15,6 +15,8 @@ import {
 import type { SessionSummary, ConversationMessage } from '../api/sessions';
 import { ApiError } from '../api/client/base-client';
 import i18n from '../i18n';
+import { useAgentStore } from './agentStore';
+import { useStorageStore } from './storageStore';
 
 // AWS AgentCore sessionId constraints: [a-zA-Z0-9][a-zA-Z0-9-_]*
 // Custom nanoid with alphanumeric characters only (excluding hyphens and underscores)
@@ -209,6 +211,32 @@ export const useSessionStore = create<SessionStore>()(
           });
 
           console.log(`🔄 Selecting session: ${sessionId}`);
+
+          // Restore agent and storage path from session data
+          const { sessions } = get();
+          const session = sessions.find((s) => s.sessionId === sessionId);
+
+          if (session) {
+            // Restore agent if session has agentId
+            if (session.agentId) {
+              const agentStore = useAgentStore.getState();
+              const agent = agentStore.getAgent(session.agentId);
+              if (agent) {
+                agentStore.selectAgent(agent);
+                console.log(`🤖 Agent switched to: ${agent.name} (${session.agentId})`);
+              } else {
+                console.warn(`⚠️ Agent not found for agentId: ${session.agentId}`);
+              }
+            }
+
+            // Restore storage path if session has storagePath
+            if (session.storagePath) {
+              const storageStore = useStorageStore.getState();
+              storageStore.setAgentWorkingDirectory(session.storagePath);
+              console.log(`📁 Storage path switched to: ${session.storagePath}`);
+            }
+          }
+
           const events = await fetchSessionEvents(sessionId);
 
           set({

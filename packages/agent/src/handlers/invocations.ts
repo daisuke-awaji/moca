@@ -33,6 +33,7 @@ export async function handleInvocation(req: Request, res: Response): Promise<voi
       enabledTools,
       systemPrompt,
       storagePath,
+      agentId,
       memoryEnabled,
       memoryTopK,
       mcpConfig,
@@ -105,7 +106,13 @@ export async function handleInvocation(req: Request, res: Response): Promise<voi
     const workspaceSyncResult = initializeWorkspaceSync(actorId, storagePath, context);
 
     // Setup session (if sessionId exists)
-    const sessionResult = setupSession(actorId, sessionId, sessionType);
+    const sessionResult = setupSession({
+      actorId,
+      sessionId,
+      sessionType,
+      agentId,
+      storagePath,
+    });
     const sessionStorage = getSessionStorage();
 
     // Agent creation options

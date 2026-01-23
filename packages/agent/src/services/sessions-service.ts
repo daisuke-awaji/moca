@@ -23,6 +23,7 @@ export interface SessionData {
   sessionId: string;
   title: string;
   agentId?: string;
+  storagePath?: string;
   sessionType?: SessionType;
   createdAt: string;
   updatedAt: string;
@@ -36,6 +37,7 @@ export interface CreateSessionOptions {
   sessionId: string;
   title: string;
   agentId?: string;
+  storagePath?: string;
   sessionType?: SessionType;
 }
 
@@ -100,6 +102,7 @@ export class SessionsService {
       sessionId: options.sessionId,
       title: options.title,
       agentId: options.agentId,
+      storagePath: options.storagePath,
       sessionType: options.sessionType,
       createdAt: now,
       updatedAt: now,
@@ -203,6 +206,68 @@ export class SessionsService {
       return unmarshall(result.Item) as SessionData;
     } catch (error) {
       logger.error('[SessionsService] Error getting session:', { error });
+      throw error;
+    }
+  }
+
+  /**
+   * Update session's agentId, storagePath and timestamp
+   * Used when continuing an existing session with potentially different agent/storage settings
+   */
+  async updateSessionAgentAndStorage(
+    userId: string,
+    sessionId: string,
+    agentId?: string,
+    storagePath?: string
+  ): Promise<void> {
+    if (!this.isConfigured()) {
+      logger.warn('[SessionsService] Not configured, skipping agent/storage update');
+      return;
+    }
+
+    const now = new Date().toISOString();
+
+    // Build update expression dynamically based on provided values
+    const updateParts: string[] = ['updatedAt = :updatedAt'];
+    const expressionValues: Record<string, string | undefined> = { ':updatedAt': now };
+
+    if (agentId !== undefined) {
+      updateParts.push('agentId = :agentId');
+      expressionValues[':agentId'] = agentId;
+    }
+
+    if (storagePath !== undefined) {
+      updateParts.push('storagePath = :storagePath');
+      expressionValues[':storagePath'] = storagePath;
+    }
+
+    try {
+      await this.client.send(
+        new UpdateItemCommand({
+          TableName: this.tableName,
+          Key: marshall({ userId, sessionId }),
+          UpdateExpression: `SET ${updateParts.join(', ')}`,
+          ExpressionAttributeValues: marshall(expressionValues, { removeUndefinedValues: true }),
+          ConditionExpression: 'attribute_exists(userId) AND attribute_exists(sessionId)',
+        })
+      );
+
+      logger.info('[SessionsService] Updated session agentId/storagePath:', {
+        userId,
+        sessionId,
+        agentId,
+        storagePath,
+        updatedAt: now,
+      });
+    } catch (error: unknown) {
+      if ((error as { name?: string }).name === 'ConditionalCheckFailedException') {
+        logger.warn('[SessionsService] Session not found for agent/storage update:', {
+          userId,
+          sessionId,
+        });
+        return;
+      }
+      logger.error('[SessionsService] Error updating session agent/storage:', { error });
       throw error;
     }
   }

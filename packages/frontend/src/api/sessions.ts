@@ -20,6 +20,7 @@ export interface SessionSummary {
   createdAt: string;
   updatedAt: string;
   agentId?: string;
+  storagePath?: string;
 }
 
 /**

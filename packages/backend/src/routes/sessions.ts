@@ -65,6 +65,7 @@ router.get('/', jwtAuthMiddleware, async (req: AuthenticatedRequest, res: Respon
         title: session.title,
         sessionType: session.sessionType,
         agentId: session.agentId,
+        storagePath: session.storagePath,
         createdAt: session.createdAt,
         updatedAt: session.updatedAt,
       })),

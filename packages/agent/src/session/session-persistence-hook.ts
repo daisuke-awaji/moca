@@ -69,13 +69,16 @@ export class SessionPersistenceHook implements HookProvider {
   private isNewSession = false;
   private firstUserMessageText?: string;
   private agentId?: string;
+  private storagePath?: string;
 
   constructor(
     private readonly storage: SessionStorage,
     private readonly sessionConfig: SessionConfig,
-    agentId?: string
+    agentId?: string,
+    storagePath?: string
   ) {
     this.agentId = agentId;
+    this.storagePath = storagePath;
   }
 
   /**
@@ -121,23 +124,33 @@ export class SessionPersistenceHook implements HookProvider {
               sessionId,
               title,
               agentId: this.agentId,
+              storagePath: this.storagePath,
               sessionType: this.sessionConfig.sessionType,
             });
             logger.info('[SessionPersistenceHook] Created new session in DynamoDB:', {
               userId: actorId,
               sessionId,
               title,
+              agentId: this.agentId,
+              storagePath: this.storagePath,
             });
 
             // Mark as new session and save user message for title generation
             this.isNewSession = true;
             this.firstUserMessageText = extractTextFromMessage(message);
           } else {
-            // Existing session - update timestamp
-            await sessionsService.updateSessionTimestamp(actorId, sessionId);
-            logger.debug('[SessionPersistenceHook] Updated existing session timestamp:', {
+            // Existing session - update agentId, storagePath and timestamp
+            await sessionsService.updateSessionAgentAndStorage(
+              actorId,
+              sessionId,
+              this.agentId,
+              this.storagePath
+            );
+            logger.debug('[SessionPersistenceHook] Updated existing session agent/storage:', {
               userId: actorId,
               sessionId,
+              agentId: this.agentId,
+              storagePath: this.storagePath,
             });
           }
 

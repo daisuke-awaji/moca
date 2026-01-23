@@ -280,6 +280,10 @@ export const environments: Record<Environment, EnvironmentConfig> = {
       email: 'testuser@amazon.com',
       password: 'TestPassword123!',
     },
+    customDomain: {
+      hostName: 'agentcore-dev',
+      domainName: 'geeawa.net',
+    },
     eventRules: [
       {
         id: 's3-upload',
@@ -302,20 +306,20 @@ export const environments: Record<Environment, EnvironmentConfig> = {
         enabled: true,
       },
       // https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-saas-furls.html
-      // {
-      //   id: 'github-issue-created',
-      //   name: 'GitHub Issue created',
-      //   description: 'Triggered when a new issue is opened in the GitHub repository',
-      //   eventPattern: {
-      //     source: ['github.com'],
-      //     detailType: ['issues'],
-      //     detail: {
-      //       action: ["opened"]
-      //     }
-      //   },
-      //   icon: 'github', // https://lucide.dev/icons/github
-      //   enabled: true,
-      // }
+      {
+        id: 'github-issue-created',
+        name: 'GitHub Issue created ',
+        description: 'Triggered when a new issue is opened in the GitHub repository',
+        eventPattern: {
+          source: ['github.com'],
+          detailType: ['issues'],
+          detail: {
+            action: ['opened'],
+          },
+        },
+        icon: 'github', // https://lucide.dev/icons/github
+        enabled: true,
+      },
     ],
   },
 

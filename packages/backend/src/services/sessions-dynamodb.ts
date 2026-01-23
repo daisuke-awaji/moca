@@ -25,6 +25,7 @@ export interface SessionData {
   sessionId: string;
   title: string;
   agentId?: string;
+  storagePath?: string;
   sessionType?: SessionType;
   createdAt: string;
   updatedAt: string;
@@ -37,6 +38,7 @@ export interface SessionSummary {
   sessionId: string;
   title: string;
   agentId?: string;
+  storagePath?: string;
   sessionType?: SessionType;
   createdAt: string;
   updatedAt: string;
@@ -104,6 +106,7 @@ export class SessionsDynamoDBService {
           sessionId: data.sessionId,
           title: data.title,
           agentId: data.agentId,
+          storagePath: data.storagePath,
           sessionType: data.sessionType,
           createdAt: data.createdAt,
           updatedAt: data.updatedAt,

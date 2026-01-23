@@ -33,6 +33,7 @@ interface AgentConfig {
   enabledTools?: string[];
   systemPrompt?: string;
   storagePath?: string;
+  agentId?: string;
   memoryEnabled?: boolean;
   memoryTopK?: number;
   mcpConfig?: Record<string, unknown>;
@@ -74,6 +75,10 @@ export const streamAgentResponse = async (
 
   if (agentConfig?.storagePath) {
     requestBody.storagePath = agentConfig.storagePath;
+  }
+
+  if (agentConfig?.agentId) {
+    requestBody.agentId = agentConfig.agentId;
   }
 
   if (agentConfig?.memoryEnabled !== undefined) {
