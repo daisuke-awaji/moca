@@ -7,6 +7,7 @@ import { Router, Response } from 'express';
 import { jwtAuthMiddleware, AuthenticatedRequest, getCurrentAuth } from '../middleware/auth.js';
 import { createAgentCoreMemoryService } from '../services/agentcore-memory.js';
 import { getSessionsDynamoDBService } from '../services/sessions-dynamodb.js';
+import { stopRuntimeSession, isSessionControlConfigured } from '../services/session-control.js';
 import { config } from '../config/index.js';
 
 const router = Router();
@@ -290,6 +291,92 @@ router.delete(
       res.status(500).json({
         error: 'Internal Server Error',
         message: error instanceof Error ? error.message : 'Failed to delete session',
+        requestId: auth.requestId,
+      });
+    }
+  }
+);
+
+/**
+ * Stop a running session endpoint
+ * POST /sessions/:sessionId/stop
+ * JWT authentication required - Use user ID as actorId
+ * Stops an actively running AgentCore Runtime session
+ */
+router.post(
+  '/:sessionId/stop',
+  jwtAuthMiddleware,
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const auth = getCurrentAuth(req);
+      const actorId = auth.userId;
+      const { sessionId } = req.params;
+
+      if (!actorId) {
+        return res.status(400).json({
+          error: 'Invalid authentication',
+          message: 'Failed to retrieve user ID',
+          requestId: auth.requestId,
+        });
+      }
+
+      if (!sessionId) {
+        return res.status(400).json({
+          error: 'Invalid request',
+          message: 'Session ID is not specified',
+          requestId: auth.requestId,
+        });
+      }
+
+      // Check if session control is configured
+      if (!isSessionControlConfigured()) {
+        return res.status(500).json({
+          error: 'Configuration Error',
+          message: 'AgentCore Runtime ARN is not configured',
+          requestId: auth.requestId,
+        });
+      }
+
+      console.log(`🛑 Session stop requested (${auth.requestId}):`, {
+        userId: actorId,
+        username: auth.username,
+        sessionId,
+      });
+
+      // Verify session ownership before stopping
+      const sessionsDynamoDBService = getSessionsDynamoDBService();
+      if (sessionsDynamoDBService.isConfigured()) {
+        const session = await sessionsDynamoDBService.getSession(actorId, sessionId);
+        if (!session) {
+          console.warn(`⚠️ Access denied to stop session (${auth.requestId}): ${sessionId}`);
+          return res.status(403).json({
+            error: 'Forbidden',
+            message: 'You do not have permission to stop this session',
+            requestId: auth.requestId,
+          });
+        }
+      }
+
+      // Stop the runtime session
+      const result = await stopRuntimeSession(sessionId);
+
+      console.log(`✅ Session stop completed (${auth.requestId}):`, result);
+
+      res.status(200).json({
+        ...result,
+        metadata: {
+          requestId: auth.requestId,
+          timestamp: new Date().toISOString(),
+          actorId,
+        },
+      });
+    } catch (error) {
+      const auth = getCurrentAuth(req);
+      console.error(`💥 Session stop error (${auth.requestId}):`, error);
+
+      res.status(500).json({
+        error: 'Internal Server Error',
+        message: error instanceof Error ? error.message : 'Failed to stop session',
         requestId: auth.requestId,
       });
     }

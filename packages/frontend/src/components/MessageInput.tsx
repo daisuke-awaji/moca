@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Send, Loader2, Paperclip } from 'lucide-react';
+import { Send, Paperclip, StopCircle } from 'lucide-react';
 import { nanoid } from 'nanoid';
 import { useChatStore } from '../stores/chatStore';
 import { useSettingsStore } from '../stores/settingsStore';
@@ -23,7 +23,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
   getScenarioPrompt,
 }) => {
   const { t } = useTranslation();
-  const { sendPrompt } = useChatStore();
+  const { sendPrompt, stopSession } = useChatStore();
   const { sendBehavior } = useSettingsStore();
   const sessionState = useChatStore((state) =>
     sessionId ? (state.sessions[sessionId] ?? null) : null
@@ -374,22 +374,29 @@ export const MessageInput: React.FC<MessageInputProps> = ({
             </button>
           </div>
 
-          {/* Send button */}
-          <button
-            type="submit"
-            disabled={(!input.trim() && attachedImages.length === 0) || isLoading}
-            className={`absolute right-2 bottom-2 w-8 h-8 rounded-md flex items-center justify-center transition-all duration-200 ${
-              (!input.trim() && attachedImages.length === 0) || isLoading
-                ? 'text-gray-400 cursor-not-allowed'
-                : 'text-black hover:bg-gray-100'
-            }`}
-          >
-            {isLoading ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
+          {/* Send/Stop button */}
+          {isLoading ? (
+            <button
+              type="button"
+              onClick={() => sessionId && stopSession(sessionId)}
+              className="absolute right-2 bottom-2 w-8 h-8 rounded-md flex items-center justify-center transition-all duration-200 text-red-500 hover:bg-red-50 hover:text-red-600"
+              title={t('chat.stopSession')}
+            >
+              <StopCircle className="w-4 h-4" />
+            </button>
+          ) : (
+            <button
+              type="submit"
+              disabled={!input.trim() && attachedImages.length === 0}
+              className={`absolute right-2 bottom-2 w-8 h-8 rounded-md flex items-center justify-center transition-all duration-200 ${
+                !input.trim() && attachedImages.length === 0
+                  ? 'text-gray-400 cursor-not-allowed'
+                  : 'text-black hover:bg-gray-100'
+              }`}
+            >
               <Send className="w-4 h-4" />
-            )}
-          </button>
+            </button>
+          )}
         </div>
       </form>
 

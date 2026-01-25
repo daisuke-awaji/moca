@@ -333,6 +333,7 @@ export class AgentCoreStack extends cdk.Stack {
       cognitoAuth: this.cognitoAuth,
       agentcoreGatewayEndpoint: `https://${this.gateway.gatewayId}.gateway.bedrock-agentcore.${this.region}.amazonaws.com/mcp`,
       agentcoreMemoryId: this.memory.memoryId,
+      agentcoreRuntimeArn: this.agentRuntime.runtimeArn,
       corsAllowedOrigins: envConfig.corsAllowedOrigins,
       timeout: 30,
       memorySize: 1024,

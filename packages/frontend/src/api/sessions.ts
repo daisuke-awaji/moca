@@ -3,7 +3,7 @@
  * Client for calling Backend session API
  */
 
-import { backendGet, backendDelete } from './client/backend-client';
+import { backendGet, backendDelete, backendPost } from './client/backend-client';
 
 /**
  * Session type
@@ -149,4 +149,27 @@ export async function fetchSessionEvents(sessionId: string): Promise<Conversatio
  */
 export async function deleteSession(sessionId: string): Promise<void> {
   await backendDelete(`/sessions/${sessionId}`);
+}
+
+/**
+ * Stop session result type
+ */
+export interface StopSessionResult {
+  success: boolean;
+  message: string;
+  sessionId: string;
+  metadata: {
+    requestId: string;
+    timestamp: string;
+    actorId: string;
+  };
+}
+
+/**
+ * Stop a running session
+ * @param sessionId Session ID to stop
+ * @returns Stop result
+ */
+export async function stopSession(sessionId: string): Promise<StopSessionResult> {
+  return backendPost<StopSessionResult>(`/sessions/${sessionId}/stop`);
 }

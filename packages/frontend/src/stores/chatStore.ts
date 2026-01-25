@@ -12,6 +12,7 @@ import type {
 } from '../types/index';
 import { streamAgentResponse } from '../api/agent';
 import type { ConversationMessage } from '../api/sessions';
+import { stopSession as stopSessionApi } from '../api/sessions';
 import { useAgentStore } from './agentStore';
 import { useStorageStore } from './storageStore';
 import { useSessionStore } from './sessionStore';
@@ -109,6 +110,7 @@ interface ChatActions {
   addMessage: (sessionId: string, message: Omit<Message, 'id' | 'timestamp'>) => string;
   updateMessage: (sessionId: string, messageId: string, updates: Partial<Message>) => void;
   sendPrompt: (prompt: string, sessionId: string, images?: ImageAttachment[]) => Promise<void>;
+  stopSession: (sessionId: string) => Promise<void>;
   clearSession: (sessionId: string) => void;
   setLoading: (sessionId: string, loading: boolean) => void;
   setError: (sessionId: string, error: string | null) => void;
@@ -545,6 +547,39 @@ export const useChatStore = create<ChatStore>()(
 
         set({ sessions: newSessions });
         console.log(`🗑️ Session cleared: ${sessionId}`);
+      },
+
+      stopSession: async (sessionId: string) => {
+        const { sessions } = get();
+        const sessionState = getOrCreateSessionState(sessions, sessionId);
+
+        // Skip if not loading
+        if (!sessionState.isLoading) {
+          console.log(`⏭️ Session not loading, skip stop: ${sessionId}`);
+          return;
+        }
+
+        console.log(`🛑 Stopping session: ${sessionId}`);
+
+        try {
+          await stopSessionApi(sessionId);
+          console.log(`✅ Session stopped: ${sessionId}`);
+        } catch (error) {
+          console.error(`❌ Failed to stop session: ${sessionId}`, error);
+          // Continue to update UI state even on error
+        }
+
+        // Update UI state - clear loading
+        set({
+          sessions: {
+            ...sessions,
+            [sessionId]: {
+              ...sessionState,
+              isLoading: false,
+              error: null,
+            },
+          },
+        });
       },
 
       setLoading: (sessionId: string, loading: boolean) => {

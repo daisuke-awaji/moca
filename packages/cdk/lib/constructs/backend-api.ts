@@ -45,6 +45,11 @@ export interface BackendApiProps {
   readonly sessionsTableName?: string;
 
   /**
+   * AgentCore Runtime ARN (for session control)
+   */
+  readonly agentcoreRuntimeArn?: string;
+
+  /**
    * CORS許可オリジン
    */
   readonly corsAllowedOrigins?: string[];
@@ -166,6 +171,17 @@ export class BackendApi extends Construct {
         })
       );
     }
+
+    // AgentCore Runtime session control permission (StopRuntimeSession)
+    if (props.agentcoreRuntimeArn) {
+      lambdaExecutionRole.addToPolicy(
+        new iam.PolicyStatement({
+          effect: iam.Effect.ALLOW,
+          actions: ['bedrock-agentcore:StopRuntimeSession'],
+          resources: [props.agentcoreRuntimeArn],
+        })
+      );
+    }
     
     // EventBridge Scheduler へのアクセス権限を追加
     // Scheduler の作成・更新・削除権限
@@ -234,6 +250,7 @@ export class BackendApi extends Construct {
         // AWS_REGION は Lambda ランタイムが自動提供するため削除
         AGENTCORE_GATEWAY_ENDPOINT: props.agentcoreGatewayEndpoint,
         AGENTCORE_MEMORY_ID: props.agentcoreMemoryId || '',
+        AGENTCORE_RUNTIME_ARN: props.agentcoreRuntimeArn || '',
         USER_STORAGE_BUCKET_NAME: props.userStorageBucketName || '',
         AGENTS_TABLE_NAME: props.agentsTableName || '',
         SESSIONS_TABLE_NAME: props.sessionsTableName || '',
