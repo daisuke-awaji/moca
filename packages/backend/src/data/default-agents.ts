@@ -134,9 +134,9 @@ Please keep the following in mind:
 [Configuration]
 **Knowledge Base ID**: [PLEASE_SPECIFY_YOUR_KNOWLEDGE_BASE_ID]
 - Before using this agent, replace the placeholder above with your actual Knowledge Base ID
-- The Knowledge Base ID can be found in the AWS Console under Amazon Bedrock > Knowledge bases
-- Format: Alphanumeric string (e.g., "ABC123DEF456")
-- This ID will be used for all kb-retrieve tool calls
+      - The Knowledge Base ID can be found in the AWS Console under Amazon Bedrock > Knowledge bases
+      - Format: Alphanumeric string (e.g., "ABC123DEF456")
+      - This ID will be used for all kb-retrieve tool calls
 
 [Basic functions]
 - Perform semantic searches against the configured Knowledge Base
