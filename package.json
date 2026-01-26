@@ -11,8 +11,8 @@
     "packages/shared/*"
   ],
   "scripts": {
-    "build": "npm run build --workspace=@fullstack-agentcore/tool-definitions && npm run build --workspaces --if-present",
-    "test": "npm run build --workspace=@fullstack-agentcore/tool-definitions && npm run test --workspaces --if-present",
+    "build": "npm run build --workspace=@fullstack-agentcore/utils && npm run build --workspace=@fullstack-agentcore/tool-definitions && npm run build --workspaces --if-present",
+    "test": "npm run build --workspace=@fullstack-agentcore/utils && npm run build --workspace=@fullstack-agentcore/tool-definitions && npm run test --workspaces --if-present",
     "test:integration": "npm run test:integration --workspace=@fullstack-agentcore/backend",
     "setup-env": "tsx scripts/setup-env.ts",
     "dev": "concurrently -n \"frontend,backend,agent\" -c \"cyan,magenta,yellow\" \"npm:frontend:dev\" \"npm:backend:dev\" \"npm:agent:dev\"",

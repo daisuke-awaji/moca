@@ -1,0 +1,28 @@
+{
+  "name": "@fullstack-agentcore/utils",
+  "version": "0.1.0",
+  "description": "Shared utility functions for AgentCore",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./path-validator": {
+      "import": "./dist/path-validator.js",
+      "types": "./dist/path-validator.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc --build",
+    "clean": "rimraf dist tsconfig.tsbuildinfo",
+    "dev": "tsc --build --watch"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "rimraf": "^5.0.5",
+    "typescript": "~5.2.2"
+  }
+}
