@@ -16,7 +16,7 @@ import { pipeline } from 'stream/promises';
 import * as crypto from 'crypto';
 import pLimit from 'p-limit';
 import { SyncIgnoreFilter } from './sync-ignore-filter.js';
-import { validatePathWithinBase } from '@fullstack-agentcore/utils/path-validator';
+import { validatePathWithinBase } from '../../../shared/utils/dist/path-validator.js';
 
 const s3Client = new S3Client({ region: process.env.AWS_REGION });
 
