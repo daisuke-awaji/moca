@@ -126,6 +126,7 @@ export class FileSessionStorage implements SessionStorage {
    */
   private getActorDir(actorId: string): string {
     const safeActorId = this.sanitizeId(actorId);
+    // nosemgrep: path-join-resolve-traversal - safeActorId is sanitized by sanitizeId()
     return path.join(this.storageDir, safeActorId);
   }
 
@@ -135,6 +136,7 @@ export class FileSessionStorage implements SessionStorage {
   private getFilePath(config: SessionConfig): string {
     const safeActorId = this.sanitizeId(config.actorId);
     const safeSessionId = this.sanitizeId(config.sessionId);
+    // nosemgrep: path-join-resolve-traversal - IDs are sanitized by sanitizeId()
     return path.join(this.storageDir, safeActorId, `${safeSessionId}.json`);
   }
 

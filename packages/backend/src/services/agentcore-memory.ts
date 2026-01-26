@@ -479,7 +479,8 @@ export class AgentCoreMemoryService {
             );
           } catch (deleteError) {
             console.warn(
-              `[AgentCoreMemoryService] Failed to delete event ${event.eventId}:`,
+              '[AgentCoreMemoryService] Failed to delete event %s:',
+              event.eventId,
               deleteError
             );
           }
@@ -630,7 +631,7 @@ export class AgentCoreMemoryService {
           // Debug log: Check structure of memoryRecordSummaries
           if (index < 2) {
             // Log only first 2 items
-            console.log(`[AgentCoreMemoryService] Record ${index} structure:`, {
+            console.log('[AgentCoreMemoryService] Record %d structure:', index, {
               recordId: record.memoryRecordId,
               recordIdType: typeof record.memoryRecordId,
               availableKeys: Object.keys(record),
@@ -652,7 +653,8 @@ export class AgentCoreMemoryService {
           const recordId = record.memoryRecordId || '';
           if (!recordId) {
             console.warn(
-              `[AgentCoreMemoryService] Empty recordId found in record ${index}:`,
+              '[AgentCoreMemoryService] Empty recordId found in record %d:',
+              index,
               record
             );
           }
@@ -779,7 +781,7 @@ export class AgentCoreMemoryService {
           // Debug log: Check structure of memoryRecordSummaries
           if (index < 2) {
             // Log only first 2 items
-            console.log(`[AgentCoreMemoryService] Retrieve record ${index} structure:`, {
+            console.log('[AgentCoreMemoryService] Retrieve record %d structure:', index, {
               recordId: record.memoryRecordId,
               recordIdType: typeof record.memoryRecordId,
               availableKeys: Object.keys(record),
@@ -801,7 +803,8 @@ export class AgentCoreMemoryService {
           const recordId = record.memoryRecordId || '';
           if (!recordId) {
             console.warn(
-              `[AgentCoreMemoryService] Empty recordId found in retrieve record ${index}:`,
+              '[AgentCoreMemoryService] Empty recordId found in retrieve record %d:',
+              index,
               record
             );
           }

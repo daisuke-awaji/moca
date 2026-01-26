@@ -23,12 +23,12 @@ router.get('/', jwtAuthMiddleware, async (req: AuthenticatedRequest, res: Respon
   try {
     const auth = getCurrentAuth(req);
 
-    console.log(`📋 Event sources retrieval started (${auth.requestId})`);
+    console.log('📋 Event sources retrieval started (%s)', auth.requestId);
 
     const eventSourcesConfig = process.env.EVENT_SOURCES_CONFIG;
 
     if (!eventSourcesConfig) {
-      console.log(`⚠️ No EVENT_SOURCES_CONFIG found (${auth.requestId})`);
+      console.log('⚠️ No EVENT_SOURCES_CONFIG found (%s)', auth.requestId);
       return res.status(200).json({
         eventSources: [],
         metadata: {
@@ -55,7 +55,7 @@ router.get('/', jwtAuthMiddleware, async (req: AuthenticatedRequest, res: Respon
     });
   } catch (error) {
     const auth = getCurrentAuth(req);
-    console.error(`💥 Event sources retrieval error (${auth.requestId}):`, error);
+    console.error('💥 Event sources retrieval error (%s):', auth.requestId, error);
 
     res.status(500).json({
       error: 'Internal Server Error',

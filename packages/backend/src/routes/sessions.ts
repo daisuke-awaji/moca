@@ -34,7 +34,7 @@ router.get('/', jwtAuthMiddleware, async (req: AuthenticatedRequest, res: Respon
       });
     }
 
-    console.log(`📋 Session list retrieval started (${auth.requestId}):`, {
+    console.log('📋 Session list retrieval started (%s):', auth.requestId, {
       userId: actorId,
       username: auth.username,
       limit,
@@ -81,7 +81,7 @@ router.get('/', jwtAuthMiddleware, async (req: AuthenticatedRequest, res: Respon
     });
   } catch (error) {
     const auth = getCurrentAuth(req);
-    console.error(`💥 Session list retrieval error (${auth.requestId}):`, error);
+    console.error('💥 Session list retrieval error (%s):', auth.requestId, error);
 
     res.status(500).json({
       error: 'Internal Server Error',
@@ -135,7 +135,7 @@ router.get(
       if (sessionsDynamoDBService.isConfigured()) {
         const session = await sessionsDynamoDBService.getSession(actorId, sessionId);
         if (!session) {
-          console.warn(`⚠️ Access denied to session (${auth.requestId}): ${sessionId}`);
+          console.warn('⚠️ Access denied to session (%s): %s', auth.requestId, sessionId);
           return res.status(403).json({
             error: 'Forbidden',
             message: 'You do not have permission to access this session',
@@ -144,7 +144,7 @@ router.get(
         }
       }
 
-      console.log(`💬 Session conversation history retrieval started (${auth.requestId}):`, {
+      console.log('💬 Session conversation history retrieval started (%s):', auth.requestId, {
         userId: actorId,
         username: auth.username,
         sessionId,
@@ -169,7 +169,7 @@ router.get(
       });
     } catch (error) {
       const auth = getCurrentAuth(req);
-      console.error(`💥 Session conversation history retrieval error (${auth.requestId}):`, error);
+      console.error('💥 Session conversation history retrieval error (%s):', auth.requestId, error);
 
       res.status(500).json({
         error: 'Internal Server Error',
@@ -214,7 +214,7 @@ router.delete(
         });
       }
 
-      console.log(`🗑️ Session deletion started (${auth.requestId}):`, {
+      console.log('🗑️ Session deletion started (%s):', auth.requestId, {
         userId: actorId,
         username: auth.username,
         sessionId,
@@ -225,7 +225,7 @@ router.delete(
       if (sessionsDynamoDBService.isConfigured()) {
         const session = await sessionsDynamoDBService.getSession(actorId, sessionId);
         if (!session) {
-          console.warn(`⚠️ Access denied to delete session (${auth.requestId}): ${sessionId}`);
+          console.warn('⚠️ Access denied to delete session (%s): %s', auth.requestId, sessionId);
           return res.status(403).json({
             error: 'Forbidden',
             message: 'You do not have permission to delete this session',
@@ -240,9 +240,9 @@ router.delete(
       if (sessionsDynamoDBService.isConfigured()) {
         try {
           await sessionsDynamoDBService.deleteSession(actorId, sessionId);
-          console.log(`✅ Deleted session from DynamoDB: ${sessionId}`);
+          console.log('✅ Deleted session from DynamoDB: %s', sessionId);
         } catch (dynamoError) {
-          console.error(`⚠️ Failed to delete session from DynamoDB: ${sessionId}`, dynamoError);
+          console.error('⚠️ Failed to delete session from DynamoDB: %s', sessionId, dynamoError);
           errors.push(
             `DynamoDB: ${dynamoError instanceof Error ? dynamoError.message : 'Unknown error'}`
           );
@@ -254,10 +254,11 @@ router.delete(
         try {
           const memoryService = createAgentCoreMemoryService();
           await memoryService.deleteSession(actorId, sessionId);
-          console.log(`✅ Deleted session from AgentCore Memory: ${sessionId}`);
+          console.log('✅ Deleted session from AgentCore Memory: %s', sessionId);
         } catch (memoryError) {
           console.error(
-            `⚠️ Failed to delete session from AgentCore Memory: ${sessionId}`,
+            '⚠️ Failed to delete session from AgentCore Memory: %s',
+            sessionId,
             memoryError
           );
           errors.push(
@@ -267,9 +268,9 @@ router.delete(
       }
 
       if (errors.length > 0) {
-        console.warn(`⚠️ Session deletion completed with errors (${auth.requestId}):`, errors);
+        console.warn('⚠️ Session deletion completed with errors (%s):', auth.requestId, errors);
       } else {
-        console.log(`✅ Session deletion completed successfully (${auth.requestId})`);
+        console.log('✅ Session deletion completed successfully (%s)', auth.requestId);
       }
 
       res.status(200).json({
@@ -285,7 +286,7 @@ router.delete(
       });
     } catch (error) {
       const auth = getCurrentAuth(req);
-      console.error(`💥 Session deletion error (${auth.requestId}):`, error);
+      console.error('💥 Session deletion error (%s):', auth.requestId, error);
 
       res.status(500).json({
         error: 'Internal Server Error',

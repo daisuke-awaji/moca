@@ -67,20 +67,20 @@ RUN curl -LsSf https://astral.sh/uv/install.sh | sh && \
 WORKDIR /app
 
 # Copy workspace root package files
-COPY package*.json ./
+COPY --chown=node:node package*.json ./
 
 # Copy workspace package.json files
-COPY packages/agent/package*.json ./packages/agent/
-COPY packages/shared/tool-definitions/package*.json ./packages/shared/tool-definitions/
+COPY --chown=node:node packages/agent/package*.json ./packages/agent/
+COPY --chown=node:node packages/shared/tool-definitions/package*.json ./packages/shared/tool-definitions/
 
 # Install production dependencies only (skip scripts like husky)
 RUN npm ci --omit=dev --ignore-scripts && npm cache clean --force
 
 # Copy built files from builder stage
-COPY --from=builder /build/packages/shared/tool-definitions/dist ./packages/shared/tool-definitions/dist
-COPY --from=builder /build/packages/shared/tool-definitions/package.json ./packages/shared/tool-definitions/
-COPY --from=builder /build/packages/agent/dist ./packages/agent/dist
-COPY --from=builder /build/packages/agent/scripts ./packages/agent/scripts
+COPY --chown=node:node --from=builder /build/packages/shared/tool-definitions/dist ./packages/shared/tool-definitions/dist
+COPY --chown=node:node --from=builder /build/packages/shared/tool-definitions/package.json ./packages/shared/tool-definitions/
+COPY --chown=node:node --from=builder /build/packages/agent/dist ./packages/agent/dist
+COPY --chown=node:node --from=builder /build/packages/agent/scripts ./packages/agent/scripts
 
 # Set working directory to agent package
 WORKDIR /app/packages/agent
@@ -94,6 +94,9 @@ EXPOSE 8080
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD curl -f http://localhost:8080/ping || exit 1
+
+# Run as non-root user for security
+USER node
 
 # Start application via entrypoint script
 CMD ["./scripts/startup.sh"]

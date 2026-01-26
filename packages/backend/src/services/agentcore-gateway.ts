@@ -139,7 +139,7 @@ export class AgentCoreGatewayService {
 
       return data.result;
     } catch (error) {
-      console.error(`💥 Gateway MCP request error (${method}):`, error);
+      console.error('💥 Gateway MCP request error (%s):', method, error);
       throw error;
     }
   }
@@ -167,7 +167,8 @@ export class AgentCoreGatewayService {
       const nextCursor = result.nextCursor;
 
       console.log(
-        `✅ Tool list retrieval completed: ${tools.length} items`,
+        '✅ Tool list retrieval completed: %d items',
+        tools.length,
         nextCursor ? { nextCursor: 'present' } : { nextCursor: 'none' }
       );
 
@@ -241,10 +242,10 @@ export class AgentCoreGatewayService {
         }
       }
 
-      console.log(`✅ Tool search completed: ${tools.length} items (query: "${query}")`);
+      console.log('✅ Tool search completed: %d items (query: "%s")', tools.length, query);
       return tools;
     } catch (error) {
-      console.error(`💥 Tool search error (query: "${query}"):`, error);
+      console.error('💥 Tool search error (query: "%s"):', query, error);
       throw new Error(
         `Tool search failed: ${error instanceof Error ? error.message : 'Unknown error'}`
       );

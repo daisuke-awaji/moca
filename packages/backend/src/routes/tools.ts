@@ -28,7 +28,7 @@ router.get('/', jwtAuthMiddleware, async (req: AuthenticatedRequest, res: Respon
       });
     }
 
-    console.log(`🔧 Tool list retrieval started (${auth.requestId}):`, {
+    console.log('🔧 Tool list retrieval started (%s):', auth.requestId, {
       userId: auth.userId,
       username: auth.username,
     });
@@ -54,7 +54,11 @@ router.get('/', jwtAuthMiddleware, async (req: AuthenticatedRequest, res: Respon
     };
 
     console.log(
-      `✅ Tool list retrieval completed (${auth.requestId}): ${tools.length} items (builtin: ${cursor ? 0 : allMCPToolDefinitions.length}, gateway: ${result.tools.length})`,
+      '✅ Tool list retrieval completed (%s): %d items (builtin: %d, gateway: %d)',
+      auth.requestId,
+      tools.length,
+      cursor ? 0 : allMCPToolDefinitions.length,
+      result.tools.length,
       result.nextCursor ? { nextCursor: 'present' } : { nextCursor: 'none' }
     );
 
@@ -103,7 +107,7 @@ router.post('/search', jwtAuthMiddleware, async (req: AuthenticatedRequest, res:
       });
     }
 
-    console.log(`🔍 Tool search started (${auth.requestId}):`, {
+    console.log('🔍 Tool search started (%s):', auth.requestId, {
       userId: auth.userId,
       username: auth.username,
       query: query.trim(),
@@ -180,7 +184,7 @@ router.get('/health', jwtAuthMiddleware, async (req: AuthenticatedRequest, res: 
       });
     }
 
-    console.log(`💓 Gateway connection check started (${auth.requestId}):`, {
+    console.log('💓 Gateway connection check started (%s):', auth.requestId, {
       userId: auth.userId,
       username: auth.username,
     });
@@ -202,7 +206,7 @@ router.get('/health', jwtAuthMiddleware, async (req: AuthenticatedRequest, res: 
         },
       };
 
-      console.log(`✅ Gateway connection check successful (${auth.requestId})`);
+      console.log('✅ Gateway connection check successful (%s)', auth.requestId);
       res.status(200).json(response);
     } else {
       const response = {
@@ -218,7 +222,7 @@ router.get('/health', jwtAuthMiddleware, async (req: AuthenticatedRequest, res: 
         },
       };
 
-      console.log(`❌ Gateway connection check failed (${auth.requestId})`);
+      console.log('❌ Gateway connection check failed (%s)', auth.requestId);
       res.status(502).json(response);
     }
   } catch (error) {
@@ -250,7 +254,7 @@ router.post('/local', jwtAuthMiddleware, async (req: AuthenticatedRequest, res: 
       });
     }
 
-    console.log(`🔧 Local MCP tool retrieval started (${auth.requestId}):`, {
+    console.log('🔧 Local MCP tool retrieval started (%s):', auth.requestId, {
       userId: auth.userId,
       serverCount: Object.keys(mcpConfig.mcpServers).length,
     });

@@ -222,7 +222,7 @@ const handleStreamEvent = (event: AgentStreamEvent, callbacks: StreamingCallback
 
       if (beforeToolsEvent.message?.content && Array.isArray(beforeToolsEvent.message.content)) {
         beforeToolsEvent.message.content.forEach((block, index) => {
-          console.debug(`🔧 BeforeTools content block ${index}:`, block);
+          console.debug('🔧 BeforeTools content block %d:', index, block);
 
           // ツール使用ブロックの場合、入力パラメータを更新
           if (
@@ -232,7 +232,12 @@ const handleStreamEvent = (event: AgentStreamEvent, callbacks: StreamingCallback
             callbacks.onToolInputUpdate
           ) {
             const toolUseId = block.toolUseId || 'unknown';
-            console.debug(`🔧 Updating tool input for ${block.name} (${toolUseId}):`, block.input);
+            console.debug(
+              '🔧 Updating tool input for %s (%s):',
+              block.name,
+              toolUseId,
+              block.input
+            );
             callbacks.onToolInputUpdate(toolUseId, block.input);
           }
         });
@@ -250,7 +255,7 @@ const handleStreamEvent = (event: AgentStreamEvent, callbacks: StreamingCallback
       const afterToolsEventData = event as Record<string, unknown>;
       if (afterToolsEventData.content && Array.isArray(afterToolsEventData.content)) {
         afterToolsEventData.content.forEach((block: Record<string, unknown>, index: number) => {
-          console.debug(`🛠️ AfterTools content block ${index}:`, block);
+          console.debug('🛠️ AfterTools content block %d:', index, block);
 
           if (block.type === 'toolResult' && callbacks.onToolResult) {
             const toolResult: ToolResult = {
@@ -278,7 +283,7 @@ const handleStreamEvent = (event: AgentStreamEvent, callbacks: StreamingCallback
         // ツール結果を検出して処理
         if (Array.isArray(content)) {
           content.forEach((block, index) => {
-            console.debug(`📦 Content block ${index}:`, block);
+            console.debug('📦 Content block %d:', index, block);
 
             if (block.type === 'toolResultBlock' && callbacks.onToolResult) {
               const toolResult: ToolResult = {

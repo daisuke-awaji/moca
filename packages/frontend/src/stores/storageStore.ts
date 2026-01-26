@@ -193,7 +193,7 @@ export const useStorageStore = create<StorageState>((set, get) => ({
             uploadProgress: Math.round((completed / files.length) * 100),
           });
         } catch (error) {
-          console.error(`Failed to upload file ${file.name}:`, error);
+          console.error('Failed to upload file %s:', file.name, error);
           errors.push(`${file.name}: ${error instanceof Error ? error.message : '不明なエラー'}`);
         }
       }

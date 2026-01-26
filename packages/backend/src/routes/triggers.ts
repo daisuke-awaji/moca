@@ -27,7 +27,7 @@ router.get('/', jwtAuthMiddleware, async (req: AuthenticatedRequest, res: Respon
       });
     }
 
-    console.log(`📋 Triggers list retrieval started (${auth.requestId}):`, {
+    console.log('📋 Triggers list retrieval started (%s):', auth.requestId, {
       userId,
       username: auth.username,
     });
@@ -76,7 +76,7 @@ router.get('/', jwtAuthMiddleware, async (req: AuthenticatedRequest, res: Respon
     });
   } catch (error) {
     const auth = getCurrentAuth(req);
-    console.error(`💥 Triggers list retrieval error (${auth.requestId}):`, error);
+    console.error('💥 Triggers list retrieval error (%s):', auth.requestId, error);
 
     res.status(500).json({
       error: 'Internal Server Error',
@@ -104,7 +104,7 @@ router.get('/:id', jwtAuthMiddleware, async (req: AuthenticatedRequest, res: Res
       });
     }
 
-    console.log(`🔍 Trigger retrieval started (${auth.requestId}):`, {
+    console.log('🔍 Trigger retrieval started (%s):', auth.requestId, {
       userId,
       triggerId,
     });
@@ -122,7 +122,7 @@ router.get('/:id', jwtAuthMiddleware, async (req: AuthenticatedRequest, res: Res
     const trigger = await triggersService.getTrigger(userId, triggerId);
 
     if (!trigger) {
-      console.warn(`⚠️ Trigger not found (${auth.requestId}): ${triggerId}`);
+      console.warn('⚠️ Trigger not found (%s): ${triggerId}', auth.requestId);
       return res.status(404).json({
         error: 'Not Found',
         message: 'Trigger not found',
@@ -130,7 +130,7 @@ router.get('/:id', jwtAuthMiddleware, async (req: AuthenticatedRequest, res: Res
       });
     }
 
-    console.log(`✅ Trigger retrieval completed (${auth.requestId})`);
+    console.log('✅ Trigger retrieval completed (%s)', auth.requestId);
 
     res.status(200).json({
       trigger: {
@@ -159,7 +159,7 @@ router.get('/:id', jwtAuthMiddleware, async (req: AuthenticatedRequest, res: Res
     });
   } catch (error) {
     const auth = getCurrentAuth(req);
-    console.error(`💥 Trigger retrieval error (${auth.requestId}):`, error);
+    console.error('💥 Trigger retrieval error (%s):', auth.requestId, error);
 
     res.status(500).json({
       error: 'Internal Server Error',
@@ -217,7 +217,7 @@ router.post('/', jwtAuthMiddleware, async (req: AuthenticatedRequest, res: Respo
       });
     }
 
-    console.log(`✨ Trigger creation started (${auth.requestId}):`, {
+    console.log('✨ Trigger creation started (%s):', auth.requestId, {
       userId,
       name,
       type,
@@ -299,7 +299,7 @@ router.post('/', jwtAuthMiddleware, async (req: AuthenticatedRequest, res: Respo
       }
     }
 
-    console.log(`✅ Trigger created successfully (${auth.requestId}): ${trigger.id}`);
+    console.log('✅ Trigger created successfully (%s): ${trigger.id}', auth.requestId);
 
     res.status(201).json({
       trigger: {
@@ -327,7 +327,7 @@ router.post('/', jwtAuthMiddleware, async (req: AuthenticatedRequest, res: Respo
     });
   } catch (error) {
     const auth = getCurrentAuth(req);
-    console.error(`💥 Trigger creation error (${auth.requestId}):`, error);
+    console.error('💥 Trigger creation error (%s):', auth.requestId, error);
 
     res.status(500).json({
       error: 'Internal Server Error',
@@ -355,7 +355,7 @@ router.put('/:id', jwtAuthMiddleware, async (req: AuthenticatedRequest, res: Res
       });
     }
 
-    console.log(`✏️ Trigger update started (${auth.requestId}):`, {
+    console.log('✏️ Trigger update started (%s):', auth.requestId, {
       userId,
       triggerId,
     });
@@ -398,7 +398,7 @@ router.put('/:id', jwtAuthMiddleware, async (req: AuthenticatedRequest, res: Res
 
     // Handle type change: schedule -> event
     if (typeChanged && existingTrigger.type === 'schedule' && type === 'event') {
-      console.log(`🔄 Type change detected: schedule -> event (${auth.requestId})`);
+      console.log('🔄 Type change detected: schedule -> event (%s)', auth.requestId);
 
       // Delete existing EventBridge Schedule
       try {
@@ -412,7 +412,7 @@ router.put('/:id', jwtAuthMiddleware, async (req: AuthenticatedRequest, res: Res
 
     // Handle type change: event -> schedule
     if (typeChanged && existingTrigger.type === 'event' && type === 'schedule') {
-      console.log(`🔄 Type change detected: event -> schedule (${auth.requestId})`);
+      console.log('🔄 Type change detected: event -> schedule (%s)', auth.requestId);
 
       if (!scheduleConfig?.expression) {
         return res.status(400).json({
@@ -508,7 +508,7 @@ router.put('/:id', jwtAuthMiddleware, async (req: AuthenticatedRequest, res: Res
       }
     }
 
-    console.log(`✅ Trigger updated successfully (${auth.requestId})`);
+    console.log('✅ Trigger updated successfully (%s)', auth.requestId);
 
     res.status(200).json({
       trigger: {
@@ -537,7 +537,7 @@ router.put('/:id', jwtAuthMiddleware, async (req: AuthenticatedRequest, res: Res
     });
   } catch (error) {
     const auth = getCurrentAuth(req);
-    console.error(`💥 Trigger update error (${auth.requestId}):`, error);
+    console.error('💥 Trigger update error (%s):', auth.requestId, error);
 
     res.status(500).json({
       error: 'Internal Server Error',
@@ -565,7 +565,7 @@ router.delete('/:id', jwtAuthMiddleware, async (req: AuthenticatedRequest, res: 
       });
     }
 
-    console.log(`🗑️ Trigger deletion started (${auth.requestId}):`, {
+    console.log('🗑️ Trigger deletion started (%s):', auth.requestId, {
       userId,
       triggerId,
     });
@@ -607,7 +607,7 @@ router.delete('/:id', jwtAuthMiddleware, async (req: AuthenticatedRequest, res: 
     // Delete trigger from DynamoDB
     await triggersService.deleteTrigger(userId, triggerId);
 
-    console.log(`✅ Trigger deleted successfully (${auth.requestId})`);
+    console.log('✅ Trigger deleted successfully (%s)', auth.requestId);
 
     res.status(200).json({
       success: true,
@@ -621,7 +621,7 @@ router.delete('/:id', jwtAuthMiddleware, async (req: AuthenticatedRequest, res: 
     });
   } catch (error) {
     const auth = getCurrentAuth(req);
-    console.error(`💥 Trigger deletion error (${auth.requestId}):`, error);
+    console.error('💥 Trigger deletion error (%s):', auth.requestId, error);
 
     res.status(500).json({
       error: 'Internal Server Error',
@@ -649,7 +649,7 @@ router.post('/:id/enable', jwtAuthMiddleware, async (req: AuthenticatedRequest, 
       });
     }
 
-    console.log(`▶️ Trigger enable started (${auth.requestId}):`, {
+    console.log('▶️ Trigger enable started (%s):', auth.requestId, {
       userId,
       triggerId,
     });
@@ -692,7 +692,7 @@ router.post('/:id/enable', jwtAuthMiddleware, async (req: AuthenticatedRequest, 
       }
     }
 
-    console.log(`✅ Trigger enabled successfully (${auth.requestId})`);
+    console.log('✅ Trigger enabled successfully (%s)', auth.requestId);
 
     res.status(200).json({
       trigger: {
@@ -721,7 +721,7 @@ router.post('/:id/enable', jwtAuthMiddleware, async (req: AuthenticatedRequest, 
     });
   } catch (error) {
     const auth = getCurrentAuth(req);
-    console.error(`💥 Trigger enable error (${auth.requestId}):`, error);
+    console.error('💥 Trigger enable error (%s):', auth.requestId, error);
 
     res.status(500).json({
       error: 'Internal Server Error',
@@ -749,7 +749,7 @@ router.post('/:id/disable', jwtAuthMiddleware, async (req: AuthenticatedRequest,
       });
     }
 
-    console.log(`⏸️ Trigger disable started (${auth.requestId}):`, {
+    console.log('⏸️ Trigger disable started (%s):', auth.requestId, {
       userId,
       triggerId,
     });
@@ -792,7 +792,7 @@ router.post('/:id/disable', jwtAuthMiddleware, async (req: AuthenticatedRequest,
       }
     }
 
-    console.log(`✅ Trigger disabled successfully (${auth.requestId})`);
+    console.log('✅ Trigger disabled successfully (%s)', auth.requestId);
 
     res.status(200).json({
       trigger: {
@@ -821,7 +821,7 @@ router.post('/:id/disable', jwtAuthMiddleware, async (req: AuthenticatedRequest,
     });
   } catch (error) {
     const auth = getCurrentAuth(req);
-    console.error(`💥 Trigger disable error (${auth.requestId}):`, error);
+    console.error('💥 Trigger disable error (%s):', auth.requestId, error);
 
     res.status(500).json({
       error: 'Internal Server Error',
@@ -854,7 +854,7 @@ router.get(
         });
       }
 
-      console.log(`📊 Execution history retrieval started (${auth.requestId}):`, {
+      console.log('📊 Execution history retrieval started (%s):', auth.requestId, {
         userId,
         triggerId,
         limit,
@@ -928,7 +928,7 @@ router.get(
       });
     } catch (error) {
       const auth = getCurrentAuth(req);
-      console.error(`💥 Execution history retrieval error (${auth.requestId}):`, error);
+      console.error('💥 Execution history retrieval error (%s):', auth.requestId, error);
 
       res.status(500).json({
         error: 'Internal Server Error',

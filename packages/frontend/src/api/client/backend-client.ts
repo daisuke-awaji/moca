@@ -35,7 +35,7 @@ const logRequestSuccess = (method: string, endpoint: string, status: number): vo
  */
 const logRequestError = (method: string, endpoint: string, error: unknown): void => {
   if (isDebugEnabled()) {
-    console.error(`💥 ${method} ${endpoint} failed:`, error);
+    console.error('💥 %s %s failed:', method, endpoint, error);
   }
 };
 
@@ -75,11 +75,11 @@ export async function backendRequest<T>(endpoint: string, options: RequestInit =
     return response.json();
   } catch (error) {
     logRequestError(method, endpoint, error);
-    
+
     // Import and handle global errors
     const { handleGlobalError } = await import('../../utils/errorHandler');
     await handleGlobalError(error);
-    
+
     throw error;
   }
 }

@@ -118,7 +118,7 @@ app.get('/me', jwtAuthMiddleware, (req: AuthenticatedRequest, res: Response) => 
       },
     };
 
-    console.log(`👤 /me request successful (${auth.requestId}):`, {
+    console.log('👤 /me request successful (%s):', auth.requestId, {
       userId: auth.userId,
       username: auth.username,
     });

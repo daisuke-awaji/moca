@@ -37,7 +37,7 @@ const logRequestSuccess = (method: string, url: string, status: number): void =>
  */
 const logRequestError = (method: string, url: string, error: unknown): void => {
   if (isDebugEnabled()) {
-    console.error(`💥 ${method} ${url} failed:`, error);
+    console.error('💥 %s %s failed:', method, url, error);
   }
 };
 

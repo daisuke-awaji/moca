@@ -32,6 +32,18 @@ jobs:
       - name: Lint OpenAPI spec
         run: npm run docs:lint
 
+  security:
+    name: Security Scan (Semgrep)
+    runs-on: ubuntu-latest
+    container:
+      image: semgrep/semgrep
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Semgrep
+        run: semgrep scan --config auto --error --exclude='**/node_modules/**' --exclude='**/dist/**' --exclude='**/*.test.ts' --exclude='**/*.integration.test.ts'
+
   test:
     name: Test
     runs-on: ubuntu-latest

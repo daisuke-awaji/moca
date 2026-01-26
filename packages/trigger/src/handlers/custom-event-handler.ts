@@ -147,7 +147,7 @@ async function invokeTrigger(
     return { success: true };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error(`❌ Trigger invocation failed: ${trigger.name}`, error);
+    console.error('❌ Trigger invocation failed: %s', trigger.name, error);
 
     // Record failure if executionId was created
     try {

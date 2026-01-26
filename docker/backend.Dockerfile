@@ -71,19 +71,19 @@ COPY --from=public.ecr.aws/awsguru/aws-lambda-adapter:0.9.1 /lambda-adapter /opt
 WORKDIR /app
 
 # Copy workspace root package files
-COPY package*.json ./
+COPY --chown=node:node package*.json ./
 
 # Copy workspace package.json files
-COPY packages/backend/package*.json ./packages/backend/
-COPY packages/shared/tool-definitions/package*.json ./packages/shared/tool-definitions/
+COPY --chown=node:node packages/backend/package*.json ./packages/backend/
+COPY --chown=node:node packages/shared/tool-definitions/package*.json ./packages/shared/tool-definitions/
 
 # Install production dependencies only (skip scripts like husky)
 RUN npm ci --omit=dev --ignore-scripts && npm cache clean --force
 
 # Copy built files from builder stage
-COPY --from=builder /build/packages/shared/tool-definitions/dist ./packages/shared/tool-definitions/dist
-COPY --from=builder /build/packages/shared/tool-definitions/package.json ./packages/shared/tool-definitions/
-COPY --from=builder /build/packages/backend/dist ./packages/backend/dist
+COPY --chown=node:node --from=builder /build/packages/shared/tool-definitions/dist ./packages/shared/tool-definitions/dist
+COPY --chown=node:node --from=builder /build/packages/shared/tool-definitions/package.json ./packages/shared/tool-definitions/
+COPY --chown=node:node --from=builder /build/packages/backend/dist ./packages/backend/dist
 
 # Set working directory to backend package
 WORKDIR /app/packages/backend
@@ -101,6 +101,9 @@ ENV AWS_NODEJS_CONNECTION_REUSE_ENABLED=1
 
 # 実行権限の設定
 RUN chmod +x /opt/extensions/lambda-adapter
+
+# Run as non-root user for security
+USER node
 
 # アプリケーションを開始
 # Lambda Web Adapter が Express サーバーを Lambda ハンドラーとしてラップ

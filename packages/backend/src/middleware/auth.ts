@@ -71,7 +71,7 @@ export function jwtAuthMiddleware(
   const authHeader = req.get('Authorization');
 
   if (!authHeader) {
-    console.warn(`❌ Authorization header not set (${requestId})`);
+    console.warn('❌ Authorization header not set (%s)', requestId);
     res
       .status(401)
       .json(
@@ -88,7 +88,7 @@ export function jwtAuthMiddleware(
   const token = extractJWTFromHeader(authHeader);
 
   if (!token) {
-    console.warn(`❌ Invalid Authorization header format (${requestId})`);
+    console.warn('❌ Invalid Authorization header format (%s)', requestId);
     res
       .status(401)
       .json(
@@ -107,7 +107,7 @@ export function jwtAuthMiddleware(
     verifyJWT(token)
       .then((result) => {
         if (!result.valid) {
-          console.warn(`❌ JWT verification failed (${requestId}):`, result.error);
+          console.warn('❌ JWT verification failed (%s):', requestId, result.error);
           res
             .status(401)
             .json(
@@ -127,7 +127,7 @@ export function jwtAuthMiddleware(
         next();
       })
       .catch((error) => {
-        console.error(`💥 JWT verification error (${requestId}):`, error);
+        console.error('💥 JWT verification error (%s):', requestId, error);
         res
           .status(500)
           .json(
@@ -141,7 +141,8 @@ export function jwtAuthMiddleware(
   } else {
     // In development environment with JWKS not configured: decode only (no verification)
     console.warn(
-      `⚠️  Development environment: Skipping verification due to JWKS not configured (${requestId})`
+      '⚠️  Development environment: Skipping verification due to JWKS not configured (%s)',
+      requestId
     );
 
     try {
@@ -158,14 +159,14 @@ export function jwtAuthMiddleware(
       req.jwt = payload as CognitoJWTPayload;
       req.userId = payload.sub || payload['cognito:username'];
 
-      console.log(`🔧 JWT decode successful (no verification) (${requestId}):`, {
+      console.log('🔧 JWT decode successful (no verification) (%s):', requestId, {
         hasUserId: !!req.userId,
         tokenUse: payload.token_use,
       });
 
       next();
     } catch (error) {
-      console.error(`❌ JWT decode error (${requestId}):`, error);
+      console.error('❌ JWT decode error (%s):', requestId, error);
       res
         .status(401)
         .json(createAuthErrorResponse('JWT_DECODE_ERROR', 'Failed to decode JWT', requestId));

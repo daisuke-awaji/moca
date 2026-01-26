@@ -39,8 +39,9 @@ i18n
     missingKeyHandler: (lngs, ns, key, fallbackValue) => {
       if (import.meta.env.DEV) {
         console.warn(
-          `%c[i18n] Translation key not found: "${key}"`,
+          '%c[i18n] Translation key not found: "%s"',
           'color: #ff9800; font-weight: bold',
+          key,
           {
             languages: lngs,
             namespace: ns,

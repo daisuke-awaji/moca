@@ -156,9 +156,14 @@ async function copyVideoToUserStorage(
  * Get user-friendly S3 path for display
  */
 function getDisplayPath(s3Path: string, userId: string): string {
-  const match = s3Path.match(new RegExp(`users/${userId}/(.+)$`));
-  if (match) {
-    return `/${match[1]}`;
+  // Use string operations instead of dynamic RegExp to avoid ReDoS concerns
+  const prefix = `users/${userId}/`;
+  if (s3Path.includes(prefix)) {
+    const index = s3Path.indexOf(prefix);
+    const relativePath = s3Path.substring(index + prefix.length);
+    if (relativePath) {
+      return `/${relativePath}`;
+    }
   }
   return s3Path;
 }

@@ -33,7 +33,7 @@ router.get('/', jwtAuthMiddleware, async (req: AuthenticatedRequest, res: Respon
       });
     }
 
-    console.log(`📋 Agent list retrieval started (${auth.requestId}):`, {
+    console.log('📋 Agent list retrieval started (%s):', auth.requestId, {
       userId,
       username: auth.username,
     });
@@ -41,7 +41,7 @@ router.get('/', jwtAuthMiddleware, async (req: AuthenticatedRequest, res: Respon
     const agentsService = createAgentsService();
     const agents = await agentsService.listAgents(userId);
 
-    console.log(`✅ Agent list retrieval completed (${auth.requestId}): ${agents.length} items`);
+    console.log('✅ Agent list retrieval completed (%s): %d items', auth.requestId, agents.length);
 
     res.status(200).json({
       agents: agents,
@@ -54,7 +54,7 @@ router.get('/', jwtAuthMiddleware, async (req: AuthenticatedRequest, res: Respon
     });
   } catch (error) {
     const auth = getCurrentAuth(req);
-    console.error(`💥 Agent list retrieval error (${auth.requestId}):`, error);
+    console.error('💥 Agent list retrieval error (%s):', auth.requestId, error);
 
     res.status(500).json({
       error: 'Internal Server Error',
@@ -91,7 +91,7 @@ router.get('/:agentId', jwtAuthMiddleware, async (req: AuthenticatedRequest, res
       });
     }
 
-    console.log(`🔍 Agent retrieval started (${auth.requestId}):`, {
+    console.log('🔍 Agent retrieval started (%s):', auth.requestId, {
       userId,
       username: auth.username,
       agentId,
@@ -108,7 +108,7 @@ router.get('/:agentId', jwtAuthMiddleware, async (req: AuthenticatedRequest, res
       });
     }
 
-    console.log(`✅ Agent retrieval completed (${auth.requestId}): ${agent.name}`);
+    console.log('✅ Agent retrieval completed (%s): %s', auth.requestId, agent.name);
 
     res.status(200).json({
       agent: agent,
@@ -120,7 +120,7 @@ router.get('/:agentId', jwtAuthMiddleware, async (req: AuthenticatedRequest, res
     });
   } catch (error) {
     const auth = getCurrentAuth(req);
-    console.error(`💥 Agent retrieval error (${auth.requestId}):`, error);
+    console.error('💥 Agent retrieval error (%s):', auth.requestId, error);
 
     res.status(500).json({
       error: 'Internal Server Error',
@@ -158,7 +158,7 @@ router.post('/', jwtAuthMiddleware, async (req: AuthenticatedRequest, res: Respo
       });
     }
 
-    console.log(`➕ Agent creation started (${auth.requestId}):`, {
+    console.log('➕ Agent creation started (%s):', auth.requestId, {
       userId,
       username: auth.username,
       agentName: input.name,
@@ -167,7 +167,7 @@ router.post('/', jwtAuthMiddleware, async (req: AuthenticatedRequest, res: Respo
     const agentsService = createAgentsService();
     const agent = await agentsService.createAgent(userId, input, auth.username);
 
-    console.log(`✅ Agent creation completed (${auth.requestId}): ${agent.agentId}`);
+    console.log('✅ Agent creation completed (%s): %s', auth.requestId, agent.agentId);
 
     res.status(201).json({
       agent: agent,
@@ -179,7 +179,7 @@ router.post('/', jwtAuthMiddleware, async (req: AuthenticatedRequest, res: Respo
     });
   } catch (error) {
     const auth = getCurrentAuth(req);
-    console.error(`💥 Agent creation error (${auth.requestId}):`, error);
+    console.error('💥 Agent creation error (%s):', auth.requestId, error);
 
     res.status(500).json({
       error: 'Internal Server Error',
@@ -217,7 +217,7 @@ router.put('/:agentId', jwtAuthMiddleware, async (req: AuthenticatedRequest, res
       });
     }
 
-    console.log(`📝 Agent update started (${auth.requestId}):`, {
+    console.log('📝 Agent update started (%s):', auth.requestId, {
       userId,
       username: auth.username,
       agentId,
@@ -230,7 +230,7 @@ router.put('/:agentId', jwtAuthMiddleware, async (req: AuthenticatedRequest, res
     };
     const agent = await agentsService.updateAgent(userId, updateInput);
 
-    console.log(`✅ Agent update completed (${auth.requestId}): ${agent.name}`);
+    console.log('✅ Agent update completed (%s): %s', auth.requestId, agent.name);
 
     res.status(200).json({
       agent: agent,
@@ -242,7 +242,7 @@ router.put('/:agentId', jwtAuthMiddleware, async (req: AuthenticatedRequest, res
     });
   } catch (error) {
     const auth = getCurrentAuth(req);
-    console.error(`💥 Agent update error (${auth.requestId}):`, error);
+    console.error('💥 Agent update error (%s):', auth.requestId, error);
 
     if (error instanceof Error && error.message === 'Agent not found') {
       return res.status(404).json({
@@ -287,7 +287,7 @@ router.delete('/:agentId', jwtAuthMiddleware, async (req: AuthenticatedRequest, 
       });
     }
 
-    console.log(`🗑️  Agent deletion started (${auth.requestId}):`, {
+    console.log('🗑️  Agent deletion started (%s):', auth.requestId, {
       userId,
       username: auth.username,
       agentId,
@@ -296,7 +296,7 @@ router.delete('/:agentId', jwtAuthMiddleware, async (req: AuthenticatedRequest, 
     const agentsService = createAgentsService();
     await agentsService.deleteAgent(userId, agentId);
 
-    console.log(`✅ Agent deletion completed (${auth.requestId}): ${agentId}`);
+    console.log('✅ Agent deletion completed (%s): %s', auth.requestId, agentId);
 
     res.status(200).json({
       success: true,
@@ -308,7 +308,7 @@ router.delete('/:agentId', jwtAuthMiddleware, async (req: AuthenticatedRequest, 
     });
   } catch (error) {
     const auth = getCurrentAuth(req);
-    console.error(`💥 Agent deletion error (${auth.requestId}):`, error);
+    console.error('💥 Agent deletion error (%s):', auth.requestId, error);
 
     res.status(500).json({
       error: 'Internal Server Error',
@@ -348,7 +348,7 @@ router.put(
         });
       }
 
-      console.log(`🔄 Agent share status toggle started (${auth.requestId}):`, {
+      console.log('🔄 Agent share status toggle started (%s):', auth.requestId, {
         userId,
         username: auth.username,
         agentId,
@@ -358,7 +358,9 @@ router.put(
       const agent = await agentsService.toggleShare(userId, agentId);
 
       console.log(
-        `✅ Agent share status toggle completed (${auth.requestId}): isShared=${agent.isShared}`
+        '✅ Agent share status toggle completed (%s): isShared=%s',
+        auth.requestId,
+        agent.isShared
       );
 
       res.status(200).json({
@@ -371,7 +373,7 @@ router.put(
       });
     } catch (error) {
       const auth = getCurrentAuth(req);
-      console.error(`💥 Agent share status toggle error (${auth.requestId}):`, error);
+      console.error('💥 Agent share status toggle error (%s):', auth.requestId, error);
 
       if (error instanceof Error && error.message === 'Agent not found') {
         return res.status(404).json({
@@ -409,7 +411,7 @@ router.post('/initialize', jwtAuthMiddleware, async (req: AuthenticatedRequest, 
       });
     }
 
-    console.log(`🔧 Default Agent initialization started (${auth.requestId}):`, {
+    console.log('🔧 Default Agent initialization started (%s):', auth.requestId, {
       userId,
       username: auth.username,
     });
@@ -420,7 +422,7 @@ router.post('/initialize', jwtAuthMiddleware, async (req: AuthenticatedRequest, 
     const existingAgents = await agentsService.listAgents(userId);
 
     if (existingAgents.length > 0) {
-      console.log(`ℹ️  Skipping initialization because existing Agents exist (${auth.requestId})`);
+      console.log('ℹ️  Skipping initialization because existing Agents exist (%s)', auth.requestId);
       return res.status(200).json({
         agents: existingAgents,
         skipped: true,
@@ -442,7 +444,9 @@ router.post('/initialize', jwtAuthMiddleware, async (req: AuthenticatedRequest, 
     );
 
     console.log(
-      `✅ Default Agent initialization completed (${auth.requestId}): ${agents.length} items`
+      '✅ Default Agent initialization completed (%s): %d items',
+      auth.requestId,
+      agents.length
     );
 
     res.status(201).json({
@@ -457,7 +461,7 @@ router.post('/initialize', jwtAuthMiddleware, async (req: AuthenticatedRequest, 
     });
   } catch (error) {
     const auth = getCurrentAuth(req);
-    console.error(`💥 Default Agent initialization error (${auth.requestId}):`, error);
+    console.error('💥 Default Agent initialization error (%s):', auth.requestId, error);
 
     res.status(500).json({
       error: 'Internal Server Error',
@@ -486,7 +490,7 @@ router.get(
       const auth = getCurrentAuth(req);
       const { q: searchQuery, limit, cursor } = req.query;
 
-      console.log(`📋 Shared Agent list retrieval started (${auth.requestId}):`, {
+      console.log('📋 Shared Agent list retrieval started (%s):', auth.requestId, {
         searchQuery,
         limit,
         hasCursor: !!cursor,
@@ -538,7 +542,9 @@ router.get(
       }
 
       console.log(
-        `✅ Shared Agent list retrieval completed (${auth.requestId}): ${allAgents.length} items`
+        '✅ Shared Agent list retrieval completed (%s): %d items',
+        auth.requestId,
+        allAgents.length
       );
 
       res.status(200).json({
@@ -553,7 +559,7 @@ router.get(
       });
     } catch (error) {
       const auth = getCurrentAuth(req);
-      console.error(`💥 Shared Agent list retrieval error (${auth.requestId}):`, error);
+      console.error('💥 Shared Agent list retrieval error (%s):', auth.requestId, error);
 
       res.status(500).json({
         error: 'Internal Server Error',
@@ -586,7 +592,7 @@ router.get(
         });
       }
 
-      console.log(`🔍 Shared Agent detail retrieval started (${auth.requestId}):`, {
+      console.log('🔍 Shared Agent detail retrieval started (%s):', auth.requestId, {
         userId,
         agentId,
       });
@@ -632,7 +638,11 @@ router.get(
         });
       }
 
-      console.log(`✅ Shared Agent detail retrieval completed (${auth.requestId}): ${agent.name}`);
+      console.log(
+        '✅ Shared Agent detail retrieval completed (%s): %s',
+        auth.requestId,
+        agent.name
+      );
 
       res.status(200).json({
         agent: agent,
@@ -643,7 +653,7 @@ router.get(
       });
     } catch (error) {
       const auth = getCurrentAuth(req);
-      console.error(`💥 Shared Agent detail retrieval error (${auth.requestId}):`, error);
+      console.error('💥 Shared Agent detail retrieval error (%s):', auth.requestId, error);
 
       res.status(500).json({
         error: 'Internal Server Error',
@@ -685,7 +695,7 @@ router.post(
         });
       }
 
-      console.log(`📥 Shared Agent clone started (${auth.requestId}):`, {
+      console.log('📥 Shared Agent clone started (%s):', auth.requestId, {
         targetUserId,
         targetUsername: auth.username,
         sourceUserId,
@@ -715,7 +725,7 @@ router.post(
       const agentsService = createAgentsService();
       const clonedAgent = await agentsService.createAgent(targetUserId, sourceAgent, auth.username);
 
-      console.log(`✅ Shared Agent clone completed (${auth.requestId}): ${clonedAgent.agentId}`);
+      console.log('✅ Shared Agent clone completed (%s): %s', auth.requestId, clonedAgent.agentId);
 
       res.status(201).json({
         agent: clonedAgent,
@@ -727,7 +737,7 @@ router.post(
       });
     } catch (error) {
       const auth = getCurrentAuth(req);
-      console.error(`💥 Shared Agent clone error (${auth.requestId}):`, error);
+      console.error('💥 Shared Agent clone error (%s):', auth.requestId, error);
 
       res.status(500).json({
         error: 'Internal Server Error',

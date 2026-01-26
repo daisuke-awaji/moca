@@ -73,6 +73,7 @@ export class SyncIgnoreFilter {
    * @param workspaceDir - Workspace directory path
    */
   loadFromWorkspace(workspaceDir: string): void {
+    // nosemgrep: path-join-resolve-traversal - workspaceDir is controlled by server configuration, not user input
     const syncignorePath = path.join(workspaceDir, '.syncignore');
 
     if (!fs.existsSync(syncignorePath)) {

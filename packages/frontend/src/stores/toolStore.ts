@@ -96,7 +96,8 @@ export const useToolStore = create<ToolStoreState>()(
           });
 
           console.log(
-            `✅ Tool list loading completed: ${result.tools.length} items`,
+            '✅ Tool list loading completed: %d items',
+            result.tools.length,
             result.nextCursor ? { nextCursor: 'present' } : { nextCursor: 'none' }
           );
         } catch (error) {
@@ -148,7 +149,9 @@ export const useToolStore = create<ToolStoreState>()(
           });
 
           console.log(
-            `✅ Additional tools loading completed: +${result.tools.length} items (total: ${currentState.tools.length + result.tools.length} items)`,
+            '✅ Additional tools loading completed: +%d items (total: %d items)',
+            result.tools.length,
+            currentState.tools.length + result.tools.length,
             result.nextCursor ? { nextCursor: 'present' } : { nextCursor: 'none' }
           );
         } catch (error) {
@@ -198,7 +201,9 @@ export const useToolStore = create<ToolStoreState>()(
             cursor = result.nextCursor;
 
             console.log(
-              `📄 Page loaded: +${result.tools.length} items (total: ${allTools.length} items)`,
+              '📄 Page loaded: +%d items (total: %d items)',
+              result.tools.length,
+              allTools.length,
               cursor ? { nextCursor: 'present' } : { nextCursor: 'none' }
             );
           } while (cursor);
