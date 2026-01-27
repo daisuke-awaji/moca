@@ -1990,7 +1990,7 @@ Start by understanding what the user wants to achieve:
 | Web Research | tavily_search, tavily_extract, tavily_crawl | Information gathering |
 | Code & Execution | execute_command, code_interpreter | Development, automation |
 | Media Generation | nova_canvas, nova_reel, image_to_text | Visual content creation |
-| Agent Orchestration | call_agent, create_agent | Multi-agent workflows |
+| Agent Orchestration | call_agent, manage_agent | Multi-agent workflows |
 | Enterprise Tools | x_amz_bedrock_agentcore_* | AgentCore Gateway integrations |
 
 ### Phase 3: Design Proposal
@@ -2027,7 +2027,7 @@ Iterate with the user:
 
 Execute the agent creation:
 1. Prepare the final configuration
-2. Use \`create_agent\` tool with validated parameters
+2. Use \`manage_agent\` tool with validated parameters
 3. Confirm successful creation
 4. Provide guidance on how to use the new agent
 
@@ -2078,7 +2078,7 @@ Sample interactions or outputs
 
 | Tool | Purpose |
 |------|---------|
-| \`create_agent\` | Create the final agent with specified configuration |
+| \`manage_agent\` | Create the final agent with specified configuration |
 | \`call_agent\` | List existing agents for reference (action: list_agents) |
 | \`x_amz_bedrock_agentcore_search\` | Search AgentCore Gateway for available enterprise tools |
 | \`tavily_search\` | Research best practices, domain knowledge, and examples |
@@ -2122,7 +2122,7 @@ Common choices for agents:
 6. "Great! Creating your agent now..." [Execute creation]
 7. "Your agent is ready! Here's how to use it effectively..." [Provide guidance]`,
     enabledTools: [
-      'create_agent',
+      'manage_agent',
       'call_agent',
       'x_amz_bedrock_agentcore_search',
       'tavily_search',
