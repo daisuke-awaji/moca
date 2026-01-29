@@ -6,12 +6,7 @@ import {
   AgentCoreMemory,
   AgentCoreRuntime,
 } from './constructs/agentcore';
-import {
-  AgentsTable,
-  SessionsTable,
-  TriggersTable,
-  UserStorage,
-} from './constructs/storage';
+import { AgentsTable, SessionsTable, TriggersTable, UserStorage } from './constructs/storage';
 import { TriggerLambda, TriggerEventSources, SessionStreamHandler } from './constructs/triggers';
 import { BackendApi, Frontend, AppSyncEvents } from './constructs/api';
 import { CognitoAuth } from './constructs/auth';
@@ -19,7 +14,8 @@ import { EnvironmentConfig } from '../config';
 
 export interface AgentCoreStackProps extends cdk.StackProps {
   /**
-   * Environment configuration
+   * Environment configuration (with all defaults applied)
+   * Use getEnvironmentConfig() to get a fully resolved EnvironmentConfig
    */
   readonly envConfig: EnvironmentConfig;
 
@@ -261,7 +257,7 @@ export class AgentCoreStack extends cdk.Stack {
 
     // 4. Create User Storage
     this.userStorage = new UserStorage(this, 'UserStorage', {
-      bucketNamePrefix: envConfig.userStorageBucketPrefix || resourcePrefix,
+      bucketNamePrefix: resourcePrefix,
       retentionDays: 365,
       corsAllowedOrigins: envConfig.corsAllowedOrigins,
       removalPolicy: envConfig.s3RemovalPolicy,
@@ -329,7 +325,7 @@ export class AgentCoreStack extends cdk.Stack {
 
     // 7. Create Backend API (Lambda Web Adapter) - Create before Runtime to pass URL
     this.backendApi = new BackendApi(this, 'BackendApi', {
-      apiName: envConfig.backendApiName || `${resourcePrefix}-backend-api`,
+      apiName: `${resourcePrefix}backendapi`,
       cognitoAuth: this.cognitoAuth,
       agentcoreGatewayEndpoint: `https://${this.gateway.gatewayId}.gateway.bedrock-agentcore.${this.region}.amazonaws.com/mcp`,
       agentcoreMemoryId: this.memory.memoryId,
@@ -363,9 +359,7 @@ export class AgentCoreStack extends cdk.Stack {
           'scheduler:DeleteSchedule',
           'scheduler:GetSchedule',
         ],
-        resources: [
-          `arn:aws:scheduler:${this.region}:${this.account}:schedule/default/*`,
-        ],
+        resources: [`arn:aws:scheduler:${this.region}:${this.account}:schedule/default/*`],
       })
     );
 
@@ -392,7 +386,7 @@ export class AgentCoreStack extends cdk.Stack {
 
     // 8. Create AgentCore Runtime
     this.agentRuntime = new AgentCoreRuntime(this, 'AgentCoreRuntime', {
-      runtimeName: envConfig.runtimeName,
+      runtimeName: resourcePrefix,
       description: `TypeScript-based Strands Agent Runtime - ${resourcePrefix}`,
       region: this.region,
       authType: props?.runtimeAuthType || 'jwt',
@@ -428,7 +422,7 @@ export class AgentCoreStack extends cdk.Stack {
 
     // 9. Create Frontend
     this.frontend = new Frontend(this, 'Frontend', {
-      resourcePrefix: envConfig.frontendBucketPrefix || resourcePrefix,
+      resourcePrefix: resourcePrefix,
       userPoolId: this.cognitoAuth.userPoolId,
       userPoolClientId: this.cognitoAuth.clientId,
       runtimeEndpoint: `https://bedrock-agentcore.${this.region}.amazonaws.com/runtimes/${this.agentRuntime.runtimeArn}/invocations?qualifier=DEFAULT`,

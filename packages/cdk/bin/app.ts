@@ -30,7 +30,7 @@ if (!envContext) {
 new AgentCoreStack(app, stackName, {
   env: {
     account: envConfig.awsAccount || process.env.CDK_DEFAULT_ACCOUNT,
-    region: envConfig.awsRegion,
+    region: process.env.CDK_DEFAULT_REGION,
   },
   envConfig: envConfig,
   tavilyApiKeySecretName: envConfig.tavilyApiKeySecretName,
@@ -41,5 +41,5 @@ new AgentCoreStack(app, stackName, {
 // 環境情報を出力
 console.log(`🚀 Deploying AgentCore Stack for environment: ${envName}`);
 console.log(`📦 Stack Name: ${stackName}`);
-console.log(`🌍 Region: ${envConfig.awsRegion}`);
+console.log(`🌍 Region: ${process.env.CDK_DEFAULT_REGION || 'not set (will use AWS_REGION)'}`);
 console.log(`🔒 Deletion Protection: ${envConfig.deletionProtection ? 'ENABLED' : 'DISABLED'}`);

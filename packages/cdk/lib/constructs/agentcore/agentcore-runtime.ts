@@ -159,7 +159,7 @@ export class AgentCoreRuntime extends Construct {
       );
 
       console.log(
-        `Cognito認証設定完了: UserPool=${props.cognitoAuth.userPoolId}, Frontend Client=${props.cognitoAuth.clientId}, Machine User Client=${props.cognitoAuth.machineUserClientId}`
+        `Cognito: UserPool=${props.cognitoAuth.userPoolId}, Frontend Client=${props.cognitoAuth.clientId}, Machine User Client=${props.cognitoAuth.machineUserClientId}`
       );
     }
 
