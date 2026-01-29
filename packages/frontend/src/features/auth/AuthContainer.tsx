@@ -6,11 +6,18 @@ import { SignUpForm } from './SignUpForm';
 import { ConfirmSignUpForm } from './ConfirmSignUpForm';
 import { ForgotPasswordForm } from './ForgotPasswordForm';
 import { ResetPasswordForm } from './ResetPasswordForm';
+import { ForceChangePasswordForm } from './ForceChangePasswordForm';
 
 export const AuthContainer: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { needsConfirmation, pendingUsername, setNeedsConfirmation } = useAuthStore();
+  const {
+    needsConfirmation,
+    pendingUsername,
+    setNeedsConfirmation,
+    needsNewPassword,
+    setNeedsNewPassword,
+  } = useAuthStore();
   const [resetPasswordEmail, setResetPasswordEmail] = useState<string>('');
 
   // Redirect to /confirm if confirmation needed
@@ -20,8 +27,16 @@ export const AuthContainer: React.FC = () => {
     }
   }, [needsConfirmation, pendingUsername, location.pathname, navigate]);
 
+  // Redirect to /force-change-password if new password required
+  useEffect(() => {
+    if (needsNewPassword && location.pathname !== '/force-change-password') {
+      navigate('/force-change-password', { replace: true });
+    }
+  }, [needsNewPassword, location.pathname, navigate]);
+
   const handleSwitchToLogin = () => {
     setNeedsConfirmation(false);
+    setNeedsNewPassword(false);
     navigate('/login');
   };
 
@@ -50,6 +65,11 @@ export const AuthContainer: React.FC = () => {
 
   const handleResetPasswordBack = () => {
     navigate('/forgot-password');
+  };
+
+  const handleForceChangePasswordSuccess = () => {
+    setNeedsNewPassword(false);
+    // Authentication is complete, App component will handle redirect to main page
   };
 
   return (
@@ -92,6 +112,10 @@ export const AuthContainer: React.FC = () => {
             onBack={handleResetPasswordBack}
           />
         }
+      />
+      <Route
+        path="/force-change-password"
+        element={<ForceChangePasswordForm onSuccess={handleForceChangePasswordSuccess} />}
       />
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>

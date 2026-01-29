@@ -107,6 +107,23 @@ auth:
     passwordNumber: パスワードには数字を含む必要があります
     passwordMismatch: パスワードが一致しません
     resetFailed: パスワードのリセットに失敗しました
+  forceChangePassword:
+    title: パスワードの変更が必要です
+    description: 管理者によって初期パスワードが設定されました。セキュリティのため、新しいパスワードを設定してください。
+    newPassword: 新しいパスワード
+    confirmNewPassword: 新しいパスワード（確認）
+    newPasswordPlaceholder: 新しいパスワードを入力
+    confirmNewPasswordPlaceholder: 新しいパスワードを再入力
+    changeButton: パスワードを変更
+    changingButton: 変更中...
+    successTitle: パスワードを変更しました
+    successDescription: 新しいパスワードでログインが完了しました
+    changeFailed: パスワードの変更に失敗しました
+    passwordMinLength: パスワードは8文字以上必要です
+    passwordUpperCase: パスワードには大文字を含む必要があります
+    passwordLowerCase: パスワードには小文字を含む必要があります
+    passwordNumber: パスワードには数字を含む必要があります
+    passwordMismatch: パスワードが一致しません
 
 # ナビゲーション
 navigation:

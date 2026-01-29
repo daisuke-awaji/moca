@@ -96,6 +96,8 @@ export interface AuthState {
   error: string | null;
   needsConfirmation: boolean;
   pendingUsername: string | null;
+  needsNewPassword: boolean;
+  pendingCognitoUser: unknown; // CognitoUser instance (not serializable)
 }
 
 // API types

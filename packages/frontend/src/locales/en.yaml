@@ -107,6 +107,23 @@ auth:
     passwordNumber: Password must contain a number
     passwordMismatch: Passwords do not match
     resetFailed: Failed to reset password
+  forceChangePassword:
+    title: Password Change Required
+    description: An initial password was set by the administrator. For security, please set a new password.
+    newPassword: New Password
+    confirmNewPassword: Confirm New Password
+    newPasswordPlaceholder: Enter new password
+    confirmNewPasswordPlaceholder: Re-enter new password
+    changeButton: Change Password
+    changingButton: Changing...
+    successTitle: Password Changed
+    successDescription: Login completed with your new password
+    changeFailed: Failed to change password
+    passwordMinLength: Password must be at least 8 characters
+    passwordUpperCase: Password must contain an uppercase letter
+    passwordLowerCase: Password must contain a lowercase letter
+    passwordNumber: Password must contain a number
+    passwordMismatch: Passwords do not match
 
 # Navigation
 navigation:

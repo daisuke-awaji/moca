@@ -7,6 +7,8 @@ import {
   signUpUser,
   confirmSignUp,
   resendConfirmationCode,
+  completeNewPasswordChallenge,
+  type CognitoUser,
 } from '../lib/cognito';
 
 interface AuthActions {
@@ -15,11 +17,13 @@ interface AuthActions {
   signUp: (username: string, password: string, email: string) => Promise<void>;
   confirmSignUp: (username: string, code: string) => Promise<void>;
   resendCode: (username: string) => Promise<void>;
+  completeNewPassword: (newPassword: string) => Promise<void>;
   setUser: (user: User | null) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
   clearError: () => void;
   setNeedsConfirmation: (needs: boolean, username?: string) => void;
+  setNeedsNewPassword: (needs: boolean, cognitoUser?: CognitoUser) => void;
 }
 
 type AuthStore = AuthState & AuthActions;
@@ -35,16 +39,28 @@ export const useAuthStore = create<AuthStore>()(
         error: null,
         needsConfirmation: false,
         pendingUsername: null,
+        needsNewPassword: false,
+        pendingCognitoUser: null,
 
         // Actions
         login: async (username: string, password: string) => {
           try {
             set({ isLoading: true, error: null });
 
-            const user = await authenticateUser(username, password);
+            const result = await authenticateUser(username, password);
+
+            if (result.type === 'newPasswordRequired') {
+              set({
+                needsNewPassword: true,
+                pendingCognitoUser: result.cognitoUser,
+                isLoading: false,
+                error: null,
+              });
+              return;
+            }
 
             set({
-              user,
+              user: result.user,
               isAuthenticated: true,
               isLoading: false,
               error: null,
@@ -75,6 +91,8 @@ export const useAuthStore = create<AuthStore>()(
               isAuthenticated: false,
               isLoading: false,
               error: null,
+              needsNewPassword: false,
+              pendingCognitoUser: null,
             });
           } catch (error) {
             console.error('Logout error:', error);
@@ -84,6 +102,8 @@ export const useAuthStore = create<AuthStore>()(
               isAuthenticated: false,
               isLoading: false,
               error: null,
+              needsNewPassword: false,
+              pendingCognitoUser: null,
             });
           }
         },
@@ -170,10 +190,50 @@ export const useAuthStore = create<AuthStore>()(
           }
         },
 
+        completeNewPassword: async (newPassword: string) => {
+          const { pendingCognitoUser } = get();
+          if (!pendingCognitoUser) {
+            throw new Error('パスワード変更のセッションが見つかりません');
+          }
+
+          try {
+            set({ isLoading: true, error: null });
+
+            const user = await completeNewPasswordChallenge(
+              pendingCognitoUser as CognitoUser,
+              newPassword
+            );
+
+            set({
+              user,
+              isAuthenticated: true,
+              isLoading: false,
+              error: null,
+              needsNewPassword: false,
+              pendingCognitoUser: null,
+            });
+          } catch (error) {
+            const errorMessage =
+              error instanceof Error ? error.message : 'パスワードの変更に失敗しました';
+            set({
+              isLoading: false,
+              error: errorMessage,
+            });
+            throw error;
+          }
+        },
+
         setNeedsConfirmation: (needs: boolean, username?: string) => {
           set({
             needsConfirmation: needs,
             pendingUsername: username || null,
+          });
+        },
+
+        setNeedsNewPassword: (needs: boolean, cognitoUser?: CognitoUser) => {
+          set({
+            needsNewPassword: needs,
+            pendingCognitoUser: cognitoUser || null,
           });
         },
 
@@ -188,6 +248,8 @@ export const useAuthStore = create<AuthStore>()(
           isAuthenticated: state.isAuthenticated,
           needsConfirmation: state.needsConfirmation,
           pendingUsername: state.pendingUsername,
+          // Note: needsNewPassword and pendingCognitoUser are NOT persisted
+          // because CognitoUser instance is not serializable
         }),
       }
     ),

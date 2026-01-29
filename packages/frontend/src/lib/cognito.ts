@@ -13,6 +13,17 @@ interface CognitoError extends Error {
   name: string;
 }
 
+// 認証結果の型定義
+export interface AuthResult {
+  type: 'success' | 'newPasswordRequired';
+  user?: User;
+  cognitoUser?: CognitoUser;
+  userAttributes?: Record<string, string>;
+}
+
+// CognitoUser を再エクスポート（型として使用するため）
+export type { CognitoUser };
+
 // Cognito設定（環境変数から取得）
 const USER_POOL_ID = import.meta.env.VITE_COGNITO_USER_POOL_ID || '';
 const CLIENT_ID = import.meta.env.VITE_COGNITO_CLIENT_ID || '';
@@ -26,8 +37,12 @@ const userPool = new CognitoUserPool({
 
 /**
  * ユーザー認証を行う
+ * NEW_PASSWORD_REQUIRED チャレンジの場合は cognitoUser を返す
  */
-export const authenticateUser = async (username: string, password: string): Promise<User> => {
+export const authenticateUser = async (
+  username: string,
+  password: string
+): Promise<AuthResult> => {
   return new Promise((resolve, reject) => {
     const authenticationDetails = new AuthenticationDetails({
       Username: username,
@@ -62,7 +77,7 @@ export const authenticateUser = async (username: string, password: string): Prom
           idToken,
         };
 
-        resolve(user);
+        resolve({ type: 'success', user });
       },
       onFailure: (err) => {
         let errorMessage = 'ログインに失敗しました';
@@ -75,6 +90,69 @@ export const authenticateUser = async (username: string, password: string): Prom
           errorMessage = 'パスワードのリセットが必要です';
         } else if (err.code === 'UserNotFoundException') {
           errorMessage = 'ユーザーが見つかりません';
+        } else if (err.message) {
+          errorMessage = err.message;
+        }
+
+        reject(new Error(errorMessage));
+      },
+      newPasswordRequired: (userAttributes: Record<string, string>) => {
+        // 読み取り専用属性を削除（Cognito の要件）
+        delete userAttributes.email_verified;
+        delete userAttributes.phone_number_verified;
+
+        resolve({
+          type: 'newPasswordRequired',
+          cognitoUser,
+          userAttributes,
+        });
+      },
+    });
+  });
+};
+
+/**
+ * NEW_PASSWORD_REQUIRED チャレンジを完了する
+ */
+export const completeNewPasswordChallenge = async (
+  cognitoUser: CognitoUser,
+  newPassword: string,
+  requiredAttributes?: Record<string, string>
+): Promise<User> => {
+  return new Promise((resolve, reject) => {
+    cognitoUser.completeNewPasswordChallenge(newPassword, requiredAttributes || {}, {
+      onSuccess: (session: CognitoUserSession) => {
+        const accessToken = session.getAccessToken().getJwtToken();
+        const refreshToken = session.getRefreshToken().getToken();
+        const idToken = session.getIdToken().getJwtToken();
+
+        // idToken から userId (sub) を取得
+        let userId = '';
+        try {
+          const idTokenPayload = JSON.parse(atob(idToken.split('.')[1]));
+          userId = idTokenPayload.sub || '';
+        } catch (error) {
+          console.error('Failed to parse idToken:', error);
+        }
+
+        const user: User = {
+          userId,
+          username: cognitoUser.getUsername(),
+          accessToken,
+          refreshToken,
+          idToken,
+        };
+
+        resolve(user);
+      },
+      onFailure: (err) => {
+        let errorMessage = 'パスワードの変更に失敗しました';
+
+        const cognitoError = err as CognitoError;
+        if (cognitoError.code === 'InvalidPasswordException') {
+          errorMessage = 'パスワードが要件を満たしていません';
+        } else if (cognitoError.code === 'InvalidParameterException') {
+          errorMessage = '入力値が正しくありません';
         } else if (err.message) {
           errorMessage = err.message;
         }
