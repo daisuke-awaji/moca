@@ -1,6 +1,6 @@
 /**
  * Amazon Bedrock AgentCore Runtime Construct
- * Strands Agent を AgentCore Runtime にデプロイするための CDK Construct
+ * CDK Construct for deploying Strands Agent to AgentCore Runtime
  */
 
 import * as cdk from 'aws-cdk-lib';
@@ -14,53 +14,53 @@ import { AgentCoreGateway } from './agentcore-gateway';
 
 export interface AgentCoreRuntimeProps {
   /**
-   * Runtime の名前
+   * Runtime name
    */
   readonly runtimeName: string;
 
   /**
-   * Runtime の説明
+   * Runtime description
    */
   readonly description?: string;
 
   /**
-   * Agent コードのパス
-   * デフォルト: '../agent'
+   * Agent code path
+   * @default '../agent'
    */
   readonly agentCodePath?: string;
 
   /**
-   * AWS リージョン
-   * デフォルト: us-east-1
+   * AWS region
+   * @default us-east-1
    */
   readonly region?: string;
 
   /**
-   * 認証タイプ (オプション)
-   * デフォルト: iam (IAM SigV4認証)
+   * Authentication type (optional)
+   * @default iam (IAM SigV4 authentication)
    */
   readonly authType?: 'iam' | 'jwt';
 
   /**
-   * Cognito認証設定 (authType が 'jwt' の場合に必要)
-   * 外部で作成されたCognitoAuthを使用
+   * Cognito authentication settings (required when authType is 'jwt')
+   * Uses externally created CognitoAuth
    */
   readonly cognitoAuth?: CognitoAuth;
 
   /**
-   * AgentCore Gateway (JWT伝播用)
-   * Gateway エンドポイントを環境変数として Runtime に設定
+   * AgentCore Gateway (for JWT propagation)
+   * Sets Gateway endpoint as environment variable for Runtime
    */
   readonly gateway?: AgentCoreGateway;
 
   /**
-   * CORS で許可するオリジン URL
-   * Frontend の CloudFront URL など
+   * CORS allowed origin URLs
+   * e.g., Frontend CloudFront URL
    */
   readonly corsAllowedOrigins?: string;
 
   /**
-   * AgentCore Memory の設定（オプション）
+   * AgentCore Memory configuration (optional)
    */
   readonly memory?: {
     readonly memoryId: string;
@@ -68,46 +68,46 @@ export interface AgentCoreRuntimeProps {
   };
 
   /**
-   * Tavily API Key Secret Name (Secrets Manager)（オプション）
-   * 設定されている場合、ランタイムは Secrets Manager から API キーを取得
+   * Tavily API Key Secret Name (Secrets Manager) (optional)
+   * When set, runtime retrieves API key from Secrets Manager
    */
   readonly tavilyApiKeySecretName?: string;
 
   /**
-   * GitHub Token Secret Name (Secrets Manager)（オプション）
-   * 設定されている場合、ランタイムは Secrets Manager から GitHub トークンを取得して gh CLI 認証
+   * GitHub Token Secret Name (Secrets Manager) (optional)
+   * When set, runtime retrieves GitHub token from Secrets Manager for gh CLI authentication
    */
   readonly githubTokenSecretName?: string;
 
   /**
-   * User Storage バケット名（オプション）
-   * S3ストレージツールを使用するために必要
+   * User Storage bucket name (optional)
+   * Required for using S3 storage tools
    */
   readonly userStorageBucketName?: string;
 
   /**
-   * Sessions Table テーブル名（オプション）
-   * セッション管理のために必要
+   * Sessions Table name (optional)
+   * Required for session management
    */
   readonly sessionsTableName?: string;
 
   /**
-   * Nova Canvas のリージョン（オプション）
-   * 画像生成に使用する Amazon Nova Canvas モデルのリージョン
-   * デフォルト: us-east-1
+   * Nova Canvas region (optional)
+   * Region of Amazon Nova Canvas model used for image generation
+   * @default us-east-1
    */
   readonly novaCanvasRegion?: string;
 
   /**
-   * Backend API URL（オプション）
-   * call_agent ツールでエージェント情報を取得するために必要
-   * 例: https://api.example.com
+   * Backend API URL (optional)
+   * Required for retrieving agent information with call_agent tool
+   * Example: https://api.example.com
    */
   readonly backendApiUrl?: string;
 
   /**
-   * AppSync Events HTTP Endpoint（オプション）
-   * リアルタイムメッセージ配信のために使用
+   * AppSync Events HTTP Endpoint (optional)
+   * Used for real-time message delivery
    */
   readonly appsyncHttpEndpoint?: string;
 }
@@ -117,17 +117,17 @@ export interface AgentCoreRuntimeProps {
  */
 export class AgentCoreRuntime extends Construct {
   /**
-   * 作成された AgentCore Runtime
+   * Created AgentCore Runtime
    */
   public readonly runtime: agentcore.Runtime;
 
   /**
-   * Runtime の ARN
+   * Runtime ARN
    */
   public readonly runtimeArn: string;
 
   /**
-   * Runtime の ID
+   * Runtime ID
    */
   public readonly runtimeId: string;
 
@@ -143,16 +143,16 @@ export class AgentCoreRuntime extends Construct {
       platform: Platform.LINUX_ARM64,
     });
 
-    // 認証設定
+    // Authentication configuration
     let authorizerConfiguration: RuntimeAuthorizerConfiguration | undefined;
 
     if (props.authType === 'jwt') {
       if (!props.cognitoAuth) {
-        throw new Error('JWT認証を使用する場合、cognitoAuthが必要です');
+        throw new Error('cognitoAuth is required when using JWT authentication');
       }
 
-      // L2 Construct の静的メソッドを使用してCognito認証を設定
-      // Frontend Client と Machine User Client の両方を許可
+      // Configure Cognito authentication using L2 Construct static method
+      // Allow both Frontend Client and Machine User Client
       authorizerConfiguration = RuntimeAuthorizerConfiguration.usingCognito(
         props.cognitoAuth.userPool,
         [props.cognitoAuth.userPoolClient, props.cognitoAuth.machineUserClient]
@@ -163,7 +163,7 @@ export class AgentCoreRuntime extends Construct {
       );
     }
 
-    // 環境変数を設定
+    // Set environment variables
     const environmentVariables: Record<string, string> = {
       AWS_REGION: props.region || 'us-east-1',
       BEDROCK_MODEL_ID: 'global.anthropic.claude-sonnet-4-5-20250929-v1:0',
@@ -171,64 +171,64 @@ export class AgentCoreRuntime extends Construct {
       LOG_LEVEL: 'info',
     };
 
-    // Gateway エンドポイントを設定（JWT伝播用）
+    // Set Gateway endpoint (for JWT propagation)
     if (props.gateway) {
       environmentVariables.AGENTCORE_GATEWAY_ENDPOINT = props.gateway.gatewayEndpoint;
     }
 
-    // CORS 許可オリジンを設定
+    // Set CORS allowed origins
     if (props.corsAllowedOrigins) {
       environmentVariables.CORS_ALLOWED_ORIGINS = props.corsAllowedOrigins;
     }
 
-    // AgentCore Memory の設定
+    // AgentCore Memory configuration
     if (props.memory) {
       environmentVariables.AGENTCORE_MEMORY_ID = props.memory.memoryId;
     }
 
-    // Tavily API Key Secret Name の設定
+    // Set Tavily API Key Secret Name
     if (props.tavilyApiKeySecretName) {
       environmentVariables.TAVILY_API_KEY_SECRET_NAME = props.tavilyApiKeySecretName;
     }
 
-    // GitHub Token Secret Name の設定
+    // Set GitHub Token Secret Name
     if (props.githubTokenSecretName) {
       environmentVariables.GITHUB_TOKEN_SECRET_NAME = props.githubTokenSecretName;
     }
 
-    // User Storage バケット名の設定
+    // Set User Storage bucket name
     if (props.userStorageBucketName) {
       environmentVariables.USER_STORAGE_BUCKET_NAME = props.userStorageBucketName;
     }
 
-    // Sessions Table テーブル名の設定
+    // Set Sessions Table name
     if (props.sessionsTableName) {
       environmentVariables.SESSIONS_TABLE_NAME = props.sessionsTableName;
     }
 
-    // Nova Canvas リージョンの設定
+    // Set Nova Canvas region
     if (props.novaCanvasRegion) {
       environmentVariables.NOVA_CANVAS_REGION = props.novaCanvasRegion;
     }
 
-    // Backend API URL の設定
+    // Set Backend API URL
     if (props.backendApiUrl) {
       environmentVariables.BACKEND_API_URL = props.backendApiUrl;
     }
 
-    // AppSync Events HTTP Endpoint の設定
+    // Set AppSync Events HTTP Endpoint
     if (props.appsyncHttpEndpoint) {
       environmentVariables.APPSYNC_HTTP_ENDPOINT = props.appsyncHttpEndpoint;
     }
 
-    // AgentCore Runtime を作成
+    // Create AgentCore Runtime
     this.runtime = new agentcore.Runtime(this, 'Runtime', {
       runtimeName: props.runtimeName,
       agentRuntimeArtifact: agentRuntimeArtifact,
       description: props.description || `Strands Agent Runtime: ${props.runtimeName}`,
       authorizerConfiguration: authorizerConfiguration,
       environmentVariables: environmentVariables,
-      // JWT認証のためのAuthorizationヘッダー転送を有効化
+      // Enable Authorization header forwarding for JWT authentication
       requestHeaderConfiguration: {
         allowlistedHeaders: ['Authorization'],
       },
@@ -237,7 +237,7 @@ export class AgentCoreRuntime extends Construct {
     const region = props.region || 'us-east-1';
     const account = cdk.Stack.of(this).account;
 
-    // CloudWatch Logs 権限（Statement 1: log-group レベル）
+    // CloudWatch Logs permissions (Statement 1: log-group level)
     this.runtime.addToRolePolicy(
       new iam.PolicyStatement({
         effect: iam.Effect.ALLOW,
@@ -248,7 +248,7 @@ export class AgentCoreRuntime extends Construct {
       })
     );
 
-    // CloudWatch Logs 権限（Statement 2: 全ロググループの参照）
+    // CloudWatch Logs permissions (Statement 2: all log groups reference)
     this.runtime.addToRolePolicy(
       new iam.PolicyStatement({
         effect: iam.Effect.ALLOW,
@@ -257,7 +257,7 @@ export class AgentCoreRuntime extends Construct {
       })
     );
 
-    // CloudWatch Logs 権限（Statement 3: log-stream レベル）
+    // CloudWatch Logs permissions (Statement 3: log-stream level)
     this.runtime.addToRolePolicy(
       new iam.PolicyStatement({
         effect: iam.Effect.ALLOW,
@@ -268,7 +268,7 @@ export class AgentCoreRuntime extends Construct {
       })
     );
 
-    // X-Ray トレース権限
+    // X-Ray tracing permissions
     this.runtime.addToRolePolicy(
       new iam.PolicyStatement({
         effect: iam.Effect.ALLOW,
@@ -282,7 +282,7 @@ export class AgentCoreRuntime extends Construct {
       })
     );
 
-    // CloudWatch メトリクス権限（条件付き）
+    // CloudWatch metrics permissions (conditional)
     this.runtime.addToRolePolicy(
       new iam.PolicyStatement({
         effect: iam.Effect.ALLOW,
@@ -296,7 +296,7 @@ export class AgentCoreRuntime extends Construct {
       })
     );
 
-    // Bedrock モデル呼び出し権限
+    // Bedrock model invocation permissions
     this.runtime.addToRolePolicy(
       new iam.PolicyStatement({
         sid: 'BedrockModelInvocation',
@@ -304,7 +304,7 @@ export class AgentCoreRuntime extends Construct {
         actions: [
           'bedrock:InvokeModel',
           'bedrock:InvokeModelWithResponseStream',
-          'bedrock:StartAsyncInvoke', // Nova Reel 用の非同期ジョブ開始
+          'bedrock:StartAsyncInvoke', // Start async job for Nova Reel
           'bedrock:GetAsyncInvoke',
           'bedrock:ListAsyncInvokes',
         ],
@@ -318,7 +318,7 @@ export class AgentCoreRuntime extends Construct {
       })
     );
 
-    // CodeInterpreter 操作権限
+    // CodeInterpreter operation permissions
     this.runtime.addToRolePolicy(
       new iam.PolicyStatement({
         sid: 'BedrockAgentCoreCodeInterpreterAccess',
@@ -336,12 +336,12 @@ export class AgentCoreRuntime extends Construct {
         ],
         resources: [
           `arn:aws:bedrock-agentcore:${region}:${account}:code-interpreter/*`,
-          `arn:aws:bedrock-agentcore:${region}:aws:code-interpreter/*`, // AWSマネージドCode Interpreter
+          `arn:aws:bedrock-agentcore:${region}:aws:code-interpreter/*`, // AWS Managed Code Interpreter
         ],
       })
     );
 
-    // Secrets Manager アクセス権限（Tavily API Key）
+    // Secrets Manager access permissions (Tavily API Key)
     if (props.tavilyApiKeySecretName) {
       this.runtime.addToRolePolicy(
         new iam.PolicyStatement({
@@ -355,7 +355,7 @@ export class AgentCoreRuntime extends Construct {
       );
     }
 
-    // Secrets Manager アクセス権限（GitHub Token）
+    // Secrets Manager access permissions (GitHub Token)
     if (props.githubTokenSecretName) {
       this.runtime.addToRolePolicy(
         new iam.PolicyStatement({
@@ -369,7 +369,7 @@ export class AgentCoreRuntime extends Construct {
       );
     }
 
-    // S3 アクセス権限（User Storage & Nova Reel 出力用）
+    // S3 access permissions (for User Storage & Nova Reel output)
     if (props.userStorageBucketName) {
       this.runtime.addToRolePolicy(
         new iam.PolicyStatement({
@@ -390,7 +390,7 @@ export class AgentCoreRuntime extends Construct {
       );
     }
 
-    // AppSync Events 権限（リアルタイムメッセージ配信用）
+    // AppSync Events permissions (for real-time message delivery)
     if (props.appsyncHttpEndpoint) {
       this.runtime.addToRolePolicy(
         new iam.PolicyStatement({
@@ -402,7 +402,7 @@ export class AgentCoreRuntime extends Construct {
       );
     }
 
-    // プロパティを設定
+    // Set properties
     this.runtimeArn = this.runtime.agentRuntimeArn;
     this.runtimeId = this.runtime.agentRuntimeId;
   }

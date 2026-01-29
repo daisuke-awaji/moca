@@ -29,8 +29,8 @@ export const environments: Record<Environment, EnvironmentConfigInput> = {
    * Default environment
    */
   default: {
-    // tavilyApiKeySecretName: 'agentcore/dev/tavily-api-key',
-    // githubTokenSecretName: 'agentcore/dev/github-token',
+    tavilyApiKeySecretName: 'agentcore/dev/tavily-api-key',
+    githubTokenSecretName: 'agentcore/dev/github-token',
   },
 
   /**
