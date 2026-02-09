@@ -99,7 +99,7 @@ export function CronBuilder({
           onChange={(e) => handleCustomInput(e.target.value)}
           disabled={disabled || !isCustom}
           placeholder="0 0 * * ? *"
-          className="w-full px-3 py-2 border border-border-strong rounded-lg focus:outline-none focus:ring-2 focus:ring-border-focus disabled:bg-surface-secondary disabled:cursor-not-allowed font-mono text-sm"
+          className="w-full px-3 py-2 border border-border-strong rounded-lg bg-surface-primary text-fg-default focus:outline-none focus:ring-2 focus:ring-border-focus disabled:bg-surface-secondary disabled:cursor-not-allowed font-mono text-sm"
         />
         <p className="mt-1 text-xs text-fg-muted">{t('triggers.cron.customExpressionHint')}</p>
       </div>
