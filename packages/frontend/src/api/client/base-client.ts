@@ -5,34 +5,10 @@
 
 import { getValidAccessToken } from '../../lib/cognito';
 import { handleGlobalError } from '../../utils/errorHandler';
-import i18n from '../../i18n';
+import { ApiError, AuthenticationError } from '../errors';
 
-/**
- * Custom error class for API errors
- */
-export class ApiError extends Error {
-  public readonly status: number;
-  public readonly statusText: string;
-  public readonly details?: unknown;
-
-  constructor(message: string, status: number, statusText: string, details?: unknown) {
-    super(message);
-    this.name = 'ApiError';
-    this.status = status;
-    this.statusText = statusText;
-    this.details = details;
-  }
-}
-
-/**
- * Custom error class for authentication errors
- */
-export class AuthenticationError extends Error {
-  constructor(message?: string) {
-    super(message || i18n.t('error.authenticationRequired'));
-    this.name = 'AuthenticationError';
-  }
-}
+// Re-export error classes for backward compatibility
+export { ApiError, AuthenticationError };
 
 /**
  * Check if API debugging is enabled
@@ -95,7 +71,10 @@ export class BaseApiClient {
       // On 401, attempt token refresh and retry once
       if (response.status === 401 && !isRetry) {
         console.warn(
-          `⚠️ [${this.clientName}] 401 on ${method} ${url}, attempting token refresh and retry...`
+          '⚠️ [%s] 401 on %s %s, attempting token refresh and retry...',
+          this.clientName,
+          method,
+          url
         );
         const error = new ApiError('Unauthorized', 401, 'Unauthorized');
         await handleGlobalError(error); // This triggers token refresh
@@ -141,19 +120,19 @@ export class BaseApiClient {
 
   private logStart(method: string, url: string): void {
     if (isDebugEnabled()) {
-      console.log(`🚀 [${this.clientName}] ${method} ${url}`);
+      console.log('🚀 [%s] %s %s', this.clientName, method, url);
     }
   }
 
   private logSuccess(method: string, url: string, status: number): void {
     if (isDebugEnabled()) {
-      console.log(`✅ [${this.clientName}] ${method} ${url} -> ${status}`);
+      console.log('✅ [%s] %s %s -> %d', this.clientName, method, url, status);
     }
   }
 
   private logError(method: string, url: string, error: unknown): void {
     if (isDebugEnabled()) {
-      console.error(`💥 [${this.clientName}] ${method} ${url} failed:`, error);
+      console.error('💥 [%s] %s %s failed:', this.clientName, method, url, error);
     }
   }
 }

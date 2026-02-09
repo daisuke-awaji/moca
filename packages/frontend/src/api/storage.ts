@@ -1,6 +1,6 @@
 /**
  * Storage API Client
- * ユーザーファイルストレージAPI
+ * User file storage API
  */
 
 import { backendClient } from './client/backend-client';
@@ -36,23 +36,23 @@ export interface FolderTreeResponse {
 }
 
 /**
- * パスを正規化（エンコード済み・未エンコード両方に対応）
- * 二重エンコード、単一エンコード、未エンコードのすべてに対応
+ * Normalize path (handles both encoded and unencoded paths)
+ * Supports double-encoded, single-encoded, and unencoded paths
  */
 function normalizeStoragePath(path: string): string {
   let normalized = path;
 
-  // 最大2回までデコードを試みる（二重エンコード対策）
+  // Attempt up to 2 decode passes (double-encoding protection)
   for (let i = 0; i < 2; i++) {
     try {
       const decoded = decodeURIComponent(normalized);
       if (decoded === normalized) {
-        // これ以上デコードできない（未エンコードまたはデコード完了）
+        // No more decoding possible (already unencoded or fully decoded)
         break;
       }
       normalized = decoded;
     } catch {
-      // デコードに失敗した場合は現在の値を使用
+      // Use current value if decode fails
       break;
     }
   }
@@ -85,7 +85,7 @@ export interface DirectorySizeResponse {
 }
 
 /**
- * ディレクトリ一覧を取得
+ * List directory contents
  */
 export async function listStorageItems(path: string = '/'): Promise<ListStorageResponse> {
   const params = new URLSearchParams();
@@ -95,7 +95,7 @@ export async function listStorageItems(path: string = '/'): Promise<ListStorageR
 }
 
 /**
- * ディレクトリ内のすべてのファイルサイズを再帰的に取得
+ * Get total size of all files in a directory recursively
  */
 export async function getDirectorySize(path: string = '/'): Promise<DirectorySizeResponse> {
   const params = new URLSearchParams();
@@ -105,7 +105,7 @@ export async function getDirectorySize(path: string = '/'): Promise<DirectorySiz
 }
 
 /**
- * Upload file用の署名付きURLを生成
+ * Generate presigned URL for file upload
  */
 export async function generateUploadUrl(
   fileName: string,
@@ -120,7 +120,7 @@ export async function generateUploadUrl(
 }
 
 /**
- * 署名付きURLを使用してS3にファイルをアップロード
+ * Upload file to S3 using presigned URL
  * Note: This is direct S3 upload, not using backend client
  */
 export async function uploadFileToS3(uploadUrl: string, file: File): Promise<void> {
@@ -138,7 +138,7 @@ export async function uploadFileToS3(uploadUrl: string, file: File): Promise<voi
 }
 
 /**
- * ディレクトリを作成
+ * Create a directory
  */
 export async function createDirectory(directoryName: string, path: string = '/') {
   return backendClient.post('/storage/directory', {
@@ -148,7 +148,7 @@ export async function createDirectory(directoryName: string, path: string = '/')
 }
 
 /**
- * ファイルを削除
+ * Delete a file
  */
 export async function deleteFile(path: string) {
   const params = new URLSearchParams();
@@ -158,9 +158,9 @@ export async function deleteFile(path: string) {
 }
 
 /**
- * ディレクトリを削除
- * @param path ディレクトリパス
- * @param force true の場合、ディレクトリ内のすべてのファイルを含めて削除
+ * Delete a directory
+ * @param path Directory path
+ * @param force If true, delete all files within the directory
  */
 export async function deleteDirectory(path: string, force: boolean = false) {
   const params = new URLSearchParams();
@@ -173,11 +173,11 @@ export async function deleteDirectory(path: string, force: boolean = false) {
 }
 
 /**
- * ファイルダウンロード用の署名付きURLを生成
+ * Generate presigned URL for file download
  */
 export async function generateDownloadUrl(path: string): Promise<string> {
   const params = new URLSearchParams();
-  // パスを正規化（二重エンコード対策）
+  // Normalize path (double-encoding protection)
   const normalizedPath = normalizeStoragePath(path);
   params.append('path', normalizedPath);
 
@@ -189,14 +189,14 @@ export async function generateDownloadUrl(path: string): Promise<string> {
 }
 
 /**
- * フォルダツリー構造を取得
+ * Fetch folder tree structure
  */
 export async function fetchFolderTree(): Promise<FolderTreeResponse> {
   return backendClient.get<FolderTreeResponse>('/storage/tree');
 }
 
 /**
- * フォルダ内のすべてのファイル情報を取得
+ * Get download info for all files in a folder
  */
 export async function getFolderDownloadInfo(path: string): Promise<FolderDownloadInfo> {
   const params = new URLSearchParams();
@@ -206,7 +206,7 @@ export async function getFolderDownloadInfo(path: string): Promise<FolderDownloa
 }
 
 /**
- * フォルダを一括ダウンロード（ZIP形式）
+ * Download folder as ZIP
  * Note: This uses external libraries (jszip, file-saver) and direct fetch to S3
  */
 export async function downloadFolder(
@@ -218,7 +218,7 @@ export async function downloadFolder(
   const JSZip = (await import('jszip')).default;
   const { saveAs } = await import('file-saver');
 
-  // フォルダ内のファイル情報を取得
+  // Get file info for the folder
   const downloadInfo = await getFolderDownloadInfo(folderPath);
 
   if (downloadInfo.fileCount === 0) {
@@ -229,14 +229,14 @@ export async function downloadFolder(
   const zip = new JSZip();
   let downloadedCount = 0;
 
-  // 各ファイルをダウンロードしてZIPに追加
+  // Download each file and add to ZIP
   for (const file of downloadInfo.files) {
-    // キャンセルチェック
+    // Check for cancellation
     if (signal?.aborted) {
       throw new Error('Download cancelled');
     }
 
-    // 進捗を通知
+    // Notify progress
     if (onProgress) {
       onProgress({
         current: downloadedCount,
@@ -257,7 +257,7 @@ export async function downloadFolder(
 
       const blob = await response.blob();
 
-      // ZIPに追加
+      // Add to ZIP
       zip.file(file.relativePath, blob);
 
       downloadedCount++;
@@ -266,12 +266,12 @@ export async function downloadFolder(
         throw new Error('Download cancelled');
       }
       console.error('Error downloading file %s:', file.relativePath, error);
-      // エラーが発生してもスキップして続行
+      // Skip and continue on error
       downloadedCount++;
     }
   }
 
-  // 最終進捗を通知
+  // Notify final progress
   if (onProgress) {
     onProgress({
       current: downloadedCount,
@@ -281,7 +281,7 @@ export async function downloadFolder(
     });
   }
 
-  // ZIPファイルを生成してダウンロード
+  // Generate and download ZIP file
   const zipBlob = await zip.generateAsync({ type: 'blob' });
   saveAs(zipBlob, `${folderName}.zip`);
 }

@@ -13,7 +13,7 @@ import {
   deleteSession as deleteSessionApi,
 } from '../api/sessions';
 import type { SessionSummary, ConversationMessage } from '../api/sessions';
-import { ApiError } from '../api/client/base-client';
+import { ApiError } from '../api/errors';
 import i18n from '../i18n';
 import { useAgentStore } from './agentStore';
 import { useStorageStore } from './storageStore';

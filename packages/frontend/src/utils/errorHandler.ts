@@ -4,7 +4,7 @@
  */
 
 import toast from 'react-hot-toast';
-import { ApiError, AuthenticationError } from '../api/client/base-client';
+import { ApiError, AuthenticationError } from '../api/errors';
 import { getValidAccessToken } from '../lib/cognito';
 import i18n from '../i18n';
 
