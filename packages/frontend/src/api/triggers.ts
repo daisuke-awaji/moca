@@ -2,7 +2,7 @@
  * Triggers API Client
  */
 
-import { backendGet, backendPost, backendPut, backendDelete } from './client/backend-client';
+import { backendClient } from './client/backend-client';
 import type {
   Trigger,
   CreateTriggerRequest,
@@ -91,7 +91,7 @@ export async function listTriggers(
   const queryString = params.toString();
   const url = `/triggers${queryString ? `?${queryString}` : ''}`;
 
-  const data = await backendGet<TriggersListResponse>(url);
+  const data = await backendClient.get<TriggersListResponse>(url);
 
   return {
     triggers: data.triggers.map(parseTriggerDates),
@@ -103,7 +103,7 @@ export async function listTriggers(
  * Get a specific trigger
  */
 export async function getTrigger(triggerId: string): Promise<Trigger> {
-  const data = await backendGet<TriggerResponse>(`/triggers/${triggerId}`);
+  const data = await backendClient.get<TriggerResponse>(`/triggers/${triggerId}`);
   return parseTriggerDates(data.trigger);
 }
 
@@ -111,7 +111,7 @@ export async function getTrigger(triggerId: string): Promise<Trigger> {
  * Create a new trigger
  */
 export async function createTrigger(input: CreateTriggerRequest): Promise<Trigger> {
-  const data = await backendPost<TriggerResponse>('/triggers', input);
+  const data = await backendClient.post<TriggerResponse>('/triggers', input);
   return parseTriggerDates(data.trigger);
 }
 
@@ -122,7 +122,7 @@ export async function updateTrigger(
   triggerId: string,
   input: UpdateTriggerRequest
 ): Promise<Trigger> {
-  const data = await backendPut<TriggerResponse>(`/triggers/${triggerId}`, input);
+  const data = await backendClient.put<TriggerResponse>(`/triggers/${triggerId}`, input);
   return parseTriggerDates(data.trigger);
 }
 
@@ -130,14 +130,14 @@ export async function updateTrigger(
  * Delete a trigger
  */
 export async function deleteTrigger(triggerId: string): Promise<void> {
-  await backendDelete<void>(`/triggers/${triggerId}`);
+  await backendClient.delete<void>(`/triggers/${triggerId}`);
 }
 
 /**
  * Enable a trigger
  */
 export async function enableTrigger(triggerId: string): Promise<Trigger> {
-  const data = await backendPost<TriggerResponse>(`/triggers/${triggerId}/enable`);
+  const data = await backendClient.post<TriggerResponse>(`/triggers/${triggerId}/enable`);
   return parseTriggerDates(data.trigger);
 }
 
@@ -145,7 +145,7 @@ export async function enableTrigger(triggerId: string): Promise<Trigger> {
  * Disable a trigger
  */
 export async function disableTrigger(triggerId: string): Promise<Trigger> {
-  const data = await backendPost<TriggerResponse>(`/triggers/${triggerId}/disable`);
+  const data = await backendClient.post<TriggerResponse>(`/triggers/${triggerId}/disable`);
   return parseTriggerDates(data.trigger);
 }
 
@@ -164,7 +164,7 @@ export async function getExecutionHistory(
   const queryString = params.toString();
   const url = `/triggers/${triggerId}/executions${queryString ? `?${queryString}` : ''}`;
 
-  const data = await backendGet<ExecutionsListResponse>(url);
+  const data = await backendClient.get<ExecutionsListResponse>(url);
 
   return {
     executions: data.executions.map(parseExecutionDates),

@@ -10,6 +10,8 @@ import {
   completeNewPasswordChallenge,
   type CognitoUser,
 } from '../lib/cognito';
+import { logger } from '../utils/logger';
+import { extractErrorMessage } from '../utils/store-helpers';
 
 interface AuthActions {
   login: (username: string, password: string) => Promise<void>;
@@ -66,7 +68,7 @@ export const useAuthStore = create<AuthStore>()(
               error: null,
             });
           } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : '認証に失敗しました';
+            const errorMessage = extractErrorMessage(error, 'Authentication failed');
             set({
               user: null,
               isAuthenticated: false,
@@ -95,8 +97,8 @@ export const useAuthStore = create<AuthStore>()(
               pendingCognitoUser: null,
             });
           } catch (error) {
-            console.error('Logout error:', error);
-            // ログアウトエラーでも状態はクリアする
+            logger.error('Logout error:', error);
+            // Clear state even on logout error
             set({
               user: null,
               isAuthenticated: false,
@@ -136,8 +138,7 @@ export const useAuthStore = create<AuthStore>()(
               pendingUsername: username,
             });
           } catch (error) {
-            const errorMessage =
-              error instanceof Error ? error.message : 'サインアップに失敗しました';
+            const errorMessage = extractErrorMessage(error, 'Sign up failed');
             set({
               isLoading: false,
               error: errorMessage,
@@ -161,7 +162,7 @@ export const useAuthStore = create<AuthStore>()(
               pendingUsername: null,
             });
           } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : '確認に失敗しました';
+            const errorMessage = extractErrorMessage(error, 'Confirmation failed');
             set({
               isLoading: false,
               error: errorMessage,
@@ -181,7 +182,7 @@ export const useAuthStore = create<AuthStore>()(
               error: null,
             });
           } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : '再送に失敗しました';
+            const errorMessage = extractErrorMessage(error, 'Failed to resend code');
             set({
               isLoading: false,
               error: errorMessage,
@@ -193,7 +194,7 @@ export const useAuthStore = create<AuthStore>()(
         completeNewPassword: async (newPassword: string) => {
           const { pendingCognitoUser } = get();
           if (!pendingCognitoUser) {
-            throw new Error('パスワード変更のセッションが見つかりません');
+            throw new Error('Password change session not found');
           }
 
           try {
@@ -213,8 +214,7 @@ export const useAuthStore = create<AuthStore>()(
               pendingCognitoUser: null,
             });
           } catch (error) {
-            const errorMessage =
-              error instanceof Error ? error.message : 'パスワードの変更に失敗しました';
+            const errorMessage = extractErrorMessage(error, 'Failed to change password');
             set({
               isLoading: false,
               error: errorMessage,
@@ -255,6 +255,7 @@ export const useAuthStore = create<AuthStore>()(
     ),
     {
       name: 'auth-store',
+      enabled: import.meta.env.DEV,
     }
   )
 );

@@ -3,7 +3,7 @@
  * Client for calling Backend tools API
  */
 
-import { backendGet, backendPost } from './client/backend-client';
+import { backendClient } from './client/backend-client';
 
 /**
  * MCP Tool type definition
@@ -56,7 +56,7 @@ export async function fetchTools(cursor?: string): Promise<{
   nextCursor?: string;
 }> {
   const url = cursor ? `/tools?cursor=${encodeURIComponent(cursor)}` : '/tools';
-  const data = await backendGet<ToolsResponse>(url);
+  const data = await backendClient.get<ToolsResponse>(url);
 
   return {
     tools: data.tools,
@@ -90,7 +90,7 @@ export interface MCPToolsFetchResult {
 export async function fetchLocalMCPTools(
   mcpConfig: Record<string, unknown>
 ): Promise<MCPToolsFetchResult> {
-  const data = await backendPost<{
+  const data = await backendClient.post<{
     tools: (MCPTool & { serverName: string })[];
     errors: MCPServerError[];
   }>('/tools/local', {
@@ -113,7 +113,7 @@ export async function searchTools(query: string): Promise<MCPTool[]> {
     throw new Error('Search query is required');
   }
 
-  const data = await backendPost<ToolsResponse>('/tools/search', {
+  const data = await backendClient.post<ToolsResponse>('/tools/search', {
     query: query.trim(),
   });
 
@@ -125,5 +125,5 @@ export async function searchTools(query: string): Promise<MCPTool[]> {
  * @returns Connection status information
  */
 export async function checkGatewayHealth(): Promise<HealthResponse> {
-  return backendGet<HealthResponse>('/tools/health');
+  return backendClient.get<HealthResponse>('/tools/health');
 }

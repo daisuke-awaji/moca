@@ -5,11 +5,10 @@
  */
 
 import { create } from 'zustand';
+import { devtools, persist } from 'zustand/middleware';
 
 export type Theme = 'light' | 'dark' | 'system';
 export type ResolvedTheme = 'light' | 'dark';
-
-const STORAGE_KEY = 'donuts-theme';
 
 /**
  * Resolve the effective theme based on user preference and OS setting.
@@ -28,21 +27,6 @@ function applyTheme(resolvedTheme: ResolvedTheme): void {
   document.documentElement.setAttribute('data-theme', resolvedTheme);
 }
 
-/**
- * Read the persisted theme from localStorage.
- */
-function getPersistedTheme(): Theme {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored === 'light' || stored === 'dark' || stored === 'system') {
-      return stored;
-    }
-  } catch {
-    // localStorage unavailable
-  }
-  return 'light';
-}
-
 interface ThemeState {
   /** User-selected theme preference */
   theme: Theme;
@@ -50,41 +34,78 @@ interface ThemeState {
   resolvedTheme: ResolvedTheme;
   /** Set theme preference and apply it */
   setTheme: (theme: Theme) => void;
-  /** Initialize theme from localStorage and OS detection */
+  /** Initialize theme and start listening for OS changes */
   initialize: () => void;
+  /** Cleanup event listeners */
+  cleanup: () => void;
+  /** Internal: media query change handler reference */
+  _cleanupFn: (() => void) | null;
 }
 
-export const useThemeStore = create<ThemeState>((set, get) => ({
-  theme: 'light',
-  resolvedTheme: 'light',
+export const useThemeStore = create<ThemeState>()(
+  devtools(
+    persist(
+      (set, get) => ({
+        theme: 'light',
+        resolvedTheme: 'light',
+        _cleanupFn: null,
 
-  setTheme: (theme: Theme) => {
-    const resolved = resolveTheme(theme);
-    applyTheme(resolved);
-    try {
-      localStorage.setItem(STORAGE_KEY, theme);
-    } catch {
-      // localStorage unavailable
-    }
-    set({ theme, resolvedTheme: resolved });
-  },
+        setTheme: (theme: Theme) => {
+          const resolved = resolveTheme(theme);
+          applyTheme(resolved);
+          set({ theme, resolvedTheme: resolved });
+        },
 
-  initialize: () => {
-    const theme = getPersistedTheme();
-    const resolved = resolveTheme(theme);
-    applyTheme(resolved);
-    set({ theme, resolvedTheme: resolved });
+        initialize: () => {
+          // Clean up any previous listener
+          const existingCleanup = get()._cleanupFn;
+          if (existingCleanup) {
+            existingCleanup();
+          }
 
-    // Listen for OS theme changes when "system" is selected
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    const handleChange = () => {
-      const currentTheme = get().theme;
-      if (currentTheme === 'system') {
-        const newResolved = resolveTheme('system');
-        applyTheme(newResolved);
-        set({ resolvedTheme: newResolved });
+          const theme = get().theme;
+          const resolved = resolveTheme(theme);
+          applyTheme(resolved);
+          set({ resolvedTheme: resolved });
+
+          // Listen for OS theme changes when "system" is selected
+          const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+          const handleChange = () => {
+            const currentTheme = get().theme;
+            if (currentTheme === 'system') {
+              const newResolved = resolveTheme('system');
+              applyTheme(newResolved);
+              set({ resolvedTheme: newResolved });
+            }
+          };
+          mediaQuery.addEventListener('change', handleChange);
+
+          // Store cleanup function
+          set({
+            _cleanupFn: () => {
+              mediaQuery.removeEventListener('change', handleChange);
+            },
+          });
+        },
+
+        cleanup: () => {
+          const cleanupFn = get()._cleanupFn;
+          if (cleanupFn) {
+            cleanupFn();
+            set({ _cleanupFn: null });
+          }
+        },
+      }),
+      {
+        name: 'donuts-theme',
+        partialize: (state) => ({
+          theme: state.theme,
+        }),
       }
-    };
-    mediaQuery.addEventListener('change', handleChange);
-  },
-}));
+    ),
+    {
+      name: 'theme-store',
+      enabled: import.meta.env.DEV,
+    }
+  )
+);

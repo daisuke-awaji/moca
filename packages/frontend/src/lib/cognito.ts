@@ -7,13 +7,13 @@ import {
 } from 'amazon-cognito-identity-js';
 import type { User } from '../types/index';
 
-// Cognito エラー型定義
+// Cognito error type definition
 interface CognitoError extends Error {
   code?: string;
   name: string;
 }
 
-// 認証結果の型定義
+// Authentication result type definition
 export interface AuthResult {
   type: 'success' | 'newPasswordRequired';
   user?: User;
@@ -21,28 +21,25 @@ export interface AuthResult {
   userAttributes?: Record<string, string>;
 }
 
-// CognitoUser を再エクスポート（型として使用するため）
+// Re-export CognitoUser (for use as a type)
 export type { CognitoUser };
 
-// Cognito設定（環境変数から取得）
+// Cognito configuration (from environment variables)
 const USER_POOL_ID = import.meta.env.VITE_COGNITO_USER_POOL_ID || '';
 const CLIENT_ID = import.meta.env.VITE_COGNITO_CLIENT_ID || '';
 const AWS_REGION = import.meta.env.VITE_AWS_REGION || 'us-east-1';
 
-// User Pool インスタンス
+// User Pool instance
 const userPool = new CognitoUserPool({
   UserPoolId: USER_POOL_ID,
   ClientId: CLIENT_ID,
 });
 
 /**
- * ユーザー認証を行う
- * NEW_PASSWORD_REQUIRED チャレンジの場合は cognitoUser を返す
+ * Authenticate user
+ * Returns cognitoUser for NEW_PASSWORD_REQUIRED challenge
  */
-export const authenticateUser = async (
-  username: string,
-  password: string
-): Promise<AuthResult> => {
+export const authenticateUser = async (username: string, password: string): Promise<AuthResult> => {
   return new Promise((resolve, reject) => {
     const authenticationDetails = new AuthenticationDetails({
       Username: username,
@@ -58,15 +55,14 @@ export const authenticateUser = async (
       onSuccess: (session: CognitoUserSession) => {
         const accessToken = session.getAccessToken().getJwtToken();
         const refreshToken = session.getRefreshToken().getToken();
-        const idToken = session.getIdToken().getJwtToken();
 
-        // idToken から userId (sub) を取得
+        // Extract userId (sub) from accessToken
         let userId = '';
         try {
-          const idTokenPayload = JSON.parse(atob(idToken.split('.')[1]));
-          userId = idTokenPayload.sub || '';
+          const accessTokenPayload = JSON.parse(atob(accessToken.split('.')[1]));
+          userId = accessTokenPayload.sub || '';
         } catch (error) {
-          console.error('Failed to parse idToken:', error);
+          console.error('Failed to parse accessToken:', error);
         }
 
         const user: User = {
@@ -74,22 +70,21 @@ export const authenticateUser = async (
           username,
           accessToken,
           refreshToken,
-          idToken,
         };
 
         resolve({ type: 'success', user });
       },
       onFailure: (err) => {
-        let errorMessage = 'ログインに失敗しました';
+        let errorMessage = 'Login failed';
 
         if (err.code === 'NotAuthorizedException') {
-          errorMessage = 'ユーザー名またはパスワードが間違っています';
+          errorMessage = 'Incorrect username or password';
         } else if (err.code === 'UserNotConfirmedException') {
-          errorMessage = 'ユーザーが確認されていません';
+          errorMessage = 'User is not confirmed';
         } else if (err.code === 'PasswordResetRequiredException') {
-          errorMessage = 'パスワードのリセットが必要です';
+          errorMessage = 'Password reset required';
         } else if (err.code === 'UserNotFoundException') {
-          errorMessage = 'ユーザーが見つかりません';
+          errorMessage = 'User not found';
         } else if (err.message) {
           errorMessage = err.message;
         }
@@ -97,7 +92,7 @@ export const authenticateUser = async (
         reject(new Error(errorMessage));
       },
       newPasswordRequired: (userAttributes: Record<string, string>) => {
-        // 読み取り専用属性を削除（Cognito の要件）
+        // Remove read-only attributes (Cognito requirement)
         delete userAttributes.email_verified;
         delete userAttributes.phone_number_verified;
 
@@ -112,7 +107,7 @@ export const authenticateUser = async (
 };
 
 /**
- * NEW_PASSWORD_REQUIRED チャレンジを完了する
+ * Complete NEW_PASSWORD_REQUIRED challenge
  */
 export const completeNewPasswordChallenge = async (
   cognitoUser: CognitoUser,
@@ -124,15 +119,14 @@ export const completeNewPasswordChallenge = async (
       onSuccess: (session: CognitoUserSession) => {
         const accessToken = session.getAccessToken().getJwtToken();
         const refreshToken = session.getRefreshToken().getToken();
-        const idToken = session.getIdToken().getJwtToken();
 
-        // idToken から userId (sub) を取得
+        // Extract userId (sub) from accessToken
         let userId = '';
         try {
-          const idTokenPayload = JSON.parse(atob(idToken.split('.')[1]));
-          userId = idTokenPayload.sub || '';
+          const accessTokenPayload = JSON.parse(atob(accessToken.split('.')[1]));
+          userId = accessTokenPayload.sub || '';
         } catch (error) {
-          console.error('Failed to parse idToken:', error);
+          console.error('Failed to parse accessToken:', error);
         }
 
         const user: User = {
@@ -140,19 +134,18 @@ export const completeNewPasswordChallenge = async (
           username: cognitoUser.getUsername(),
           accessToken,
           refreshToken,
-          idToken,
         };
 
         resolve(user);
       },
       onFailure: (err) => {
-        let errorMessage = 'パスワードの変更に失敗しました';
+        let errorMessage = 'Failed to change password';
 
         const cognitoError = err as CognitoError;
         if (cognitoError.code === 'InvalidPasswordException') {
-          errorMessage = 'パスワードが要件を満たしていません';
+          errorMessage = 'Password does not meet requirements';
         } else if (cognitoError.code === 'InvalidParameterException') {
-          errorMessage = '入力値が正しくありません';
+          errorMessage = 'Invalid input values';
         } else if (err.message) {
           errorMessage = err.message;
         }
@@ -164,7 +157,7 @@ export const completeNewPasswordChallenge = async (
 };
 
 /**
- * ユーザーをサインアウトする
+ * Sign out user
  */
 export const signOutUser = async (): Promise<void> => {
   return new Promise((resolve) => {
@@ -177,7 +170,7 @@ export const signOutUser = async (): Promise<void> => {
 };
 
 /**
- * 現在のユーザーセッションを取得する
+ * Get current user session
  */
 export const getCurrentUserSession = async (): Promise<User | null> => {
   return new Promise((resolve) => {
@@ -196,15 +189,14 @@ export const getCurrentUserSession = async (): Promise<User | null> => {
 
       const accessToken = session.getAccessToken().getJwtToken();
       const refreshToken = session.getRefreshToken().getToken();
-      const idToken = session.getIdToken().getJwtToken();
 
-      // idToken から userId (sub) を取得
+      // Extract userId (sub) from accessToken
       let userId = '';
       try {
-        const idTokenPayload = JSON.parse(atob(idToken.split('.')[1]));
-        userId = idTokenPayload.sub || '';
+        const accessTokenPayload = JSON.parse(atob(accessToken.split('.')[1]));
+        userId = accessTokenPayload.sub || '';
       } catch (error) {
-        console.error('Failed to parse idToken:', error);
+        console.error('Failed to parse accessToken:', error);
       }
 
       const user: User = {
@@ -212,7 +204,6 @@ export const getCurrentUserSession = async (): Promise<User | null> => {
         username: cognitoUser.getUsername(),
         accessToken,
         refreshToken,
-        idToken,
       };
 
       resolve(user);
@@ -221,7 +212,7 @@ export const getCurrentUserSession = async (): Promise<User | null> => {
 };
 
 /**
- * トークンを更新する
+ * Refresh tokens
  */
 export const refreshTokens = async (): Promise<User | null> => {
   return new Promise((resolve, reject) => {
@@ -234,7 +225,7 @@ export const refreshTokens = async (): Promise<User | null> => {
 
     cognitoUser.getSession((err: Error | null, session: CognitoUserSession | null) => {
       if (err || !session) {
-        reject(new Error('セッションの取得に失敗しました'));
+        reject(new Error('Failed to get session'));
         return;
       }
 
@@ -242,21 +233,20 @@ export const refreshTokens = async (): Promise<User | null> => {
 
       cognitoUser.refreshSession(refreshToken, (refreshErr, newSession) => {
         if (refreshErr) {
-          reject(new Error('トークンの更新に失敗しました'));
+          reject(new Error('Failed to refresh token'));
           return;
         }
 
         const accessToken = newSession.getAccessToken().getJwtToken();
         const newRefreshToken = newSession.getRefreshToken().getToken();
-        const idToken = newSession.getIdToken().getJwtToken();
 
-        // idToken から userId (sub) を取得
+        // Extract userId (sub) from accessToken
         let userId = '';
         try {
-          const idTokenPayload = JSON.parse(atob(idToken.split('.')[1]));
-          userId = idTokenPayload.sub || '';
+          const accessTokenPayload = JSON.parse(atob(accessToken.split('.')[1]));
+          userId = accessTokenPayload.sub || '';
         } catch (error) {
-          console.error('Failed to parse idToken:', error);
+          console.error('Failed to parse accessToken:', error);
         }
 
         const user: User = {
@@ -264,7 +254,6 @@ export const refreshTokens = async (): Promise<User | null> => {
           username: cognitoUser.getUsername(),
           accessToken,
           refreshToken: newRefreshToken,
-          idToken,
         };
 
         resolve(user);
@@ -274,48 +263,51 @@ export const refreshTokens = async (): Promise<User | null> => {
 };
 
 /**
- * 有効なアクセストークンを取得する（必要に応じて自動リフレッシュ）
- * getSession() は期限切れトークンを自動的にリフレッシュしてくれる
+ * Get valid access token (auto-refreshes if expired)
+ * getSession() internally checks expiration and auto-refreshes
  */
 export const getValidAccessToken = async (): Promise<string | null> => {
   return new Promise((resolve) => {
     const cognitoUser = userPool.getCurrentUser();
 
     if (!cognitoUser) {
-      console.warn('🔒 認証されたユーザーが見つかりません');
+      console.warn('🔒 No authenticated user found');
       resolve(null);
       return;
     }
 
-    // getSession() は内部で期限切れチェック & 自動リフレッシュを行う
+    // getSession() internally checks expiration and auto-refreshes
     cognitoUser.getSession((err: Error | null, session: CognitoUserSession | null) => {
       if (err) {
         // Check if error is related to refresh token expiration
         const cognitoErr = err as CognitoError;
-        if (cognitoErr.code === 'NotAuthorizedException' || cognitoErr.message?.includes('refresh')) {
-          console.warn('🔒 リフレッシュトークンが期限切れです:', err.message);
+        if (
+          cognitoErr.code === 'NotAuthorizedException' ||
+          cognitoErr.message?.includes('refresh')
+        ) {
+          console.warn('🔒 Refresh token expired:', err.message);
         } else {
-          console.warn('🔒 セッション取得エラー:', err.message);
+          console.warn('🔒 Session retrieval error:', err.message);
         }
         resolve(null);
         return;
       }
 
       if (!session || !session.isValid()) {
-        console.warn('🔒 無効なセッション');
+        console.warn('🔒 Invalid session');
         resolve(null);
         return;
       }
 
       const accessToken = session.getAccessToken().getJwtToken();
-      console.log('✅ 有効なアクセストークンを取得');
+      console.log('✅ Valid access token obtained');
       resolve(accessToken);
     });
   });
 };
 
 /**
- * 有効なユーザー情報を取得する（必要に応じて自動リフレッシュ）
+ * Get valid user info (auto-refreshes if expired)
  */
 export const getValidUser = async (): Promise<User | null> => {
   return new Promise((resolve) => {
@@ -332,23 +324,22 @@ export const getValidUser = async (): Promise<User | null> => {
         return;
       }
 
-      const idToken = session.getIdToken().getJwtToken();
+      const accessToken = session.getAccessToken().getJwtToken();
 
-      // idToken から userId (sub) を取得
+      // Extract userId (sub) from accessToken
       let userId = '';
       try {
-        const idTokenPayload = JSON.parse(atob(idToken.split('.')[1]));
-        userId = idTokenPayload.sub || '';
+        const accessTokenPayload = JSON.parse(atob(accessToken.split('.')[1]));
+        userId = accessTokenPayload.sub || '';
       } catch (error) {
-        console.error('Failed to parse idToken:', error);
+        console.error('Failed to parse accessToken:', error);
       }
 
       const user: User = {
         userId,
         username: cognitoUser.getUsername(),
-        accessToken: session.getAccessToken().getJwtToken(),
+        accessToken,
         refreshToken: session.getRefreshToken().getToken(),
-        idToken,
       };
 
       resolve(user);
@@ -357,7 +348,7 @@ export const getValidUser = async (): Promise<User | null> => {
 };
 
 /**
- * 新規ユーザーを登録する
+ * Sign up a new user
  */
 export const signUpUser = async (
   username: string,
@@ -374,15 +365,15 @@ export const signUpUser = async (
 
     userPool.signUp(username, password, attributeList, [], (err) => {
       if (err) {
-        let errorMessage = 'サインアップに失敗しました';
+        let errorMessage = 'Sign up failed';
 
         const cognitoError = err as CognitoError;
         if (cognitoError.code === 'UsernameExistsException') {
-          errorMessage = 'このユーザー名は既に使用されています';
+          errorMessage = 'This username is already taken';
         } else if (cognitoError.code === 'InvalidPasswordException') {
-          errorMessage = 'パスワードが要件を満たしていません';
+          errorMessage = 'Password does not meet requirements';
         } else if (cognitoError.code === 'InvalidParameterException') {
-          errorMessage = '入力値が正しくありません';
+          errorMessage = 'Invalid input values';
         } else if (err.message) {
           errorMessage = err.message;
         }
@@ -397,7 +388,7 @@ export const signUpUser = async (
 };
 
 /**
- * サインアップの確認コードを検証する
+ * Verify sign up confirmation code
  */
 export const confirmSignUp = async (username: string, code: string): Promise<void> => {
   return new Promise((resolve, reject) => {
@@ -408,15 +399,15 @@ export const confirmSignUp = async (username: string, code: string): Promise<voi
 
     cognitoUser.confirmRegistration(code, true, (err) => {
       if (err) {
-        let errorMessage = '確認に失敗しました';
+        let errorMessage = 'Confirmation failed';
 
         const cognitoError = err as CognitoError;
         if (cognitoError.code === 'CodeMismatchException') {
-          errorMessage = '確認コードが正しくありません';
+          errorMessage = 'Incorrect confirmation code';
         } else if (cognitoError.code === 'ExpiredCodeException') {
-          errorMessage = '確認コードの有効期限が切れています';
+          errorMessage = 'Confirmation code has expired';
         } else if (cognitoError.code === 'UserNotFoundException') {
-          errorMessage = 'ユーザーが見つかりません';
+          errorMessage = 'User not found';
         } else if (err.message) {
           errorMessage = err.message;
         }
@@ -431,7 +422,7 @@ export const confirmSignUp = async (username: string, code: string): Promise<voi
 };
 
 /**
- * 確認コードを再送する
+ * Resend confirmation code
  */
 export const resendConfirmationCode = async (username: string): Promise<void> => {
   return new Promise((resolve, reject) => {
@@ -442,13 +433,13 @@ export const resendConfirmationCode = async (username: string): Promise<void> =>
 
     cognitoUser.resendConfirmationCode((err) => {
       if (err) {
-        let errorMessage = '確認コードの再送に失敗しました';
+        let errorMessage = 'Failed to resend confirmation code';
 
         const cognitoError = err as CognitoError;
         if (cognitoError.code === 'UserNotFoundException') {
-          errorMessage = 'ユーザーが見つかりません';
+          errorMessage = 'User not found';
         } else if (cognitoError.code === 'InvalidParameterException') {
-          errorMessage = 'ユーザーは既に確認済みです';
+          errorMessage = 'User is already confirmed';
         } else if (err.message) {
           errorMessage = err.message;
         }
@@ -463,7 +454,7 @@ export const resendConfirmationCode = async (username: string): Promise<void> =>
 };
 
 /**
- * パスワードリセットを開始する（確認コードを送信）
+ * Initiate password reset (sends confirmation code)
  */
 export const forgotPassword = async (username: string): Promise<void> => {
   return new Promise((resolve, reject) => {
@@ -477,15 +468,15 @@ export const forgotPassword = async (username: string): Promise<void> => {
         resolve();
       },
       onFailure: (err) => {
-        let errorMessage = 'パスワードリセットの開始に失敗しました';
+        let errorMessage = 'Failed to initiate password reset';
 
         const cognitoError = err as CognitoError;
         if (cognitoError.code === 'UserNotFoundException') {
-          errorMessage = 'ユーザーが見つかりません';
+          errorMessage = 'User not found';
         } else if (cognitoError.code === 'InvalidParameterException') {
-          errorMessage = '入力値が正しくありません';
+          errorMessage = 'Invalid input values';
         } else if (cognitoError.code === 'LimitExceededException') {
-          errorMessage = '試行回数が上限に達しました。しばらく待ってから再度お試しください';
+          errorMessage = 'Attempt limit exceeded. Please try again later';
         } else if (err.message) {
           errorMessage = err.message;
         }
@@ -497,7 +488,7 @@ export const forgotPassword = async (username: string): Promise<void> => {
 };
 
 /**
- * パスワードリセットを確定する（確認コードと新しいパスワードで確認）
+ * Confirm password reset (with confirmation code and new password)
  */
 export const confirmResetPassword = async (
   username: string,
@@ -515,17 +506,17 @@ export const confirmResetPassword = async (
         resolve();
       },
       onFailure: (err) => {
-        let errorMessage = 'パスワードのリセットに失敗しました';
+        let errorMessage = 'Failed to reset password';
 
         const cognitoError = err as CognitoError;
         if (cognitoError.code === 'CodeMismatchException') {
-          errorMessage = '確認コードが正しくありません';
+          errorMessage = 'Incorrect confirmation code';
         } else if (cognitoError.code === 'ExpiredCodeException') {
-          errorMessage = '確認コードの有効期限が切れています';
+          errorMessage = 'Confirmation code has expired';
         } else if (cognitoError.code === 'InvalidPasswordException') {
-          errorMessage = 'パスワードが要件を満たしていません';
+          errorMessage = 'Password does not meet requirements';
         } else if (cognitoError.code === 'UserNotFoundException') {
-          errorMessage = 'ユーザーが見つかりません';
+          errorMessage = 'User not found';
         } else if (err.message) {
           errorMessage = err.message;
         }
@@ -537,7 +528,7 @@ export const confirmResetPassword = async (
 };
 
 /**
- * Cognito設定を取得する
+ * Get Cognito configuration
  */
 export const getCognitoConfig = () => ({
   userPoolId: USER_POOL_ID,

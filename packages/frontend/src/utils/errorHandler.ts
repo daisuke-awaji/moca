@@ -4,7 +4,8 @@
  */
 
 import toast from 'react-hot-toast';
-import { ApiError, AuthenticationError } from '../api/client/base-client';
+import { ApiError, AuthenticationError } from '../api/errors';
+import { getValidAccessToken } from '../lib/cognito';
 import i18n from '../i18n';
 
 interface AuthStore {
@@ -12,6 +13,11 @@ interface AuthStore {
 }
 
 let authStore: AuthStore | null = null;
+
+/**
+ * Track whether a token refresh attempt is in progress to avoid concurrent refreshes
+ */
+let isRefreshing = false;
 
 /**
  * Initialize error handler with auth store
@@ -22,39 +28,82 @@ export function initializeErrorHandler(store: AuthStore): void {
 }
 
 /**
- * Handle global API errors
- * @param error - Error object
+ * Attempt to refresh the access token
+ * @returns true if refresh succeeded, false otherwise
  */
-export async function handleGlobalError(error: unknown): Promise<void> {
-  // Handle authentication errors (401)
-  if (error instanceof ApiError && error.status === 401) {
-    console.warn('⚠️ Authentication token expired. Logging out...');
+async function attemptTokenRefresh(): Promise<boolean> {
+  if (isRefreshing) {
+    return false;
+  }
 
-    toast.error(i18n.t('error.tokenExpired'), {
-      duration: 5000,
-    });
+  try {
+    isRefreshing = true;
+    console.log('🔄 Attempting token refresh...');
+    const newToken = await getValidAccessToken();
 
-    // Automatic logout
-    if (authStore && typeof authStore.logout === 'function') {
-      await authStore.logout();
+    if (newToken) {
+      console.log('✅ Token refresh succeeded');
+      return true;
     }
 
+    console.warn('❌ Token refresh returned null');
+    return false;
+  } catch (error) {
+    console.warn('❌ Token refresh failed:', error);
+    return false;
+  } finally {
+    isRefreshing = false;
+  }
+}
+
+/**
+ * Force logout with error message
+ */
+async function forceLogout(message: string): Promise<void> {
+  toast.error(message, { duration: 5000 });
+
+  if (authStore && typeof authStore.logout === 'function') {
+    await authStore.logout();
+  }
+}
+
+/**
+ * Handle global API errors
+ * @param error - Error object
+ * @param skipRefreshAttempt - Skip token refresh attempt (used after retry)
+ */
+export async function handleGlobalError(error: unknown, skipRefreshAttempt = false): Promise<void> {
+  // Handle authentication errors (401)
+  if (error instanceof ApiError && error.status === 401) {
+    if (!skipRefreshAttempt) {
+      // Try to refresh the token before giving up
+      const refreshed = await attemptTokenRefresh();
+      if (refreshed) {
+        // Token refreshed successfully — caller should retry the request
+        // We don't logout here; the retry logic in the API client handles this
+        console.log('🔄 Token refreshed, request should be retried');
+        return;
+      }
+    }
+
+    // Refresh failed or skipped — force logout
+    console.warn('⚠️ Authentication token expired and refresh failed. Logging out...');
+    await forceLogout(i18n.t('error.tokenExpired'));
     return;
   }
 
   // Handle authentication errors (from Cognito)
   if (error instanceof AuthenticationError) {
-    console.warn('⚠️ Authentication required. Logging out...');
-
-    toast.error(error.message, {
-      duration: 5000,
-    });
-
-    // Automatic logout
-    if (authStore && typeof authStore.logout === 'function') {
-      await authStore.logout();
+    if (!skipRefreshAttempt) {
+      const refreshed = await attemptTokenRefresh();
+      if (refreshed) {
+        console.log('🔄 Token refreshed after AuthenticationError');
+        return;
+      }
     }
 
+    console.warn('⚠️ Authentication required and refresh failed. Logging out...');
+    await forceLogout(error.message);
     return;
   }
 

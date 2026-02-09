@@ -3,7 +3,7 @@
  * API for retrieving available event sources
  */
 
-import { backendGet } from './client/backend-client';
+import { backendClient } from './client/backend-client';
 
 /**
  * EventBridge event pattern structure
@@ -35,6 +35,6 @@ export interface EventSourcesResponse {
  * Get available event sources
  */
 export async function getEventSources(): Promise<EventSource[]> {
-  const data = await backendGet<EventSourcesResponse>('/events');
+  const data = await backendClient.get<EventSourcesResponse>('/events');
   return data.eventSources;
 }

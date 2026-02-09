@@ -3,7 +3,7 @@
  * Backend の Memory API を呼び出すためのクライアント
  */
 
-import { backendGet, backendPost, backendDelete } from './client/backend-client';
+import { backendClient } from './client/backend-client';
 
 /**
  * メモリレコードの型定義
@@ -45,7 +45,7 @@ interface SearchMemoryResponse {
  * @returns メモリレコード一覧
  */
 export async function fetchMemoryRecords(): Promise<MemoryRecordList> {
-  return backendGet<MemoryRecordList>('/memory/records');
+  return backendClient.get<MemoryRecordList>('/memory/records');
 }
 
 /**
@@ -53,7 +53,7 @@ export async function fetchMemoryRecords(): Promise<MemoryRecordList> {
  * @param recordId レコードID
  */
 export async function deleteMemoryRecord(recordId: string): Promise<void> {
-  return backendDelete<void>(`/memory/records/${recordId}`);
+  return backendClient.delete<void>(`/memory/records/${recordId}`);
 }
 
 /**
@@ -64,6 +64,6 @@ export async function deleteMemoryRecord(recordId: string): Promise<void> {
 export async function searchMemoryRecords(
   searchRequest: SearchMemoryRequest
 ): Promise<MemoryRecord[]> {
-  const data = await backendPost<SearchMemoryResponse>('/memory/search', searchRequest);
+  const data = await backendClient.post<SearchMemoryResponse>('/memory/search', searchRequest);
   return data.records;
 }

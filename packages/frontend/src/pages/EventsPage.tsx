@@ -18,7 +18,7 @@ import toast from 'react-hot-toast';
 
 export function EventsPage() {
   const { t } = useTranslation();
-  const { triggers, isLoading, fetchTriggers, enableTrigger, disableTrigger, deleteTrigger } =
+  const { triggers, isLoading, fetchTriggers, setTriggerEnabled, deleteTrigger } =
     useTriggerStore();
   const { setMobileHeaderAction } = useUIStore();
 
@@ -58,18 +58,14 @@ export function EventsPage() {
   // Handle toggle trigger
   const handleToggle = async (triggerId: string, enabled: boolean) => {
     try {
-      if (enabled) {
-        await enableTrigger(triggerId);
-        toast.success(t('triggers.messages.enableSuccess'));
-      } else {
-        await disableTrigger(triggerId);
-        toast.success(t('triggers.messages.disableSuccess'));
-      }
-      // Note: No need to call fetchTriggers() - optimistic update handles state
+      await setTriggerEnabled(triggerId, enabled);
+      const messageKey = enabled
+        ? 'triggers.messages.enableSuccess'
+        : 'triggers.messages.disableSuccess';
+      toast.success(t(messageKey));
     } catch (error) {
       console.error('Failed to toggle trigger:', error);
       // Error is already handled by store with rollback
-      // toast.error is already shown by the store
     }
   };
 

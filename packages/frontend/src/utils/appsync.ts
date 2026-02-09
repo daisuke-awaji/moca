@@ -26,9 +26,9 @@ export function buildHttpHostFromEndpoint(endpoint: string): string {
 /**
  * Create authorization protocol string for WebSocket subprotocol
  */
-export function createAuthProtocol(idToken: string, httpHost: string): string {
+export function createAuthProtocol(token: string, httpHost: string): string {
   const authorization = {
-    Authorization: idToken,
+    Authorization: token,
     host: httpHost,
   };
   return `header-${getBase64URLEncoded(authorization)}`;

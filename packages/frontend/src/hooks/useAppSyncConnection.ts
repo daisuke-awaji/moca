@@ -37,7 +37,7 @@ export function useAppSyncConnection() {
 
   // Connect when authenticated, disconnect on logout
   useEffect(() => {
-    if (user?.idToken && user?.userId) {
+    if (user?.accessToken && user?.userId) {
       connect();
     } else {
       // User logged out or not authenticated
@@ -56,7 +56,7 @@ export function useAppSyncConnection() {
      * which is handled by the if/else block above.
      */
     return () => {};
-  }, [user?.idToken, user?.userId, connect, disconnect]);
+  }, [user?.accessToken, user?.userId, connect, disconnect]);
 
   return connectionState;
 }

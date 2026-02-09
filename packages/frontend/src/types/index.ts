@@ -5,7 +5,6 @@ export interface User {
   email?: string;
   accessToken: string;
   refreshToken?: string;
-  idToken?: string;
 }
 
 // Tool Use types

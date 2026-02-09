@@ -12,7 +12,7 @@ interface TreeNodeProps {
   level: number;
   selectedPath: string;
   workingDirectoryPath?: string;
-  expandedPaths: Set<string>;
+  expandedPaths: string[];
   onSelect: (path: string) => void;
   onToggleExpand: (path: string) => void;
   onContextMenu?: (e: React.MouseEvent, node: FolderNode) => void;
@@ -28,7 +28,7 @@ function TreeNode({
   onToggleExpand,
   onContextMenu,
 }: TreeNodeProps) {
-  const isExpanded = expandedPaths.has(node.path);
+  const isExpanded = expandedPaths.includes(node.path);
   const isSelected = selectedPath === node.path;
   const isWorkingDirectory = workingDirectoryPath === node.path;
   const hasChildren = node.children && node.children.length > 0;
@@ -111,7 +111,7 @@ interface FolderTreeProps {
   tree: FolderNode[];
   selectedPath: string;
   workingDirectoryPath?: string;
-  expandedPaths: Set<string>;
+  expandedPaths: string[];
   onSelect: (path: string) => void;
   onToggleExpand: (path: string) => void;
   onContextMenu?: (e: React.MouseEvent, node: FolderNode) => void;

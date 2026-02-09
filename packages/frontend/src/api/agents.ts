@@ -2,7 +2,7 @@
  * Agent Management API Client
  */
 
-import { backendGet, backendPost, backendPut, backendDelete } from './client/backend-client';
+import { backendClient } from './client/backend-client';
 import type { Agent, CreateAgentInput } from '../types/agent';
 
 export interface AgentResponse {
@@ -62,7 +62,7 @@ function parseAgentDates(agent: Agent): Agent {
  * Get list of user's agents
  */
 export async function listAgents(): Promise<Agent[]> {
-  const data = await backendGet<AgentsListResponse>('/agents');
+  const data = await backendClient.get<AgentsListResponse>('/agents');
   return data.agents.map(parseAgentDates);
 }
 
@@ -70,7 +70,7 @@ export async function listAgents(): Promise<Agent[]> {
  * Get a specific agent
  */
 export async function getAgent(agentId: string): Promise<Agent> {
-  const data = await backendGet<AgentResponse>(`/agents/${agentId}`);
+  const data = await backendClient.get<AgentResponse>(`/agents/${agentId}`);
   return parseAgentDates(data.agent);
 }
 
@@ -78,7 +78,7 @@ export async function getAgent(agentId: string): Promise<Agent> {
  * Create a new agent
  */
 export async function createAgent(input: CreateAgentInput): Promise<Agent> {
-  const data = await backendPost<AgentResponse>('/agents', input);
+  const data = await backendClient.post<AgentResponse>('/agents', input);
   return parseAgentDates(data.agent);
 }
 
@@ -89,7 +89,7 @@ export async function updateAgent(
   agentId: string,
   input: Partial<CreateAgentInput>
 ): Promise<Agent> {
-  const data = await backendPut<AgentResponse>(`/agents/${agentId}`, input);
+  const data = await backendClient.put<AgentResponse>(`/agents/${agentId}`, input);
   return parseAgentDates(data.agent);
 }
 
@@ -97,14 +97,14 @@ export async function updateAgent(
  * Delete an agent
  */
 export async function deleteAgent(agentId: string): Promise<void> {
-  return backendDelete<void>(`/agents/${agentId}`);
+  return backendClient.delete<void>(`/agents/${agentId}`);
 }
 
 /**
  * Toggle agent share status
  */
 export async function toggleShareAgent(agentId: string): Promise<Agent> {
-  const data = await backendPut<AgentResponse>(`/agents/${agentId}/share`);
+  const data = await backendClient.put<AgentResponse>(`/agents/${agentId}/share`);
   return parseAgentDates(data.agent);
 }
 
@@ -124,7 +124,7 @@ export async function listSharedAgents(
   const queryString = params.toString();
   const url = `/agents/shared-agents/list${queryString ? `?${queryString}` : ''}`;
 
-  const data = await backendGet<SharedAgentsResponse>(url);
+  const data = await backendClient.get<SharedAgentsResponse>(url);
 
   return {
     ...data,
@@ -136,7 +136,7 @@ export async function listSharedAgents(
  * Get shared agent details
  */
 export async function getSharedAgent(userId: string, agentId: string): Promise<Agent> {
-  const data = await backendGet<AgentResponse>(`/agents/shared-agents/${userId}/${agentId}`);
+  const data = await backendClient.get<AgentResponse>(`/agents/shared-agents/${userId}/${agentId}`);
   return parseAgentDates(data.agent);
 }
 
@@ -144,7 +144,9 @@ export async function getSharedAgent(userId: string, agentId: string): Promise<A
  * Clone shared agent to my agents
  */
 export async function cloneSharedAgent(userId: string, agentId: string): Promise<Agent> {
-  const data = await backendPost<AgentResponse>(`/agents/shared-agents/${userId}/${agentId}/clone`);
+  const data = await backendClient.post<AgentResponse>(
+    `/agents/shared-agents/${userId}/${agentId}/clone`
+  );
 
   return parseAgentDates(data.agent);
 }
@@ -154,7 +156,7 @@ export async function cloneSharedAgent(userId: string, agentId: string): Promise
  * Creates default agents if user has no agents yet
  */
 export async function initializeAgents(): Promise<InitializeAgentsResponse> {
-  const data = await backendPost<InitializeAgentsResponse>('/agents/initialize');
+  const data = await backendClient.post<InitializeAgentsResponse>('/agents/initialize');
   return {
     ...data,
     agents: data.agents.map(parseAgentDates),

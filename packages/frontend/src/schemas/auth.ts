@@ -63,7 +63,6 @@ export const userSchema = z.object({
   email: z.string().email().optional(),
   accessToken: z.string(),
   refreshToken: z.string().optional(),
-  idToken: z.string().optional(),
 });
 
 export type UserData = z.infer<typeof userSchema>;

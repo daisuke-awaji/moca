@@ -9,10 +9,10 @@ import type {
   ToolUse,
   ToolResult,
 } from '../types/index';
-import { agentRequest, getAgentConfig, testAgentConnection } from './client/agent-client';
+import { agentClient } from './client/agent-client';
 
 /**
- * ストリーミングコールバック型
+ * Streaming callback types
  */
 interface StreamingCallbacks {
   onTextDelta?: (text: string) => void;
@@ -26,7 +26,7 @@ interface StreamingCallbacks {
 }
 
 /**
- * Agent 設定オプション
+ * Agent configuration options
  */
 interface AgentConfig {
   modelId?: string;
@@ -41,7 +41,31 @@ interface AgentConfig {
 }
 
 /**
- * Agent にストリーミングでプロンプトを送信する
+ * Build request body from prompt and optional agent config
+ * Strips undefined values to keep the payload clean
+ */
+function buildRequestBody(prompt: string, agentConfig?: AgentConfig): string {
+  const body: Record<string, unknown> = { prompt };
+
+  if (agentConfig) {
+    const { images, ...rest } = agentConfig;
+    // Add non-undefined config values
+    for (const [key, value] of Object.entries(rest)) {
+      if (value !== undefined) {
+        body[key] = value;
+      }
+    }
+    // Only add images if non-empty
+    if (images && images.length > 0) {
+      body.images = images;
+    }
+  }
+
+  return JSON.stringify(body);
+}
+
+/**
+ * Send streaming prompt to Agent
  */
 export const streamAgentResponse = async (
   prompt: string,
@@ -53,54 +77,15 @@ export const streamAgentResponse = async (
     'Content-Type': 'application/json',
   };
 
-  // セッションIDが指定されている場合のみ付与
+  // Only set session ID header if provided
   if (sessionId) {
     headers['X-Amzn-Bedrock-AgentCore-Runtime-Session-Id'] = sessionId;
   }
 
-  // リクエストボディを構築
-  const requestBody: Record<string, unknown> = { prompt };
-
-  if (agentConfig?.modelId) {
-    requestBody.modelId = agentConfig.modelId;
-  }
-
-  if (agentConfig?.enabledTools) {
-    requestBody.enabledTools = agentConfig.enabledTools;
-  }
-
-  if (agentConfig?.systemPrompt) {
-    requestBody.systemPrompt = agentConfig.systemPrompt;
-  }
-
-  if (agentConfig?.storagePath) {
-    requestBody.storagePath = agentConfig.storagePath;
-  }
-
-  if (agentConfig?.agentId) {
-    requestBody.agentId = agentConfig.agentId;
-  }
-
-  if (agentConfig?.memoryEnabled !== undefined) {
-    requestBody.memoryEnabled = agentConfig.memoryEnabled;
-  }
-
-  if (agentConfig?.memoryTopK !== undefined) {
-    requestBody.memoryTopK = agentConfig.memoryTopK;
-  }
-
-  if (agentConfig?.mcpConfig) {
-    requestBody.mcpConfig = agentConfig.mcpConfig;
-  }
-
-  if (agentConfig?.images && agentConfig.images.length > 0) {
-    requestBody.images = agentConfig.images;
-  }
-
-  const body = JSON.stringify(requestBody);
+  const body = buildRequestBody(prompt, agentConfig);
 
   try {
-    const response = await agentRequest({
+    const response = await agentClient.invoke({
       method: 'POST',
       headers,
       body,
@@ -116,15 +101,15 @@ export const streamAgentResponse = async (
           errorMessage += ` - ${errorJson.message || errorJson.error || errorText}`;
         }
       } catch {
-        // JSON解析に失敗した場合は元のエラーメッセージを使用
+        // Use original error message if JSON parsing fails
       }
 
       throw new Error(errorMessage);
     }
 
-    // ストリーミングレスポンスを処理
+    // Process streaming response
     if (!response.body) {
-      throw new Error('レスポンスボディが存在しません');
+      throw new Error('Response body is missing');
     }
 
     const reader = response.body.getReader();
@@ -136,22 +121,22 @@ export const streamAgentResponse = async (
         const { done, value } = await reader.read();
 
         if (done) {
-          // 残りのバッファを処理
+          // Process remaining buffer
           if (buffer.trim()) {
             try {
               const event = JSON.parse(buffer.trim()) as AgentStreamEvent;
               handleStreamEvent(event, callbacks);
             } catch (parseError) {
-              console.warn('最終バッファ パースエラー:', parseError, 'バッファ:', buffer);
+              console.warn('Final buffer parse error:', parseError, 'buffer:', buffer);
             }
           }
           break;
         }
 
-        // バッファに新しいチャンクを追加
+        // Append new chunk to buffer
         buffer += decoder.decode(value, { stream: true });
 
-        // 改行で分割してNDJSONを処理
+        // Split by newline and process NDJSON
         const lines = buffer.split('\n');
         buffer = lines.pop() || ''; // Keep last incomplete line
 
@@ -162,7 +147,7 @@ export const streamAgentResponse = async (
               const event = JSON.parse(trimmed) as AgentStreamEvent;
               handleStreamEvent(event, callbacks);
             } catch (parseError) {
-              console.warn('NDJSON パースエラー:', parseError, 'ライン:', trimmed);
+              console.warn('NDJSON parse error:', parseError, 'line:', trimmed);
             }
           }
         }
@@ -172,7 +157,7 @@ export const streamAgentResponse = async (
     }
   } catch (error) {
     if (callbacks.onError) {
-      callbacks.onError(error instanceof Error ? error : new Error('Agent API エラー'));
+      callbacks.onError(error instanceof Error ? error : new Error('Agent API error'));
     } else {
       throw error;
     }
@@ -180,7 +165,7 @@ export const streamAgentResponse = async (
 };
 
 /**
- * ストリーミングイベントを処理する
+ * Handle a single streaming event
  */
 const handleStreamEvent = (event: AgentStreamEvent, callbacks: StreamingCallbacks) => {
   switch (event.type) {
@@ -195,12 +180,11 @@ const handleStreamEvent = (event: AgentStreamEvent, callbacks: StreamingCallback
     case 'modelContentBlockStartEvent': {
       const startEvent = event as ModelContentBlockStartEvent;
       if (startEvent.start?.type === 'toolUseStart') {
-        // ツール使用開始時の処理
         if (callbacks.onToolStart) {
-          callbacks.onToolStart(startEvent.start.name || '不明なツール');
+          callbacks.onToolStart(startEvent.start.name || 'Unknown tool');
         }
 
-        // ToolUse オブジェクトを作成してコールバックに渡す
+        // Create ToolUse object and pass to callback
         if (callbacks.onToolUse && startEvent.start.name) {
           const toolUse: ToolUse = {
             id: `tool-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -216,7 +200,7 @@ const handleStreamEvent = (event: AgentStreamEvent, callbacks: StreamingCallback
     }
 
     case 'beforeToolsEvent': {
-      // ツール実行前イベント（完全なツール入力情報を含む）
+      // Pre-tool execution event (contains complete tool input info)
       const beforeToolsEvent = event as BeforeToolsEvent;
       console.debug('🔧 beforeToolsEvent received:', beforeToolsEvent);
 
@@ -224,7 +208,7 @@ const handleStreamEvent = (event: AgentStreamEvent, callbacks: StreamingCallback
         beforeToolsEvent.message.content.forEach((block, index) => {
           console.debug('🔧 BeforeTools content block %d:', index, block);
 
-          // ツール使用ブロックの場合、入力パラメータを更新
+          // Update tool input parameters for toolUseBlock
           if (
             block.type === 'toolUseBlock' &&
             block.name &&
@@ -248,10 +232,10 @@ const handleStreamEvent = (event: AgentStreamEvent, callbacks: StreamingCallback
     case 'afterToolsEvent': {
       console.debug('🔧 afterToolsEvent received:', event);
       if (callbacks.onToolEnd) {
-        callbacks.onToolEnd('ツール実行完了');
+        callbacks.onToolEnd('Tool execution completed');
       }
 
-      // afterToolsEventにもtoolResult情報が含まれている可能性があります
+      // afterToolsEvent may also contain toolResult info
       const afterToolsEventData = event as Record<string, unknown>;
       if (afterToolsEventData.content && Array.isArray(afterToolsEventData.content)) {
         afterToolsEventData.content.forEach((block: Record<string, unknown>, index: number) => {
@@ -272,7 +256,7 @@ const handleStreamEvent = (event: AgentStreamEvent, callbacks: StreamingCallback
     }
 
     case 'messageAddedEvent': {
-      // メッセージ追加イベント（ツール結果が含まれる可能性がある）
+      // Message added event (may contain tool results)
       const messageEvent = event as MessageAddedEvent;
       console.debug('🔍 messageAddedEvent received:', messageEvent);
 
@@ -280,7 +264,7 @@ const handleStreamEvent = (event: AgentStreamEvent, callbacks: StreamingCallback
         const content = messageEvent.message.content;
         console.debug('📝 messageAddedEvent content:', content);
 
-        // ツール結果を検出して処理
+        // Detect and process tool results
         if (Array.isArray(content)) {
           content.forEach((block, index) => {
             console.debug('📦 Content block %d:', index, block);
@@ -318,9 +302,8 @@ const handleStreamEvent = (event: AgentStreamEvent, callbacks: StreamingCallback
       break;
     }
 
-    // その他のイベントはログに出力
     default:
-      console.debug('ストリーミングイベント:', event.type, event);
+      console.debug('Streaming event:', event.type, event);
       break;
   }
 };
@@ -443,5 +426,6 @@ You are an AI assistant that performs multi-stage web searches like DeepSearch t
 `;
 };
 
-// Re-export from agent-client for backward compatibility
-export { getAgentConfig, testAgentConnection };
+// Re-export agent client methods for external usage
+export const getAgentConfig = () => agentClient.getConfig();
+export const testAgentConnection = () => agentClient.testConnection();

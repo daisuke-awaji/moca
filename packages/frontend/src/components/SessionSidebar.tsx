@@ -381,13 +381,13 @@ export function SessionSidebar() {
             onClick={handleNewChat}
           />
           <NavItem
-            to="/search-chat"
+            to="/chat/search"
             icon={Search}
             label={t('navigation.searchChat')}
             collapsed={!shouldShowExpanded}
           />
           <NavItem
-            to="/search"
+            to="/agents"
             icon={Bot}
             label={t('navigation.searchAgents')}
             collapsed={!shouldShowExpanded}

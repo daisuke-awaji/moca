@@ -3,7 +3,7 @@
  * Client for calling Backend session API
  */
 
-import { backendGet, backendDelete } from './client/backend-client';
+import { backendClient } from './client/backend-client';
 
 /**
  * Session type
@@ -124,7 +124,7 @@ export async function fetchSessions(options?: FetchSessionsOptions): Promise<Fet
   const queryString = params.toString();
   const url = queryString ? `/sessions?${queryString}` : '/sessions';
 
-  const data = await backendGet<SessionsResponse>(url);
+  const data = await backendClient.get<SessionsResponse>(url);
 
   return {
     sessions: data.sessions,
@@ -139,7 +139,7 @@ export async function fetchSessions(options?: FetchSessionsOptions): Promise<Fet
  * @returns Conversation history
  */
 export async function fetchSessionEvents(sessionId: string): Promise<ConversationMessage[]> {
-  const data = await backendGet<SessionEventsResponse>(`/sessions/${sessionId}/events`);
+  const data = await backendClient.get<SessionEventsResponse>(`/sessions/${sessionId}/events`);
   return data.events;
 }
 
@@ -148,5 +148,5 @@ export async function fetchSessionEvents(sessionId: string): Promise<Conversatio
  * @param sessionId Session ID to delete
  */
 export async function deleteSession(sessionId: string): Promise<void> {
-  await backendDelete(`/sessions/${sessionId}`);
+  await backendClient.delete(`/sessions/${sessionId}`);
 }

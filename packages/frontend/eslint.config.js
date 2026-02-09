@@ -56,6 +56,8 @@ export default defineConfig([
               /^\+$/,
               // 全角括弧（キーボードショートカット表記用）
               /^[（）]+$/,
+              '↑↓',
+              '⌘K',
             ],
           },
           'should-validate-template': true,

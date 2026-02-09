@@ -44,23 +44,18 @@ export const routes = {
     requiresAuth: true,
   },
   searchChat: {
-    path: '/search-chat',
+    path: '/chat/search',
     titleKey: 'navigation.searchChat',
     requiresAuth: true,
   },
   agentDirectory: {
-    path: '/search',
+    path: '/agents',
     titleKey: 'navigation.searchAgents',
     requiresAuth: true,
   },
   tools: {
     path: '/tools',
     titleKey: 'navigation.searchTools',
-    requiresAuth: true,
-  },
-  agents: {
-    path: '/agents',
-    titleKey: 'navigation.myAgents',
     requiresAuth: true,
   },
   events: {

@@ -10,7 +10,6 @@ import { ChatPage } from './pages/ChatPage';
 import { ToolsPage } from './pages/ToolsPage';
 import { AgentDirectoryPage } from './pages/AgentDirectoryPage';
 import { SearchChatPage } from './pages/SearchChatPage';
-import { AgentsPage } from './pages/AgentsPage';
 import { EventsPage } from './pages/EventsPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { getCurrentUserSession } from './lib/cognito';
@@ -106,10 +105,9 @@ function App() {
                 <Route path="/" element={<HomePage />} />
                 <Route path="/chat" element={<ChatPage />} />
                 <Route path="/chat/:sessionId" element={<ChatPage />} />
-                <Route path="/search-chat" element={<SearchChatPage />} />
-                <Route path="/search" element={<AgentDirectoryPage />} />
+                <Route path="/chat/search" element={<SearchChatPage />} />
+                <Route path="/agents" element={<AgentDirectoryPage />} />
                 <Route path="/tools" element={<ToolsPage />} />
-                <Route path="/agents" element={<AgentsPage />} />
                 <Route path="/events" element={<EventsPage />} />
                 <Route path="/settings" element={<SettingsPage />} />
               </Route>

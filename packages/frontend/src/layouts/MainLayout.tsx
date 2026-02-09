@@ -35,12 +35,17 @@ export function MainLayout() {
   const [isAgentModalOpen, setIsAgentModalOpen] = useState(false);
   const { clearActiveSession } = useSessionStore();
 
+  // Check if current page is a chat page (not /chat/search)
+  const isChatRoute = (path: string) => {
+    return path === '/chat' || (path.startsWith('/chat/') && path !== '/chat/search');
+  };
+
   // Get page title
   const getPageTitle = () => {
     const path = location.pathname;
 
     // Return agent name for chat page
-    if (path.startsWith('/chat')) {
+    if (isChatRoute(path)) {
       return selectedAgent ? translateIfKey(selectedAgent.name, t) : '汎用アシスタント';
     }
 
@@ -54,7 +59,7 @@ export function MainLayout() {
     const path = location.pathname;
 
     // Return agent icon for chat page
-    if (path.startsWith('/chat') && selectedAgent?.icon) {
+    if (isChatRoute(path) && selectedAgent?.icon) {
       const AgentIcon = (icons[selectedAgent.icon as keyof typeof icons] as LucideIcon) || Bot;
       return <AgentIcon className="w-5 h-5 text-fg-secondary flex-shrink-0" />;
     }
@@ -64,7 +69,7 @@ export function MainLayout() {
 
   // Handle title click
   const handleTitleClick = () => {
-    if (location.pathname.startsWith('/chat')) {
+    if (isChatRoute(location.pathname)) {
       setIsAgentModalOpen(true);
     }
   };
@@ -84,7 +89,7 @@ export function MainLayout() {
 
   const pageTitle = getPageTitle();
   const pageIcon = getPageIcon();
-  const isChatPage = location.pathname.startsWith('/chat');
+  const isChatPage = isChatRoute(location.pathname);
   const showSkeleton = isChatPage && isAgentLoading;
 
   // Responsive design: 3 breakpoints
