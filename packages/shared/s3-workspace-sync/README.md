@@ -10,8 +10,7 @@ AI Agents that perform file operations — code generation, data analysis, repor
 |---|---|
 | **AWS Lambda** | `/tmp` is wiped between cold starts. Max 512 MB (10 GB with ephemeral storage). |
 | **AWS Fargate / ECS** | Container filesystem is destroyed when the task stops or scales down. |
-| **Kubernetes Pods** | Pod-local storage is lost on eviction, restart, or rescheduling. |
-| **Serverless Containers** (Cloud Run, etc.) | Same — no persistent local state across invocations. |
+| **Serverless Containers** (AgentCore Runtime, App Runnter, etc.) | Same — no persistent local state across invocations. |
 
 This means that every file an agent creates or modifies during a session **will be lost** when the execution environment is recycled. For AI agents that build up project context over multiple interactions (e.g., iteratively refining code, accumulating research data), this is a critical problem.
 
@@ -269,19 +268,6 @@ const sync = new S3WorkspaceSync({
   logger,
 });
 ```
-
-## Performance Notes
-
-Benchmarked with 2,116 files:
-
-| Concurrency | Download Time |
-|---|---|
-| 10 | ~21s |
-| 30 | ~11s |
-| 50 | ~10s |
-| 100 | ~7s |
-
-Default concurrency of 50 provides a good balance between speed and resource usage.
 
 ## License
 
