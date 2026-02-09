@@ -27,6 +27,7 @@ import {
   calculateReconnectDelay,
 } from '../utils/appsync';
 import type { AppSyncMessage } from '../types/appsync';
+import { logger } from '../utils/logger';
 
 /**
  * Maximum number of reconnection attempts
@@ -115,7 +116,7 @@ export const useAppSyncConnectionStore = create<AppSyncConnectionState>()(
 
       // Prevent multiple simultaneous connection attempts
       if (state._isConnecting) {
-        console.log('🔌 Already connecting, skipping...');
+        logger.log('🔌 Already connecting, skipping...');
         return;
       }
 
@@ -124,12 +125,12 @@ export const useAppSyncConnectionStore = create<AppSyncConnectionState>()(
         state._ws &&
         (state._ws.readyState === WebSocket.OPEN || state._ws.readyState === WebSocket.CONNECTING)
       ) {
-        console.log('🔌 Already connected or connecting, skipping...');
+        logger.log('🔌 Already connected or connecting, skipping...');
         return;
       }
 
       if (!appsyncEventsConfig.isConfigured) {
-        console.log('🔌 AppSync Events not configured, skipping');
+        logger.log('🔌 AppSync Events not configured, skipping');
         return;
       }
 
@@ -138,7 +139,7 @@ export const useAppSyncConnectionStore = create<AppSyncConnectionState>()(
       const userId = useAuthStore.getState().user?.userId;
 
       if (!accessToken || !userId) {
-        console.log('🔌 No auth token available, skipping');
+        logger.log('🔌 No auth token available, skipping');
         return;
       }
 
@@ -154,12 +155,12 @@ export const useAppSyncConnectionStore = create<AppSyncConnectionState>()(
         const newHttpHost = buildHttpHostFromEndpoint(endpoint);
         const authProtocol = createAuthProtocol(accessToken, newHttpHost);
 
-        console.log('🔌 Connecting to AppSync Events (shared connection)');
+        logger.log('🔌 Connecting to AppSync Events (shared connection)');
 
         const ws = new WebSocket(endpoint, [authProtocol, 'aws-appsync-event-ws']);
 
         ws.onopen = () => {
-          console.log('🔌 WebSocket connected');
+          logger.log('🔌 WebSocket connected');
           set({
             _ws: ws,
             _reconnectAttempts: 0,
@@ -180,7 +181,7 @@ export const useAppSyncConnectionStore = create<AppSyncConnectionState>()(
 
             switch (message.type) {
               case 'connection_ack': {
-                console.log('🔌 Connection acknowledged');
+                logger.log('🔌 Connection acknowledged');
                 set({ isConnectionAcknowledged: true });
 
                 /**
@@ -201,20 +202,20 @@ export const useAppSyncConnectionStore = create<AppSyncConnectionState>()(
                 // Get fresh token for re-subscriptions
                 getValidAccessToken().then((freshToken) => {
                   if (!freshToken) {
-                    console.log('🔌 No valid token for re-subscription');
+                    logger.log('🔌 No valid token for re-subscription');
                     return;
                   }
 
                   currentState._channelMap.forEach((channel, subscriptionId) => {
                     // Skip if already pending (subscription was sent before ack)
                     if (currentState._pendingSubscriptions.has(subscriptionId)) {
-                      console.log(`🔌 Skipping re-subscribe (already pending): ${subscriptionId}`);
+                      logger.log(`🔌 Skipping re-subscribe (already pending): ${subscriptionId}`);
                       return;
                     }
 
                     const handler = currentState._subscriptionHandlers.get(subscriptionId);
                     if (handler && ws.readyState === WebSocket.OPEN) {
-                      console.log(`🔌 Re-subscribing after reconnect: ${subscriptionId}`);
+                      logger.log(`🔌 Re-subscribing after reconnect: ${subscriptionId}`);
 
                       // Mark as pending
                       const pending = new Set(get()._pendingSubscriptions);
@@ -239,7 +240,7 @@ export const useAppSyncConnectionStore = create<AppSyncConnectionState>()(
               }
 
               case 'subscribe_success': {
-                console.log('🔌 Subscription successful:', message.id);
+                logger.log('🔌 Subscription successful:', message.id);
                 if (message.id) {
                   const pending = new Set(currentState._pendingSubscriptions);
                   pending.delete(message.id);
@@ -249,7 +250,7 @@ export const useAppSyncConnectionStore = create<AppSyncConnectionState>()(
               }
 
               case 'subscribe_error': {
-                console.error('🔌 Subscription error:', message);
+                logger.error('🔌 Subscription error:', message);
                 if (message.id) {
                   const pending = new Set(currentState._pendingSubscriptions);
                   pending.delete(message.id);
@@ -278,22 +279,22 @@ export const useAppSyncConnectionStore = create<AppSyncConnectionState>()(
               }
 
               case 'error': {
-                console.error('🔌 WebSocket error message:', message);
+                logger.error('🔌 WebSocket error message:', message);
                 break;
               }
             }
           } catch (error) {
-            console.error('🔌 Failed to parse WebSocket message:', error);
+            logger.error('🔌 Failed to parse WebSocket message:', error);
           }
         };
 
         ws.onerror = (error) => {
-          console.error('🔌 WebSocket error:', error);
+          logger.error('🔌 WebSocket error:', error);
           set({ _isConnecting: false });
         };
 
         ws.onclose = (event) => {
-          console.log(`🔌 WebSocket closed: code=${event.code}`);
+          logger.log(`🔌 WebSocket closed: code=${event.code}`);
           const currentState = get();
 
           set({
@@ -312,7 +313,7 @@ export const useAppSyncConnectionStore = create<AppSyncConnectionState>()(
           // Attempt reconnection if not intentionally closed
           if (event.code !== 1000 && currentState._reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
             const delay = calculateReconnectDelay(currentState._reconnectAttempts);
-            console.log(
+            logger.log(
               `🔌 Reconnecting in ${delay}ms (attempt ${currentState._reconnectAttempts + 1})`
             );
 
@@ -327,7 +328,7 @@ export const useAppSyncConnectionStore = create<AppSyncConnectionState>()(
 
         set({ _ws: ws });
       } catch (error) {
-        console.error('🔌 Failed to connect:', error);
+        logger.error('🔌 Failed to connect:', error);
         set({ _isConnecting: false });
       }
     },
@@ -375,12 +376,12 @@ export const useAppSyncConnectionStore = create<AppSyncConnectionState>()(
 
       // Skip if already subscribed
       if (state._channelMap.has(subscriptionId)) {
-        console.log(`🔌 Already subscribed to: ${subscriptionId}`);
+        logger.log(`🔌 Already subscribed to: ${subscriptionId}`);
         return;
       }
 
       if (state._pendingSubscriptions.has(subscriptionId)) {
-        console.log(`🔌 Subscription pending for: ${subscriptionId}`);
+        logger.log(`🔌 Subscription pending for: ${subscriptionId}`);
         return;
       }
 
@@ -391,12 +392,12 @@ export const useAppSyncConnectionStore = create<AppSyncConnectionState>()(
 
       const ws = state._ws;
       if (!ws || ws.readyState !== WebSocket.OPEN) {
-        console.log('🔌 WebSocket not open, will subscribe when connected');
+        logger.log('🔌 WebSocket not open, will subscribe when connected');
         return;
       }
 
       if (!state.isConnectionAcknowledged) {
-        console.log('🔌 Connection not acknowledged, will subscribe after ack');
+        logger.log('🔌 Connection not acknowledged, will subscribe after ack');
         return;
       }
 
@@ -404,11 +405,11 @@ export const useAppSyncConnectionStore = create<AppSyncConnectionState>()(
       const accessToken = await getValidAccessToken();
 
       if (!accessToken) {
-        console.log('🔌 No auth token, cannot subscribe');
+        logger.log('🔌 No auth token, cannot subscribe');
         return;
       }
 
-      console.log(`🔌 Subscribing to: ${channel} (id: ${subscriptionId})`);
+      logger.log(`🔌 Subscribing to: ${channel} (id: ${subscriptionId})`);
 
       // Mark as pending
       const pending = new Set(state._pendingSubscriptions);
@@ -454,7 +455,7 @@ export const useAppSyncConnectionStore = create<AppSyncConnectionState>()(
 
       const ws = state._ws;
       if (ws && ws.readyState === WebSocket.OPEN) {
-        console.log(`🔌 Unsubscribing from: ${subscriptionId}`);
+        logger.log(`🔌 Unsubscribing from: ${subscriptionId}`);
         ws.send(
           JSON.stringify({
             type: 'unsubscribe',

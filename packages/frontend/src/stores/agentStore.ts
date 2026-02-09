@@ -1,284 +1,265 @@
 /**
- * Agent管理用Zustandストア（API + LocalStorage）
+ * Agent management Zustand store (API + LocalStorage)
  */
 
 import { create } from 'zustand';
+import { devtools, persist } from 'zustand/middleware';
 import type { Agent, CreateAgentInput, UpdateAgentInput, AgentStore } from '../types/agent';
 import * as agentsApi from '../api/agents';
-
-const SELECTED_AGENT_KEY = 'agentcore-selected-agent';
-
-/**
- * LocalStorageに選択されたAgentのIDを保存
- */
-const saveSelectedAgentIdToStorage = (agentId: string | null): void => {
-  try {
-    if (agentId) {
-      localStorage.setItem(SELECTED_AGENT_KEY, agentId);
-    } else {
-      localStorage.removeItem(SELECTED_AGENT_KEY);
-    }
-  } catch (error) {
-    console.error('選択AgentID保存エラー:', error);
-  }
-};
+import { logger } from '../utils/logger';
+import { extractErrorMessage } from '../utils/store-helpers';
 
 /**
- * LocalStorageから選択されたAgentのIDを読み込む
+ * AgentStore implementation
  */
-const loadSelectedAgentIdFromStorage = (): string | null => {
-  try {
-    const stored = localStorage.getItem(SELECTED_AGENT_KEY);
-    return stored || null;
-  } catch (error) {
-    console.error('選択AgentID読み込みエラー:', error);
-    return null;
-  }
-};
-
-/**
- * AgentStoreの実装
- */
-export const useAgentStore = create<AgentStore>((set, get) => ({
-  // 初期状態
-  agents: [],
-  selectedAgent: null,
-  isLoading: false,
-  error: null,
-
-  // Agent CRUD operations
-  createAgent: async (input: CreateAgentInput) => {
-    set({ isLoading: true, error: null });
-
-    try {
-      const newAgent = await agentsApi.createAgent(input);
-
-      set((state) => ({
-        agents: [...state.agents, newAgent],
-        isLoading: false,
-        error: null,
-      }));
-
-      return newAgent;
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Agent作成に失敗しました';
-      set({ isLoading: false, error: errorMessage });
-      throw error;
-    }
-  },
-
-  updateAgent: async (input: UpdateAgentInput) => {
-    set({ isLoading: true, error: null });
-
-    try {
-      const updatedAgent = await agentsApi.updateAgent(input.agentId, input);
-
-      set((state) => {
-        const agentIndex = state.agents.findIndex((agent) => agent.agentId === input.agentId);
-        const updatedAgents = [...state.agents];
-
-        if (agentIndex !== -1) {
-          updatedAgents[agentIndex] = updatedAgent;
-        }
-
-        // 選択中のAgentが更新された場合は選択状態も更新
-        const updatedSelectedAgent =
-          state.selectedAgent?.agentId === input.agentId ? updatedAgent : state.selectedAgent;
-
-        return {
-          agents: updatedAgents,
-          selectedAgent: updatedSelectedAgent,
-          isLoading: false,
-          error: null,
-        };
-      });
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Agent更新に失敗しました';
-      set({ isLoading: false, error: errorMessage });
-      throw error;
-    }
-  },
-
-  deleteAgent: async (agentId: string) => {
-    set({ isLoading: true, error: null });
-
-    try {
-      await agentsApi.deleteAgent(agentId);
-
-      set((state) => {
-        const updatedAgents = state.agents.filter((agent) => agent.agentId !== agentId);
-
-        // 削除されたAgentが選択中だった場合は選択を解除
-        const updatedSelectedAgent =
-          state.selectedAgent?.agentId === agentId ? null : state.selectedAgent;
-
-        if (updatedSelectedAgent !== state.selectedAgent) {
-          saveSelectedAgentIdToStorage(updatedSelectedAgent?.agentId || null);
-        }
-
-        return {
-          agents: updatedAgents,
-          selectedAgent: updatedSelectedAgent,
-          isLoading: false,
-          error: null,
-        };
-      });
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Agent削除に失敗しました';
-      set({ isLoading: false, error: errorMessage });
-      throw error;
-    }
-  },
-
-  getAgent: (agentId: string) => {
-    return get().agents.find((agent) => agent.agentId === agentId);
-  },
-
-  // 共有機能
-  toggleShare: async (agentId: string) => {
-    set({ isLoading: true, error: null });
-
-    try {
-      const updatedAgent = await agentsApi.toggleShareAgent(agentId);
-
-      set((state) => {
-        const agentIndex = state.agents.findIndex((agent) => agent.agentId === agentId);
-        const updatedAgents = [...state.agents];
-
-        if (agentIndex !== -1) {
-          updatedAgents[agentIndex] = updatedAgent;
-        }
-
-        // 選択中のAgentが更新された場合は選択状態も更新
-        const updatedSelectedAgent =
-          state.selectedAgent?.agentId === agentId ? updatedAgent : state.selectedAgent;
-
-        return {
-          agents: updatedAgents,
-          selectedAgent: updatedSelectedAgent,
-          isLoading: false,
-          error: null,
-        };
-      });
-
-      return updatedAgent;
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : 'Agent共有状態の変更に失敗しました';
-      set({ isLoading: false, error: errorMessage });
-      throw error;
-    }
-  },
-
-  // Select agent
-  selectAgent: (agent: Agent | null) => {
-    set({ selectedAgent: agent });
-    saveSelectedAgentIdToStorage(agent?.agentId || null);
-  },
-
-  // ユーティリティ
-  initializeStore: async () => {
-    set({ isLoading: true, error: null });
-
-    try {
-      console.log('🔧 AgentStore初期化開始...');
-
-      // まずAPIからAgent一覧を取得
-      let agents = await agentsApi.listAgents();
-
-      // エージェントが0件の場合のみ初期化APIを呼び出し
-      if (agents.length === 0) {
-        console.log('📝 初回ログイン検出 - デフォルトエージェントを初期化...');
-        const result = await agentsApi.initializeAgents();
-        agents = result.agents;
-        console.log(`✨ デフォルトエージェント作成完了: ${agents.length}件`);
-      }
-
-      // 保存されている選択AgentIDを取得
-      const selectedAgentId = loadSelectedAgentIdFromStorage();
-      let selectedAgent: Agent | null = null;
-
-      // 選択されたAgentIDが有効か確認
-      if (selectedAgentId) {
-        selectedAgent = agents.find((a) => a.agentId === selectedAgentId) || null;
-      }
-
-      // 未選択の場合はデフォルトで最初のAgentを選択
-      if (!selectedAgent && agents.length > 0) {
-        selectedAgent = agents[0];
-        saveSelectedAgentIdToStorage(selectedAgent.agentId);
-      }
-
-      console.log(`✅ AgentStore初期化完了: ${agents.length}件`);
-
-      set({
-        agents,
-        selectedAgent,
-        isLoading: false,
-        error: null,
-      });
-    } catch (error) {
-      console.error('💥 AgentStore初期化エラー:', error);
-      set({
+export const useAgentStore = create<AgentStore>()(
+  devtools(
+    persist(
+      (set, get) => ({
+        // Initial state
         agents: [],
         selectedAgent: null,
         isLoading: false,
-        error: error instanceof Error ? error.message : 'ストアの初期化に失敗しました',
-      });
+        error: null,
+
+        // Agent CRUD operations
+        createAgent: async (input: CreateAgentInput) => {
+          set({ isLoading: true, error: null });
+
+          try {
+            const newAgent = await agentsApi.createAgent(input);
+
+            set((state) => ({
+              agents: [...state.agents, newAgent],
+              isLoading: false,
+              error: null,
+            }));
+
+            return newAgent;
+          } catch (error) {
+            const errorMessage = extractErrorMessage(error, 'Failed to create agent');
+            set({ isLoading: false, error: errorMessage });
+            throw error;
+          }
+        },
+
+        updateAgent: async (input: UpdateAgentInput) => {
+          set({ isLoading: true, error: null });
+
+          try {
+            const updatedAgent = await agentsApi.updateAgent(input.agentId, input);
+
+            set((state) => {
+              const agentIndex = state.agents.findIndex((agent) => agent.agentId === input.agentId);
+              const updatedAgents = [...state.agents];
+
+              if (agentIndex !== -1) {
+                updatedAgents[agentIndex] = updatedAgent;
+              }
+
+              // Update selection if the selected agent was updated
+              const updatedSelectedAgent =
+                state.selectedAgent?.agentId === input.agentId ? updatedAgent : state.selectedAgent;
+
+              return {
+                agents: updatedAgents,
+                selectedAgent: updatedSelectedAgent,
+                isLoading: false,
+                error: null,
+              };
+            });
+          } catch (error) {
+            const errorMessage = extractErrorMessage(error, 'Failed to update agent');
+            set({ isLoading: false, error: errorMessage });
+            throw error;
+          }
+        },
+
+        deleteAgent: async (agentId: string) => {
+          set({ isLoading: true, error: null });
+
+          try {
+            await agentsApi.deleteAgent(agentId);
+
+            set((state) => {
+              const updatedAgents = state.agents.filter((agent) => agent.agentId !== agentId);
+
+              // Clear selection if the deleted agent was selected
+              const updatedSelectedAgent =
+                state.selectedAgent?.agentId === agentId ? null : state.selectedAgent;
+
+              return {
+                agents: updatedAgents,
+                selectedAgent: updatedSelectedAgent,
+                isLoading: false,
+                error: null,
+              };
+            });
+          } catch (error) {
+            const errorMessage = extractErrorMessage(error, 'Failed to delete agent');
+            set({ isLoading: false, error: errorMessage });
+            throw error;
+          }
+        },
+
+        getAgent: (agentId: string) => {
+          return get().agents.find((agent) => agent.agentId === agentId);
+        },
+
+        // Share functionality
+        toggleShare: async (agentId: string) => {
+          set({ isLoading: true, error: null });
+
+          try {
+            const updatedAgent = await agentsApi.toggleShareAgent(agentId);
+
+            set((state) => {
+              const agentIndex = state.agents.findIndex((agent) => agent.agentId === agentId);
+              const updatedAgents = [...state.agents];
+
+              if (agentIndex !== -1) {
+                updatedAgents[agentIndex] = updatedAgent;
+              }
+
+              // Update selection if the selected agent was updated
+              const updatedSelectedAgent =
+                state.selectedAgent?.agentId === agentId ? updatedAgent : state.selectedAgent;
+
+              return {
+                agents: updatedAgents,
+                selectedAgent: updatedSelectedAgent,
+                isLoading: false,
+                error: null,
+              };
+            });
+
+            return updatedAgent;
+          } catch (error) {
+            const errorMessage = extractErrorMessage(error, 'Failed to toggle agent share status');
+            set({ isLoading: false, error: errorMessage });
+            throw error;
+          }
+        },
+
+        // Select agent
+        selectAgent: (agent: Agent | null) => {
+          set({ selectedAgent: agent });
+        },
+
+        // Utilities
+        initializeStore: async () => {
+          set({ isLoading: true, error: null });
+
+          try {
+            logger.log('🔧 AgentStore initialization started...');
+
+            // Fetch agent list from API
+            let agents = await agentsApi.listAgents();
+
+            // Initialize default agents only when list is empty
+            if (agents.length === 0) {
+              logger.log('📝 First login detected - initializing default agents...');
+              const result = await agentsApi.initializeAgents();
+              agents = result.agents;
+              logger.log(`✨ Default agents created: ${agents.length} items`);
+            }
+
+            // Restore selected agent from persisted state
+            const currentSelectedAgent = get().selectedAgent;
+            let selectedAgent: Agent | null = null;
+
+            if (currentSelectedAgent) {
+              selectedAgent =
+                agents.find((a) => a.agentId === currentSelectedAgent.agentId) || null;
+            }
+
+            // Select first agent if none is selected
+            if (!selectedAgent && agents.length > 0) {
+              selectedAgent = agents[0];
+            }
+
+            logger.log(`✅ AgentStore initialization complete: ${agents.length} items`);
+
+            set({
+              agents,
+              selectedAgent,
+              isLoading: false,
+              error: null,
+            });
+          } catch (error) {
+            logger.error('💥 AgentStore initialization error:', error);
+            set({
+              agents: [],
+              selectedAgent: null,
+              isLoading: false,
+              error: extractErrorMessage(error, 'Failed to initialize store'),
+            });
+          }
+        },
+
+        refreshAgents: async () => {
+          // Background refresh (no loading state to keep existing data visible)
+          try {
+            logger.log('🔄 Refreshing agent list in background...');
+            const agents = await agentsApi.listAgents();
+
+            set((state) => {
+              // Verify selected agent still exists; keep selection if it does
+              const selectedAgent = state.selectedAgent
+                ? agents.find((a) => a.agentId === state.selectedAgent?.agentId) ||
+                  state.selectedAgent
+                : null;
+
+              return {
+                agents,
+                selectedAgent,
+              };
+            });
+
+            logger.log(`✅ Agent list refresh complete: ${agents.length} items`);
+          } catch (error) {
+            // Silently handle errors (keep existing data)
+            logger.error('💥 Agent list refresh error:', error);
+          }
+        },
+
+        clearError: () => {
+          set({ error: null });
+        },
+
+        clearStore: () => {
+          logger.log('🧹 Clearing AgentStore...');
+          set({
+            agents: [],
+            selectedAgent: null,
+            isLoading: false,
+            error: null,
+          });
+        },
+      }),
+      {
+        name: 'agentcore-selected-agent',
+        partialize: (state) => ({
+          selectedAgent: state.selectedAgent,
+        }),
+      }
+    ),
+    {
+      name: 'agent-store',
+      enabled: import.meta.env.DEV,
     }
-  },
-
-  refreshAgents: async () => {
-    // バックグラウンドで更新（ローディング状態を設定しない）
-    // 既存のキャッシュデータを即時表示し、裏でAPIを呼び出して更新
-    try {
-      console.log('🔄 エージェント一覧をバックグラウンド更新中...');
-      const agents = await agentsApi.listAgents();
-
-      set((state) => {
-        // 選択中のAgentが存在するか確認し、存在しない場合は選択を維持
-        const selectedAgent = state.selectedAgent
-          ? agents.find((a) => a.agentId === state.selectedAgent?.agentId) || state.selectedAgent
-          : null;
-
-        return {
-          agents,
-          selectedAgent,
-        };
-      });
-
-      console.log(`✅ エージェント一覧更新完了: ${agents.length}件`);
-    } catch (error) {
-      // エラーは静かに処理（既存データを維持）
-      console.error('💥 エージェント一覧更新エラー:', error);
-    }
-  },
-
-  clearError: () => {
-    set({ error: null });
-  },
-
-  clearStore: () => {
-    console.log('🧹 AgentStoreをクリア...');
-    set({
-      agents: [],
-      selectedAgent: null,
-      isLoading: false,
-      error: null,
-    });
-    localStorage.removeItem(SELECTED_AGENT_KEY);
-  },
-}));
+  )
+);
 
 /**
- * 選択されたAgentを取得するヘルパー
+ * Helper hook to get the selected agent
  */
 export const useSelectedAgent = () => {
   return useAgentStore((state) => state.selectedAgent);
 };
 
 /**
- * Agent一覧を取得するヘルパー
+ * Helper hook to get the agent list
  */
 export const useAgents = () => {
   return useAgentStore((state) => state.agents);

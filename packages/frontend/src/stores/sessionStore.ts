@@ -17,6 +17,8 @@ import { ApiError } from '../api/errors';
 import i18n from '../i18n';
 import { useAgentStore } from './agentStore';
 import { useStorageStore } from './storageStore';
+import { logger } from '../utils/logger';
+import { extractErrorMessage } from '../utils/store-helpers';
 
 // AWS AgentCore sessionId constraints: [a-zA-Z0-9][a-zA-Z0-9-_]*
 // Custom nanoid with alphanumeric characters only (excluding hyphens and underscores)
@@ -37,7 +39,7 @@ interface SessionState {
   sessions: SessionSummary[];
   isLoadingSessions: boolean;
   sessionsError: string | null;
-  hasLoadedOnce: boolean; // Initial load completion flag
+  hasLoadedOnce: boolean;
 
   // Pagination state
   nextToken: string | null;
@@ -49,7 +51,7 @@ interface SessionState {
   isLoadingEvents: boolean;
   eventsError: string | null;
 
-  isCreatingSession: boolean; // New session creation in progress flag
+  isCreatingSession: boolean;
 }
 
 /**
@@ -57,21 +59,21 @@ interface SessionState {
  */
 interface SessionActions {
   loadSessions: () => Promise<void>;
-  loadMoreSessions: () => Promise<void>; // Load more sessions for infinite scroll
-  loadAllSessions: () => Promise<void>; // Load all sessions (for search page)
+  loadMoreSessions: () => Promise<void>;
+  loadAllSessions: () => Promise<void>;
   selectSession: (sessionId: string) => Promise<void>;
-  deleteSession: (sessionId: string) => Promise<void>; // Delete a session
-  deleteMultipleSessions: (sessionIds: string[]) => Promise<void>; // Delete multiple sessions
+  deleteSession: (sessionId: string) => Promise<void>;
+  deleteMultipleSessions: (sessionIds: string[]) => Promise<void>;
   setActiveSessionId: (sessionId: string) => void;
   clearActiveSession: () => void;
   setSessionsError: (error: string | null) => void;
   setEventsError: (error: string | null) => void;
   clearErrors: () => void;
   refreshSessions: () => Promise<void>;
-  createNewSession: () => string; // Create new session (generate ID and set flag)
-  finalizeNewSession: () => void; // Finalize new session creation (clear flag)
-  addOptimisticSession: (sessionId: string, title?: string) => void; // Optimistically add session to sidebar
-  updateSessionTitle: (sessionId: string, title: string) => void; // Update session title
+  createNewSession: () => string;
+  finalizeNewSession: () => void;
+  addOptimisticSession: (sessionId: string, title?: string) => void;
+  updateSessionTitle: (sessionId: string, title: string) => void;
 }
 
 /**
@@ -86,7 +88,7 @@ export const useSessionStore = create<SessionStore>()(
       sessions: [],
       isLoadingSessions: false,
       sessionsError: null,
-      hasLoadedOnce: false, // Initial load completion flag
+      hasLoadedOnce: false,
 
       // Pagination state
       nextToken: null,
@@ -97,14 +99,14 @@ export const useSessionStore = create<SessionStore>()(
       sessionEvents: [],
       isLoadingEvents: false,
       eventsError: null,
-      isCreatingSession: false, // New session creation in progress flag
+      isCreatingSession: false,
 
       // Actions
       loadSessions: async () => {
         try {
           set({ isLoadingSessions: true, sessionsError: null });
 
-          console.log('🔄 Loading all sessions...');
+          logger.log('🔄 Loading all sessions...');
           const result = await fetchSessions({ limit: DEFAULT_PAGE_SIZE });
 
           set({
@@ -113,16 +115,15 @@ export const useSessionStore = create<SessionStore>()(
             hasMoreSessions: result.hasMore,
             isLoadingSessions: false,
             sessionsError: null,
-            hasLoadedOnce: true, // Set initial load completion flag
+            hasLoadedOnce: true,
           });
 
-          console.log(
+          logger.log(
             `✅ Session list loaded: ${result.sessions.length} items, hasMore: ${result.hasMore}`
           );
         } catch (error) {
-          const errorMessage =
-            error instanceof Error ? error.message : 'Failed to load session list';
-          console.error('💥 Session list loading error:', error);
+          const errorMessage = extractErrorMessage(error, 'Failed to load session list');
+          logger.error('💥 Session list loading error:', error);
 
           set({
             sessions: [],
@@ -130,7 +131,7 @@ export const useSessionStore = create<SessionStore>()(
             hasMoreSessions: false,
             isLoadingSessions: false,
             sessionsError: errorMessage,
-            hasLoadedOnce: true, // Mark as initial load completed even on error
+            hasLoadedOnce: true,
           });
         }
       },
@@ -140,7 +141,7 @@ export const useSessionStore = create<SessionStore>()(
 
         // Skip if no more sessions or already loading
         if (!hasMoreSessions || isLoadingMoreSessions || !nextToken) {
-          console.log('⏭️ Skipping loadMoreSessions:', {
+          logger.log('⏭️ Skipping loadMoreSessions:', {
             hasMoreSessions,
             isLoadingMoreSessions,
             hasNextToken: !!nextToken,
@@ -151,7 +152,7 @@ export const useSessionStore = create<SessionStore>()(
         try {
           set({ isLoadingMoreSessions: true });
 
-          console.log('🔄 Loading more sessions...');
+          logger.log('🔄 Loading more sessions...');
           const result = await fetchSessions({
             limit: DEFAULT_PAGE_SIZE,
             nextToken,
@@ -164,13 +165,12 @@ export const useSessionStore = create<SessionStore>()(
             isLoadingMoreSessions: false,
           });
 
-          console.log(
+          logger.log(
             `✅ More sessions loaded: ${result.sessions.length} items, total: ${sessions.length + result.sessions.length}, hasMore: ${result.hasMore}`
           );
         } catch (error) {
-          const errorMessage =
-            error instanceof Error ? error.message : 'Failed to load more sessions';
-          console.error('💥 Load more sessions error:', error);
+          const errorMessage = extractErrorMessage(error, 'Failed to load more sessions');
+          logger.error('💥 Load more sessions error:', error);
 
           set({
             isLoadingMoreSessions: false,
@@ -182,7 +182,7 @@ export const useSessionStore = create<SessionStore>()(
       loadAllSessions: async () => {
         const { loadSessions, loadMoreSessions } = get();
 
-        console.log('🔄 Loading all sessions...');
+        logger.log('🔄 Loading all sessions...');
 
         // First, load initial sessions
         await loadSessions();
@@ -197,7 +197,7 @@ export const useSessionStore = create<SessionStore>()(
         }
 
         const totalSessions = get().sessions.length;
-        console.log(
+        logger.log(
           `✅ All sessions loaded: ${totalSessions} items in ${iterationCount + 1} requests`
         );
       },
@@ -210,7 +210,7 @@ export const useSessionStore = create<SessionStore>()(
             activeSessionId: sessionId,
           });
 
-          console.log(`🔄 Selecting session: ${sessionId}`);
+          logger.log(`🔄 Selecting session: ${sessionId}`);
 
           // Restore agent and storage path from session data
           const { sessions } = get();
@@ -223,9 +223,9 @@ export const useSessionStore = create<SessionStore>()(
               const agent = agentStore.getAgent(session.agentId);
               if (agent) {
                 agentStore.selectAgent(agent);
-                console.log(`🤖 Agent switched to: ${agent.name} (${session.agentId})`);
+                logger.log(`🤖 Agent switched to: ${agent.name} (${session.agentId})`);
               } else {
-                console.warn(`⚠️ Agent not found for agentId: ${session.agentId}`);
+                logger.warn(`⚠️ Agent not found for agentId: ${session.agentId}`);
               }
             }
 
@@ -233,7 +233,7 @@ export const useSessionStore = create<SessionStore>()(
             if (session.storagePath) {
               const storageStore = useStorageStore.getState();
               storageStore.setAgentWorkingDirectory(session.storagePath);
-              console.log(`📁 Storage path switched to: ${session.storagePath}`);
+              logger.log(`📁 Storage path switched to: ${session.storagePath}`);
             }
           }
 
@@ -245,11 +245,11 @@ export const useSessionStore = create<SessionStore>()(
             eventsError: null,
           });
 
-          console.log(`✅ Session conversation history loaded: ${events.length} items`);
+          logger.log(`✅ Session conversation history loaded: ${events.length} items`);
         } catch (error) {
           // Handle 403 Forbidden - redirect to /chat
           if (error instanceof ApiError && error.status === 403) {
-            console.warn(`⚠️ Access denied to session: ${sessionId}`);
+            logger.warn(`⚠️ Access denied to session: ${sessionId}`);
             toast.error(i18n.t('error.forbidden'));
             set({
               activeSessionId: null,
@@ -261,9 +261,11 @@ export const useSessionStore = create<SessionStore>()(
             return;
           }
 
-          const errorMessage =
-            error instanceof Error ? error.message : 'Failed to load session conversation history';
-          console.error('💥 Session conversation history loading error:', error);
+          const errorMessage = extractErrorMessage(
+            error,
+            'Failed to load session conversation history'
+          );
+          logger.error('💥 Session conversation history loading error:', error);
 
           set({
             sessionEvents: [],
@@ -292,16 +294,16 @@ export const useSessionStore = create<SessionStore>()(
           });
         }
 
-        console.log(`🗑️ Optimistically removed session: ${sessionId}`);
+        logger.log(`🗑️ Optimistically removed session: ${sessionId}`);
 
         try {
           // 3. Call API to delete session (in background)
           await deleteSessionApi(sessionId);
-          console.log(`✅ Session deleted from server: ${sessionId}`);
+          logger.log(`✅ Session deleted from server: ${sessionId}`);
           toast.success(i18n.t('chat.sessionDeleted'));
         } catch (error) {
           // 4. Rollback on error - restore the session
-          console.error('💥 Session deletion error, rolling back:', error);
+          logger.error('💥 Session deletion error, rolling back:', error);
 
           if (sessionToDelete) {
             const currentSessions = get().sessions;
@@ -312,7 +314,7 @@ export const useSessionStore = create<SessionStore>()(
             set({ sessions: restoredSessions });
           }
 
-          const errorMessage = error instanceof Error ? error.message : 'Failed to delete session';
+          const errorMessage = extractErrorMessage(error, 'Failed to delete session');
           toast.error(errorMessage);
           throw error;
         }
@@ -339,7 +341,7 @@ export const useSessionStore = create<SessionStore>()(
           });
         }
 
-        console.log(`🗑️ Optimistically removed ${sessionIds.length} sessions`);
+        logger.log(`🗑️ Optimistically removed ${sessionIds.length} sessions`);
 
         // 3. Call API to delete sessions (in parallel, in background)
         const results = await Promise.allSettled(
@@ -351,7 +353,7 @@ export const useSessionStore = create<SessionStore>()(
         const successCount = results.filter((r) => r.status === 'fulfilled').length;
 
         if (failedCount > 0) {
-          console.error(`💥 ${failedCount} session deletions failed`);
+          logger.error(`💥 ${failedCount} session deletions failed`);
 
           // Rollback failed deletions
           const failedIndices = results
@@ -372,7 +374,7 @@ export const useSessionStore = create<SessionStore>()(
           }
           toast.error(`${failedCount} sessions failed to delete`);
         } else {
-          console.log(`✅ ${successCount} sessions deleted from server`);
+          logger.log(`✅ ${successCount} sessions deleted from server`);
           toast.success(i18n.t('chat.sessionsDeleted', { count: successCount }));
         }
       },
@@ -380,11 +382,11 @@ export const useSessionStore = create<SessionStore>()(
       setActiveSessionId: (sessionId: string) => {
         set({
           activeSessionId: sessionId,
-          sessionEvents: [], // Empty conversation history for new session
+          sessionEvents: [],
           eventsError: null,
           isLoadingEvents: false,
         });
-        console.log(`🆕 Set new session as active: ${sessionId}`);
+        logger.log(`🆕 Set new session as active: ${sessionId}`);
       },
 
       clearActiveSession: () => {
@@ -392,9 +394,9 @@ export const useSessionStore = create<SessionStore>()(
           activeSessionId: null,
           sessionEvents: [],
           eventsError: null,
-          isLoadingEvents: false, // Explicitly clear loading state for new chat
+          isLoadingEvents: false,
         });
-        console.log('🗑️ Cleared active session');
+        logger.log('🗑️ Cleared active session');
       },
 
       setSessionsError: (error: string | null) => {
@@ -415,7 +417,7 @@ export const useSessionStore = create<SessionStore>()(
       refreshSessions: async () => {
         // Reload all sessions (without clearing first to prevent UI flash)
         const { loadSessions } = get();
-        console.log('🔄 Refreshing session list...');
+        logger.log('🔄 Refreshing session list...');
         await loadSessions();
       },
 
@@ -426,15 +428,15 @@ export const useSessionStore = create<SessionStore>()(
           sessionEvents: [],
           eventsError: null,
           isLoadingEvents: false,
-          isCreatingSession: true, // Set new session creation flag
+          isCreatingSession: true,
         });
-        console.log(`🆕 Created new session: ${newSessionId}`);
+        logger.log(`🆕 Created new session: ${newSessionId}`);
         return newSessionId;
       },
 
       finalizeNewSession: () => {
         set({ isCreatingSession: false });
-        console.log('✅ New session creation completed');
+        logger.log('✅ New session creation completed');
       },
 
       addOptimisticSession: (sessionId: string, title?: string) => {
@@ -443,7 +445,7 @@ export const useSessionStore = create<SessionStore>()(
         // Check if session already exists
         const exists = sessions.some((s) => s.sessionId === sessionId);
         if (exists) {
-          console.log(`⚠️ Session ${sessionId} already exists, skipping optimistic add`);
+          logger.log(`⚠️ Session ${sessionId} already exists, skipping optimistic add`);
           return;
         }
 
@@ -460,7 +462,7 @@ export const useSessionStore = create<SessionStore>()(
           sessions: [optimisticSession, ...sessions],
         });
 
-        console.log(`✨ Optimistically added session: ${sessionId} - "${optimisticSession.title}"`);
+        logger.log(`✨ Optimistically added session: ${sessionId} - "${optimisticSession.title}"`);
       },
 
       updateSessionTitle: (sessionId: string, title: string) => {
@@ -473,47 +475,49 @@ export const useSessionStore = create<SessionStore>()(
         );
 
         set({ sessions: updatedSessions });
-        console.log(`📝 Updated session title: ${sessionId} - "${title}"`);
+        logger.log(`📝 Updated session title: ${sessionId} - "${title}"`);
       },
     }),
     {
       name: 'session-store',
+      enabled: import.meta.env.DEV,
     }
   )
 );
 
 /**
- * Session-related selectors (utility functions)
+ * Session-related selector hooks
+ */
+export const useSessionById = (sessionId: string) => {
+  return useSessionStore((state) => state.sessions.find((s) => s.sessionId === sessionId));
+};
+
+export const useIsAnySessionLoading = () => {
+  return useSessionStore(
+    (state) => state.isLoadingSessions || state.isLoadingEvents || state.isLoadingMoreSessions
+  );
+};
+
+/**
+ * Session selectors (non-reactive, for use outside React components)
  */
 export const sessionSelectors = {
-  /**
-   * Get session information for specified session ID
-   */
   getSessionById: (sessionId: string) => {
     const { sessions } = useSessionStore.getState();
     return sessions.find((session) => session.sessionId === sessionId);
   },
 
-  /**
-   * Check if any session loading is in progress
-   */
   isAnyLoading: () => {
     const { isLoadingSessions, isLoadingEvents, isLoadingMoreSessions } =
       useSessionStore.getState();
     return isLoadingSessions || isLoadingEvents || isLoadingMoreSessions;
   },
 
-  /**
-   * Check if there are any errors
-   */
   hasAnyError: () => {
     const { sessionsError, eventsError } = useSessionStore.getState();
     return !!sessionsError || !!eventsError;
   },
 
-  /**
-   * Get all error messages as an array
-   */
   getAllErrors: () => {
     const { sessionsError, eventsError } = useSessionStore.getState();
     return [sessionsError, eventsError].filter(Boolean) as string[];

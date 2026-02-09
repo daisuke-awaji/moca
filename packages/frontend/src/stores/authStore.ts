@@ -10,6 +10,8 @@ import {
   completeNewPasswordChallenge,
   type CognitoUser,
 } from '../lib/cognito';
+import { logger } from '../utils/logger';
+import { extractErrorMessage } from '../utils/store-helpers';
 
 interface AuthActions {
   login: (username: string, password: string) => Promise<void>;
@@ -66,7 +68,7 @@ export const useAuthStore = create<AuthStore>()(
               error: null,
             });
           } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : 'Authentication failed';
+            const errorMessage = extractErrorMessage(error, 'Authentication failed');
             set({
               user: null,
               isAuthenticated: false,
@@ -95,7 +97,7 @@ export const useAuthStore = create<AuthStore>()(
               pendingCognitoUser: null,
             });
           } catch (error) {
-            console.error('Logout error:', error);
+            logger.error('Logout error:', error);
             // Clear state even on logout error
             set({
               user: null,
@@ -136,7 +138,7 @@ export const useAuthStore = create<AuthStore>()(
               pendingUsername: username,
             });
           } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : 'Sign up failed';
+            const errorMessage = extractErrorMessage(error, 'Sign up failed');
             set({
               isLoading: false,
               error: errorMessage,
@@ -160,7 +162,7 @@ export const useAuthStore = create<AuthStore>()(
               pendingUsername: null,
             });
           } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : 'Confirmation failed';
+            const errorMessage = extractErrorMessage(error, 'Confirmation failed');
             set({
               isLoading: false,
               error: errorMessage,
@@ -180,7 +182,7 @@ export const useAuthStore = create<AuthStore>()(
               error: null,
             });
           } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : 'Failed to resend code';
+            const errorMessage = extractErrorMessage(error, 'Failed to resend code');
             set({
               isLoading: false,
               error: errorMessage,
@@ -212,8 +214,7 @@ export const useAuthStore = create<AuthStore>()(
               pendingCognitoUser: null,
             });
           } catch (error) {
-            const errorMessage =
-              error instanceof Error ? error.message : 'Failed to change password';
+            const errorMessage = extractErrorMessage(error, 'Failed to change password');
             set({
               isLoading: false,
               error: errorMessage,
@@ -254,6 +255,7 @@ export const useAuthStore = create<AuthStore>()(
     ),
     {
       name: 'auth-store',
+      enabled: import.meta.env.DEV,
     }
   )
 );

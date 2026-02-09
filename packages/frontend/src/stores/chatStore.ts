@@ -17,6 +17,7 @@ import { useStorageStore } from './storageStore';
 import { useSessionStore } from './sessionStore';
 import { useMemoryStore } from './memoryStore';
 import { useSettingsStore } from './settingsStore';
+import { logger } from '../utils/logger';
 
 // Helper function: Convert image to Base64
 const convertImageToBase64 = (file: File): Promise<string> => {
@@ -150,7 +151,7 @@ export const useChatStore = create<ChatStore>()(
             },
           });
         }
-        console.log(`🔄 Session switched: ${sessionId}`);
+        logger.log(`🔄 Session switched: ${sessionId}`);
       },
 
       addMessage: (sessionId: string, message: Omit<Message, 'id' | 'timestamp'>) => {
@@ -472,11 +473,11 @@ export const useChatStore = create<ChatStore>()(
                   },
                 });
 
-                console.log(`✅ Message send complete (session: ${sessionId})`);
+                logger.log(`✅ Message send complete (session: ${sessionId})`);
 
                 // For new sessions, update session list
                 if (isNewSession) {
-                  console.log('🔄 New session created, updating session list...');
+                  logger.log('🔄 New session created, updating session list...');
                   useSessionStore.getState().refreshSessions();
                 }
               },
@@ -544,7 +545,7 @@ export const useChatStore = create<ChatStore>()(
         delete newSessions[sessionId];
 
         set({ sessions: newSessions });
-        console.log(`🗑️ Session cleared: ${sessionId}`);
+        logger.log(`🗑️ Session cleared: ${sessionId}`);
       },
 
       setLoading: (sessionId: string, loading: boolean) => {
@@ -593,7 +594,7 @@ export const useChatStore = create<ChatStore>()(
       },
 
       loadSessionHistory: (sessionId: string, conversationMessages: ConversationMessage[]) => {
-        console.log(
+        logger.log(
           `📖 Restoring conversation history (${sessionId}): ${conversationMessages.length} messages`
         );
 
@@ -658,11 +659,12 @@ export const useChatStore = create<ChatStore>()(
           },
         });
 
-        console.log(`✅ Conversation history restored (${sessionId}): ${messages.length} messages`);
+        logger.log(`✅ Conversation history restored (${sessionId}): ${messages.length} messages`);
       },
     }),
     {
       name: 'chat-store',
+      enabled: import.meta.env.DEV,
     }
   )
 );

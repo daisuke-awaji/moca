@@ -7,6 +7,8 @@ import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import type { MCPTool } from '../api/tools';
 import { fetchTools, searchTools, checkGatewayHealth } from '../api/tools';
+import { logger } from '../utils/logger';
+import { extractErrorMessage } from '../utils/store-helpers';
 
 /**
  * Tool store state type definition
@@ -69,7 +71,7 @@ export const useToolStore = create<ToolStoreState>()(
 
         // Avoid duplicate execution if already loading
         if (currentState.isLoading) {
-          console.log('🔧 Tool list already loading, skipping duplicate execution');
+          logger.log('🔧 Tool list already loading, skipping duplicate execution');
           return;
         }
 
@@ -81,7 +83,7 @@ export const useToolStore = create<ToolStoreState>()(
         });
 
         try {
-          console.log('🔧 Tool list loading started');
+          logger.log('🔧 Tool list loading started');
 
           const result = await fetchTools();
 
@@ -95,15 +97,15 @@ export const useToolStore = create<ToolStoreState>()(
             gatewayStatus: 'healthy',
           });
 
-          console.log(
+          logger.log(
             '✅ Tool list loading completed: %d items',
             result.tools.length,
             result.nextCursor ? { nextCursor: 'present' } : { nextCursor: 'none' }
           );
         } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : 'Failed to load tool list';
+          const errorMessage = extractErrorMessage(error, 'Failed to load tool list');
 
-          console.error('💥 Tool list loading error:', error);
+          logger.error('💥 Tool list loading error:', error);
 
           set({
             tools: [],
@@ -124,7 +126,7 @@ export const useToolStore = create<ToolStoreState>()(
         const currentState = get();
 
         if (currentState.isLoading || !currentState.nextCursor) {
-          console.log('🔧 Cannot load more: loading in progress or no nextCursor');
+          logger.log('🔧 Cannot load more: loading in progress or no nextCursor');
           return;
         }
 
@@ -134,7 +136,7 @@ export const useToolStore = create<ToolStoreState>()(
         });
 
         try {
-          console.log('🔧 Loading additional tools started', { cursor: currentState.nextCursor });
+          logger.log('🔧 Loading additional tools started', { cursor: currentState.nextCursor });
 
           const result = await fetchTools(currentState.nextCursor);
 
@@ -148,17 +150,16 @@ export const useToolStore = create<ToolStoreState>()(
             gatewayStatus: 'healthy',
           });
 
-          console.log(
+          logger.log(
             '✅ Additional tools loading completed: +%d items (total: %d items)',
             result.tools.length,
             currentState.tools.length + result.tools.length,
             result.nextCursor ? { nextCursor: 'present' } : { nextCursor: 'none' }
           );
         } catch (error) {
-          const errorMessage =
-            error instanceof Error ? error.message : 'Failed to load additional tools';
+          const errorMessage = extractErrorMessage(error, 'Failed to load additional tools');
 
-          console.error('💥 Additional tools loading error:', error);
+          logger.error('💥 Additional tools loading error:', error);
 
           set({
             isLoading: false,
@@ -178,7 +179,7 @@ export const useToolStore = create<ToolStoreState>()(
 
         // Avoid duplicate execution if already loading
         if (currentState.isLoading) {
-          console.log('🔧 All tools already loading, skipping duplicate execution');
+          logger.log('🔧 All tools already loading, skipping duplicate execution');
           return;
         }
 
@@ -189,7 +190,7 @@ export const useToolStore = create<ToolStoreState>()(
         });
 
         try {
-          console.log('🔧 Loading all tools started');
+          logger.log('🔧 Loading all tools started');
 
           let allTools: MCPTool[] = [];
           let cursor: string | undefined = undefined;
@@ -200,7 +201,7 @@ export const useToolStore = create<ToolStoreState>()(
             allTools = [...allTools, ...result.tools];
             cursor = result.nextCursor;
 
-            console.log(
+            logger.log(
               '📄 Page loaded: +%d items (total: %d items)',
               result.tools.length,
               allTools.length,
@@ -218,11 +219,11 @@ export const useToolStore = create<ToolStoreState>()(
             gatewayStatus: 'healthy',
           });
 
-          console.log(`✅ All tools loading completed: ${allTools.length} items`);
+          logger.log(`✅ All tools loading completed: ${allTools.length} items`);
         } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : 'Failed to load all tools';
+          const errorMessage = extractErrorMessage(error, 'Failed to load all tools');
 
-          console.error('💥 All tools loading error:', error);
+          logger.error('💥 All tools loading error:', error);
 
           set({
             tools: [],
@@ -259,7 +260,7 @@ export const useToolStore = create<ToolStoreState>()(
         });
 
         try {
-          console.log(`🔍 Tool search started: "${trimmedQuery}"`);
+          logger.log(`🔍 Tool search started: "${trimmedQuery}"`);
 
           // Search via Backend API (builtin tools + MCP tools)
           const searchResults = await searchTools(trimmedQuery);
@@ -272,13 +273,13 @@ export const useToolStore = create<ToolStoreState>()(
             gatewayStatus: 'healthy',
           });
 
-          console.log(
+          logger.log(
             `✅ Tool search completed: ${searchResults.length} items (query: "${trimmedQuery}")`
           );
         } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : 'Tool search failed';
+          const errorMessage = extractErrorMessage(error, 'Tool search failed');
 
-          console.error('💥 Tool search error:', error);
+          logger.error('💥 Tool search error:', error);
 
           set({
             searchResults: [],
@@ -294,7 +295,7 @@ export const useToolStore = create<ToolStoreState>()(
        * Clear search state
        */
       clearSearch: () => {
-        console.log('🧹 Clearing search state');
+        logger.log('🧹 Clearing search state');
         set({
           searchQuery: '',
           searchResults: [],
@@ -317,7 +318,7 @@ export const useToolStore = create<ToolStoreState>()(
        */
       checkGateway: async () => {
         try {
-          console.log('💓 Gateway connection check started');
+          logger.log('💓 Gateway connection check started');
 
           const healthResponse = await checkGatewayHealth();
 
@@ -326,9 +327,9 @@ export const useToolStore = create<ToolStoreState>()(
             gatewayStatus: healthResponse.status,
           });
 
-          console.log(`✅ Gateway connection check completed: ${healthResponse.status}`);
+          logger.log(`✅ Gateway connection check completed: ${healthResponse.status}`);
         } catch (error) {
-          console.error('💥 Gateway connection check error:', error);
+          logger.error('💥 Gateway connection check error:', error);
 
           set({
             gatewayHealthy: false,

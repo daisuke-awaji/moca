@@ -4,7 +4,7 @@
  */
 
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { devtools, persist } from 'zustand/middleware';
 import type React from 'react';
 
 interface UIState {
@@ -62,49 +62,39 @@ interface UIState {
  * UI状態管理ストア
  */
 export const useUIStore = create<UIState>()(
-  persist(
-    (set) => ({
-      // デフォルトはサイドバー開いた状態
-      isSidebarOpen: true,
+  devtools(
+    persist(
+      (set) => ({
+        // Default: sidebar open
+        isSidebarOpen: true,
 
-      // デフォルトはデスクトップ表示
-      isMobileView: false,
+        // Default: desktop view
+        isMobileView: false,
 
-      // デフォルトはワイドデスクトップ
-      isNarrowDesktop: false,
+        // Default: wide desktop
+        isNarrowDesktop: false,
 
-      // デフォルトはモバイルヘッダーアクションなし
-      mobileHeaderAction: null,
+        // Default: no mobile header action
+        mobileHeaderAction: null,
 
-      toggleSidebar: () =>
-        set((state) => {
-          const newState = !state.isSidebarOpen;
-          return { isSidebarOpen: newState };
-        }),
+        toggleSidebar: () => set((state) => ({ isSidebarOpen: !state.isSidebarOpen })),
 
-      setSidebarOpen: (isOpen) =>
-        set(() => {
-          return { isSidebarOpen: isOpen };
-        }),
+        setSidebarOpen: (isOpen) => set({ isSidebarOpen: isOpen }),
 
-      setMobileView: (isMobile) =>
-        set(() => {
-          return { isMobileView: isMobile };
-        }),
+        setMobileView: (isMobile) => set({ isMobileView: isMobile }),
 
-      setNarrowDesktop: (isNarrow) =>
-        set(() => {
-          return { isNarrowDesktop: isNarrow };
-        }),
+        setNarrowDesktop: (isNarrow) => set({ isNarrowDesktop: isNarrow }),
 
-      setMobileHeaderAction: (action) =>
-        set(() => {
-          return { mobileHeaderAction: action };
-        }),
-    }),
+        setMobileHeaderAction: (action) => set({ mobileHeaderAction: action }),
+      }),
+      {
+        name: 'ui-storage',
+        partialize: (state) => ({ isSidebarOpen: state.isSidebarOpen }),
+      }
+    ),
     {
-      name: 'ui-storage', // localStorage key name
-      partialize: (state) => ({ isSidebarOpen: state.isSidebarOpen }), // Specify items to persist
+      name: 'ui-store',
+      enabled: import.meta.env.DEV,
     }
   )
 );

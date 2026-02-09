@@ -1,10 +1,13 @@
 /**
- * 共有Agent管理用Zustandストア（ページネーション対応）
+ * Shared Agent management Zustand store (with pagination)
  */
 
 import { create } from 'zustand';
+import { devtools } from 'zustand/middleware';
 import type { Agent } from '../types/agent';
 import * as agentsApi from '../api/agents';
+import { logger } from '../utils/logger';
+import { extractErrorMessage } from '../utils/store-helpers';
 
 interface SharedAgentState {
   sharedAgents: Agent[];
@@ -17,148 +20,142 @@ interface SharedAgentState {
 }
 
 interface SharedAgentActions {
-  // 共有Agent一覧取得（初回または検索クエリ変更時）
   fetchSharedAgents: (searchQuery?: string) => Promise<void>;
-
-  // 追加のAgentを読み込み（ページネーション）
   loadMoreAgents: () => Promise<void>;
-
-  // ページネーションをリセット
   resetPagination: () => void;
-
-  // 検索クエリ更新
   setSearchQuery: (query: string) => void;
-
-  // 共有Agentをマイエージェントに追加
   cloneAgent: (userId: string, agentId: string) => Promise<Agent>;
-
-  // エラークリア
   clearError: () => void;
 }
 
 export type SharedAgentStore = SharedAgentState & SharedAgentActions;
 
-export const useSharedAgentStore = create<SharedAgentStore>((set, get) => ({
-  // 初期状態
-  sharedAgents: [],
-  isLoading: false,
-  isLoadingMore: false,
-  error: null,
-  searchQuery: '',
-  nextCursor: null,
-  hasMore: false,
-
-  // 共有Agent一覧取得（初回または検索クエリ変更時）
-  fetchSharedAgents: async (searchQuery?: string) => {
-    set({ isLoading: true, error: null });
-
-    try {
-      const query = searchQuery !== undefined ? searchQuery : get().searchQuery;
-      console.log('📋 共有Agent一覧取得開始...', { query });
-
-      const result = await agentsApi.listSharedAgents(query || undefined, 20);
-
-      console.log(
-        `✅ 共有Agent一覧取得完了: ${result.agents.length}件 (hasMore: ${result.hasMore})`
-      );
-
-      set({
-        sharedAgents: result.agents,
-        nextCursor: result.nextCursor || null,
-        hasMore: result.hasMore,
-        isLoading: false,
-        error: null,
-      });
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : '共有Agent一覧の取得に失敗しました';
-      console.error('💥 共有Agent一覧取得エラー:', error);
-      set({
-        sharedAgents: [],
-        nextCursor: null,
-        hasMore: false,
-        isLoading: false,
-        error: errorMessage,
-      });
-    }
-  },
-
-  // 追加のAgentを読み込み（ページネーション）
-  loadMoreAgents: async () => {
-    const { nextCursor, isLoadingMore, searchQuery } = get();
-
-    if (!nextCursor || isLoadingMore) {
-      return;
-    }
-
-    set({ isLoadingMore: true, error: null });
-
-    try {
-      console.log('📋 追加Agent読み込み開始...', { cursor: nextCursor });
-
-      const result = await agentsApi.listSharedAgents(searchQuery || undefined, 20, nextCursor);
-
-      console.log(
-        `✅ 追加Agent読み込み完了: ${result.agents.length}件 (hasMore: ${result.hasMore})`
-      );
-
-      set((state) => ({
-        sharedAgents: [...state.sharedAgents, ...result.agents],
-        nextCursor: result.nextCursor || null,
-        hasMore: result.hasMore,
-        isLoadingMore: false,
-        error: null,
-      }));
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : '追加Agentの読み込みに失敗しました';
-      console.error('💥 追加Agent読み込みエラー:', error);
-      set({
-        isLoadingMore: false,
-        error: errorMessage,
-      });
-    }
-  },
-
-  // ページネーションをリセット
-  resetPagination: () => {
-    set({
+export const useSharedAgentStore = create<SharedAgentStore>()(
+  devtools(
+    (set, get) => ({
+      // Initial state
       sharedAgents: [],
+      isLoading: false,
+      isLoadingMore: false,
+      error: null,
+      searchQuery: '',
       nextCursor: null,
       hasMore: false,
-    });
-  },
 
-  // 検索クエリ更新
-  setSearchQuery: (query: string) => {
-    set({ searchQuery: query });
-  },
+      // Fetch shared agent list (initial or search query change)
+      fetchSharedAgents: async (searchQuery?: string) => {
+        set({ isLoading: true, error: null });
 
-  // 共有Agentをマイエージェントに追加
-  cloneAgent: async (userId: string, agentId: string) => {
-    set({ isLoading: true, error: null });
+        try {
+          const query = searchQuery !== undefined ? searchQuery : get().searchQuery;
+          logger.log('📋 Fetching shared agents...', { query });
 
-    try {
-      console.log('📥 共有Agentクローン開始...', { userId, agentId });
+          const result = await agentsApi.listSharedAgents(query || undefined, 20);
 
-      const clonedAgent = await agentsApi.cloneSharedAgent(userId, agentId);
+          logger.log(
+            `✅ Shared agents fetched: ${result.agents.length} items (hasMore: ${result.hasMore})`
+          );
 
-      console.log(`✅ 共有Agentクローン完了: ${clonedAgent.agentId}`);
+          set({
+            sharedAgents: result.agents,
+            nextCursor: result.nextCursor || null,
+            hasMore: result.hasMore,
+            isLoading: false,
+            error: null,
+          });
+        } catch (error) {
+          const errorMessage = extractErrorMessage(error, 'Failed to fetch shared agents');
+          logger.error('💥 Shared agents fetch error:', error);
+          set({
+            sharedAgents: [],
+            nextCursor: null,
+            hasMore: false,
+            isLoading: false,
+            error: errorMessage,
+          });
+        }
+      },
 
-      set({ isLoading: false, error: null });
+      // Load more agents (pagination)
+      loadMoreAgents: async () => {
+        const { nextCursor, isLoadingMore, searchQuery } = get();
 
-      return clonedAgent;
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : '共有Agentのクローンに失敗しました';
-      console.error('💥 共有Agentクローンエラー:', error);
-      set({ isLoading: false, error: errorMessage });
-      throw error;
+        if (!nextCursor || isLoadingMore) {
+          return;
+        }
+
+        set({ isLoadingMore: true, error: null });
+
+        try {
+          logger.log('📋 Loading more agents...', { cursor: nextCursor });
+
+          const result = await agentsApi.listSharedAgents(searchQuery || undefined, 20, nextCursor);
+
+          logger.log(
+            `✅ More agents loaded: ${result.agents.length} items (hasMore: ${result.hasMore})`
+          );
+
+          set((state) => ({
+            sharedAgents: [...state.sharedAgents, ...result.agents],
+            nextCursor: result.nextCursor || null,
+            hasMore: result.hasMore,
+            isLoadingMore: false,
+            error: null,
+          }));
+        } catch (error) {
+          const errorMessage = extractErrorMessage(error, 'Failed to load more agents');
+          logger.error('💥 Load more agents error:', error);
+          set({
+            isLoadingMore: false,
+            error: errorMessage,
+          });
+        }
+      },
+
+      // Reset pagination
+      resetPagination: () => {
+        set({
+          sharedAgents: [],
+          nextCursor: null,
+          hasMore: false,
+        });
+      },
+
+      // Update search query
+      setSearchQuery: (query: string) => {
+        set({ searchQuery: query });
+      },
+
+      // Clone shared agent to my agents
+      cloneAgent: async (userId: string, agentId: string) => {
+        set({ isLoading: true, error: null });
+
+        try {
+          logger.log('📥 Cloning shared agent...', { userId, agentId });
+
+          const clonedAgent = await agentsApi.cloneSharedAgent(userId, agentId);
+
+          logger.log(`✅ Shared agent cloned: ${clonedAgent.agentId}`);
+
+          set({ isLoading: false, error: null });
+
+          return clonedAgent;
+        } catch (error) {
+          const errorMessage = extractErrorMessage(error, 'Failed to clone shared agent');
+          logger.error('💥 Shared agent clone error:', error);
+          set({ isLoading: false, error: errorMessage });
+          throw error;
+        }
+      },
+
+      // Clear error
+      clearError: () => {
+        set({ error: null });
+      },
+    }),
+    {
+      name: 'shared-agent-store',
+      enabled: import.meta.env.DEV,
     }
-  },
-
-  // エラークリア
-  clearError: () => {
-    set({ error: null });
-  },
-}));
+  )
+);

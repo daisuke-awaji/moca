@@ -1,30 +1,31 @@
 /**
  * Settings Store
- * アプリケーション設定管理用のZustand store
+ * Application settings management Zustand store
  */
 
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { devtools, persist } from 'zustand/middleware';
 import { DEFAULT_MODEL_ID } from '../config/models';
+import { logger } from '../utils/logger';
 
 /**
- * 送信動作の設定値
- * - 'enter': Enter で送信、Shift+Enter で改行
- * - 'cmdEnter': Cmd/Ctrl+Enter で送信、Enter で改行
+ * Send behavior setting
+ * - 'enter': Send with Enter, newline with Shift+Enter
+ * - 'cmdEnter': Send with Cmd/Ctrl+Enter, newline with Enter
  */
 export type SendBehavior = 'enter' | 'cmdEnter';
 
 /**
- * Settings Store の状態
+ * Settings Store state
  */
 interface SettingsState {
-  // Enter キーの動作設定
+  // Enter key behavior setting
   sendBehavior: SendBehavior;
 
-  // 選択中のモデルID
+  // Selected model ID
   selectedModelId: string;
 
-  // アクション
+  // Actions
   setSendBehavior: (behavior: SendBehavior) => void;
   setSelectedModelId: (modelId: string) => void;
 }
@@ -33,32 +34,38 @@ interface SettingsState {
  * Settings Store
  */
 export const useSettingsStore = create<SettingsState>()(
-  persist(
-    (set) => ({
-      // 初期状態: デフォルトは Enter で送信
-      sendBehavior: 'enter',
+  devtools(
+    persist(
+      (set) => ({
+        // Initial state: default is send with Enter
+        sendBehavior: 'enter',
 
-      // 初期状態: デフォルトモデル
-      selectedModelId: DEFAULT_MODEL_ID,
+        // Initial state: default model
+        selectedModelId: DEFAULT_MODEL_ID,
 
-      /**
-       * Enter キーの動作設定を変更
-       */
-      setSendBehavior: (behavior: SendBehavior) => {
-        set({ sendBehavior: behavior });
-        console.log(`[SettingsStore] Send behavior changed to: ${behavior}`);
-      },
+        /**
+         * Change Enter key behavior setting
+         */
+        setSendBehavior: (behavior: SendBehavior) => {
+          set({ sendBehavior: behavior });
+          logger.log(`[SettingsStore] Send behavior changed to: ${behavior}`);
+        },
 
-      /**
-       * 選択中のモデルIDを変更
-       */
-      setSelectedModelId: (modelId: string) => {
-        set({ selectedModelId: modelId });
-        console.log(`[SettingsStore] Model changed to: ${modelId}`);
-      },
-    }),
+        /**
+         * Change selected model ID
+         */
+        setSelectedModelId: (modelId: string) => {
+          set({ selectedModelId: modelId });
+          logger.log(`[SettingsStore] Model changed to: ${modelId}`);
+        },
+      }),
+      {
+        name: 'app-settings',
+      }
+    ),
     {
-      name: 'app-settings',
+      name: 'settings-store',
+      enabled: import.meta.env.DEV,
     }
   )
 );
