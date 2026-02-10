@@ -17,17 +17,17 @@ const envSchema = z.object({
   PORT: z.string().default('3000').transform(Number),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
 
-  // Cognito/JWKS configuration
-  COGNITO_USER_POOL_ID: z.string().optional(),
-  COGNITO_REGION: z.string().optional(),
-  JWKS_URI: z.string().url().optional(),
+  // Cognito configuration (required for JWT verification)
+  COGNITO_USER_POOL_ID: z.string({
+    required_error: 'COGNITO_USER_POOL_ID is required for JWT verification',
+  }),
+  COGNITO_REGION: z.string({
+    required_error: 'COGNITO_REGION is required for JWT verification',
+  }),
+  COGNITO_CLIENT_ID: z.string().optional(),
 
   // CORS configuration
   CORS_ALLOWED_ORIGINS: z.string().default('*'),
-
-  // JWT configuration
-  JWT_ISSUER: z.string().optional(),
-  JWT_AUDIENCE: z.string().optional(),
 
   // AgentCore Memory configuration
   AGENTCORE_MEMORY_ID: z.string().optional(),
@@ -70,25 +70,11 @@ export const config = {
   isDevelopment: env.NODE_ENV === 'development',
   isProduction: env.NODE_ENV === 'production',
 
-  // Build JWKS configuration
-  jwks: {
-    uri:
-      env.JWKS_URI ||
-      (env.COGNITO_USER_POOL_ID && env.COGNITO_REGION
-        ? `https://cognito-idp.${env.COGNITO_REGION}.amazonaws.com/${env.COGNITO_USER_POOL_ID}/.well-known/jwks.json`
-        : undefined),
-    cacheDuration: 10 * 60 * 1000, // Cache for 10 minutes
-  },
-
-  // JWT configuration
-  jwt: {
-    issuer:
-      env.JWT_ISSUER ||
-      (env.COGNITO_USER_POOL_ID && env.COGNITO_REGION
-        ? `https://cognito-idp.${env.COGNITO_REGION}.amazonaws.com/${env.COGNITO_USER_POOL_ID}`
-        : undefined),
-    audience: env.JWT_AUDIENCE,
-    algorithms: ['RS256'] as const,
+  // Cognito configuration (used by aws-jwt-verify)
+  cognito: {
+    userPoolId: env.COGNITO_USER_POOL_ID,
+    region: env.COGNITO_REGION,
+    clientId: env.COGNITO_CLIENT_ID,
   },
 
   // CORS configuration
@@ -117,44 +103,10 @@ export const config = {
   sessionsTableName: env.SESSIONS_TABLE_NAME,
 } as const;
 
-/**
- * Validate configuration
- */
-export function validateConfig() {
-  const issues: string[] = [];
-
-  if (!config.jwks.uri) {
-    issues.push(
-      'JWKS URI is not configured (JWKS_URI or COGNITO_USER_POOL_ID + COGNITO_REGION required)'
-    );
-  }
-
-  if (!config.jwt.issuer) {
-    issues.push(
-      'JWT Issuer is not configured (JWT_ISSUER or COGNITO_USER_POOL_ID + COGNITO_REGION required)'
-    );
-  }
-
-  if (issues.length > 0) {
-    console.warn('⚠️  Configuration issues found:');
-    issues.forEach((issue) => console.warn(`  - ${issue}`));
-
-    if (config.isProduction) {
-      console.error('❌ All configurations are required in production environment');
-      process.exit(1);
-    } else {
-      console.warn('🔧 Continuing with warnings in development environment');
-    }
-  }
-}
-
-// Validate configuration on initialization
-validateConfig();
-
 console.log('⚙️  Backend API configuration loaded:', {
   port: config.port,
   nodeEnv: config.nodeEnv,
-  hasJwksUri: !!config.jwks.uri,
-  hasJwtIssuer: !!config.jwt.issuer,
+  hasCognitoUserPoolId: !!config.cognito.userPoolId,
+  hasCognitoClientId: !!config.cognito.clientId,
   corsOrigins: config.cors.allowedOrigins,
 });

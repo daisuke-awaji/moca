@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 /**
- * CloudFormation スタック出力から環境変数を取得し、各パッケージの .env ファイルを生成
+ * Retrieve environment variables from CloudFormation stack outputs
+ * and generate .env files for each package.
  *
- * パターンA: ローカル開発モード
- * - Frontend は localhost の Backend/Agent に接続
- * - Backend/Agent は AWS リソース（Cognito, Memory, Gateway, S3）に接続
+ * Pattern A: Local Development Mode
+ * - Frontend connects to Backend/Agent on localhost
+ * - Backend/Agent connects to AWS resources (Cognito, Memory, Gateway, S3)
  */
 
 import { CloudFormationClient, DescribeStacksCommand } from '@aws-sdk/client-cloudformation';
@@ -41,7 +42,7 @@ const STACK_NAME = process.env.STACK_NAME || 'AgentCoreApp';
 const PROJECT_ROOT = path.resolve(__dirname, '..');
 
 /**
- * Cognito App ClientからClient Secretを取得
+ * Retrieve Client Secret from Cognito App Client
  */
 async function getMachineUserClientSecret(
   userPoolId: string,
@@ -58,7 +59,7 @@ async function getMachineUserClientSecret(
     const response = await client.send(command);
     return response.UserPoolClient?.ClientSecret;
   } catch (error) {
-    console.warn('⚠️  Machine User Client Secretの取得に失敗しました:', error);
+    console.warn('⚠️  Failed to retrieve Machine User Client Secret:', error);
     return undefined;
   }
 }
@@ -67,7 +68,7 @@ async function getStackOutputs(): Promise<StackOutputs> {
   const client = new CloudFormationClient({});
 
   try {
-    console.log(`📡 CloudFormation スタック出力を取得中: ${STACK_NAME}`);
+    console.log(`📡 Retrieving CloudFormation stack outputs: ${STACK_NAME}`);
 
     const command = new DescribeStacksCommand({
       StackName: STACK_NAME,
@@ -77,7 +78,7 @@ async function getStackOutputs(): Promise<StackOutputs> {
     const stack = response.Stacks?.[0];
 
     if (!stack) {
-      throw new Error(`スタックが見つかりません: ${STACK_NAME}`);
+      throw new Error(`Stack not found: ${STACK_NAME}`);
     }
 
     const outputs: StackOutputs = {};
@@ -91,16 +92,16 @@ async function getStackOutputs(): Promise<StackOutputs> {
       }
     }
 
-    console.log('✅ スタック出力の取得完了');
+    console.log('✅ Stack outputs retrieved successfully');
     return outputs;
   } catch (error) {
     if (error instanceof Error) {
-      console.error('❌ スタック出力の取得に失敗しました:', error.message);
-      console.error('\n📝 確認事項:');
-      console.error(`  1. スタック名が正しいか: ${STACK_NAME}`);
-      console.error('  2. AWS認証情報が設定されているか');
-      console.error('  3. スタックがデプロイされているか');
-      console.error('\n💡 スタック名を指定する場合: STACK_NAME=YourStackName npm run setup-env\n');
+      console.error('❌ Failed to retrieve stack outputs:', error.message);
+      console.error('\n📝 Checklist:');
+      console.error(`  1. Is the stack name correct? ${STACK_NAME}`);
+      console.error('  2. Are AWS credentials configured?');
+      console.error('  3. Has the stack been deployed?');
+      console.error('\n💡 To specify a stack name: STACK_NAME=YourStackName npm run setup-env\n');
     }
     throw error;
   }
@@ -112,17 +113,17 @@ VITE_COGNITO_USER_POOL_ID=${outputs.UserPoolId || ''}
 VITE_COGNITO_CLIENT_ID=${outputs.UserPoolClientId || ''}
 VITE_AWS_REGION=${outputs.Region || ''}
 
-# Backend API Configuration (ローカル開発モード)
+# Backend API Configuration (Local Development Mode)
 VITE_BACKEND_URL=http://localhost:3000
 
-# Agent API Configuration (ローカル開発モード)
+# Agent API Configuration (Local Development Mode)
 VITE_AGENT_ENDPOINT=http://localhost:8080/invocations
 
 # AppSync Events Configuration (for real-time session updates)
 VITE_APPSYNC_EVENTS_ENDPOINT=${outputs.AppSyncEventsRealtimeEndpoint || ''}
 
-# 注: ローカル開発モードでは Backend/Agent をローカルで起動する必要があります
-# クラウド接続モードを使用する場合は以下をコメント解除してください:
+# Note: In local development mode, Backend/Agent must be running locally.
+# To use cloud connection mode, uncomment the following:
 # VITE_BACKEND_URL=${outputs.BackendApiUrl || ''}
 # VITE_AGENT_ENDPOINT=${outputs.RuntimeInvocationEndpoint || ''}
 `;
@@ -131,14 +132,14 @@ VITE_APPSYNC_EVENTS_ENDPOINT=${outputs.AppSyncEventsRealtimeEndpoint || ''}
 function createBackendEnv(outputs: StackOutputs): string {
   return `# Backend API Server Configuration
 
-# サーバー
+# Server
 PORT=3000
 NODE_ENV=development
 
-# CORS設定
+# CORS
 CORS_ALLOWED_ORIGINS=*
 
-# JWT / JWKS
+# Cognito (required for JWT verification via aws-jwt-verify)
 COGNITO_USER_POOL_ID=${outputs.UserPoolId || ''}
 COGNITO_REGION=${outputs.Region || ''}
 
@@ -178,7 +179,7 @@ AWS_REGION=${outputs.Region || ''}
 # Bedrock Model Region
 BEDROCK_REGION=${outputs.Region || ''}
 
-# Nova Canvas Region (画像生成用)
+# Nova Canvas Region (for image generation)
 NOVA_CANVAS_REGION=us-east-1
 
 # AgentCore Memory
@@ -202,10 +203,7 @@ NODE_ENV=development
 `;
 }
 
-function createTriggerEnv(
-  outputs: StackOutputs,
-  machineUserClientSecret?: string
-): string {
+function createTriggerEnv(outputs: StackOutputs, machineUserClientSecret?: string): string {
   return `# Trigger Lambda Configuration
 
 # AWS Region
@@ -224,12 +222,9 @@ TRIGGERS_TABLE_NAME=${outputs.TriggersTableName || ''}
 `;
 }
 
-function createTestScriptEnv(
-  outputs: StackOutputs,
-  machineUserClientSecret?: string
-): string {
+function createTestScriptEnv(outputs: StackOutputs, machineUserClientSecret?: string): string {
   return `# Machine User Test Script Configuration
-# このファイルは自動生成されました
+# This file was auto-generated
 
 # AWS Region
 AWS_REGION=${outputs.Region || ''}
@@ -253,24 +248,24 @@ TARGET_USER_ID=YOUR_USER_ID_HERE
 async function writeEnvFile(filePath: string, content: string, packageName: string): Promise<void> {
   const dir = path.dirname(filePath);
 
-  // ディレクトリが存在しない場合は作成
+  // Create directory if it does not exist
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }
 
-  // .env ファイルを書き込み
+  // Write .env file
   fs.writeFileSync(filePath, content, 'utf-8');
-  console.log(`✅ ${packageName} の .env ファイルを生成しました: ${filePath}`);
+  console.log(`✅ Generated .env file for ${packageName}: ${filePath}`);
 }
 
 async function main() {
   try {
-    console.log('🚀 環境変数セットアップを開始します...\n');
+    console.log('🚀 Starting environment variable setup...\n');
 
-    // スタック出力を取得
+    // Retrieve stack outputs
     const outputs = await getStackOutputs();
 
-    // 必須項目のチェック
+    // Check required outputs
     const requiredOutputs: (keyof StackOutputs)[] = [
       'Region',
       'UserPoolId',
@@ -285,13 +280,13 @@ async function main() {
     const missingOutputs = requiredOutputs.filter((key) => !outputs[key]);
 
     if (missingOutputs.length > 0) {
-      console.warn('\n⚠️  警告: 以下の出力が見つかりません:');
+      console.warn('\n⚠️  Warning: The following outputs were not found:');
       missingOutputs.forEach((key) => console.warn(`  - ${key}`));
-      console.warn('\n一部の機能が動作しない可能性があります。\n');
+      console.warn('\nSome features may not work correctly.\n');
     }
 
-    // 各パッケージの .env ファイルを生成
-    console.log('\n📝 .env ファイルを生成中...\n');
+    // Generate .env files for each package
+    console.log('\n📝 Generating .env files...\n');
 
     await writeEnvFile(
       path.join(PROJECT_ROOT, 'packages/frontend/.env'),
@@ -311,10 +306,10 @@ async function main() {
       'Agent'
     );
 
-    // Machine User のクレデンシャルを取得
+    // Retrieve Machine User credentials
     let clientSecret: string | undefined;
     if (outputs.MachineUserClientId && outputs.UserPoolId && outputs.Region) {
-      console.log('\n🔐 Machine User 認証情報を取得中...\n');
+      console.log('\n🔐 Retrieving Machine User credentials...\n');
 
       clientSecret = await getMachineUserClientSecret(
         outputs.UserPoolId,
@@ -323,13 +318,13 @@ async function main() {
       );
 
       if (clientSecret) {
-        console.log('✅ Machine User Client Secret を取得しました\n');
+        console.log('✅ Machine User Client Secret retrieved successfully\n');
       } else {
-        console.warn('⚠️  Machine User Client Secret の取得に失敗しました\n');
+        console.warn('⚠️  Failed to retrieve Machine User Client Secret\n');
       }
     }
 
-    // Trigger パッケージの .env ファイルを生成（トリガー機能が有効な場合）
+    // Generate .env file for Trigger package (if trigger feature is enabled)
     if (outputs.TriggersTableName && outputs.TriggerLambdaArn) {
       await writeEnvFile(
         path.join(PROJECT_ROOT, 'packages/trigger/.env'),
@@ -338,22 +333,21 @@ async function main() {
       );
     }
 
-    // Machine User テストスクリプト用 .env を生成
+    // Generate .env for Machine User test script
     if (outputs.MachineUserClientId && outputs.UserPoolId && outputs.Region) {
-
       if (clientSecret) {
         await writeEnvFile(
           path.join(PROJECT_ROOT, 'scripts/test-machine-user.env'),
           createTestScriptEnv(outputs, clientSecret),
           'Machine User Test Script'
         );
-        console.log('✅ Machine User テストスクリプト用の .env ファイルを生成しました');
+        console.log('✅ Generated .env file for Machine User test script');
         console.log(
-          '   ⚠️  セキュリティ: .env ファイルには機密情報が含まれています。Gitにコミットしないでください\n'
+          '   ⚠️  Security: The .env file contains sensitive information. Do not commit it to Git.\n'
         );
       } else {
         console.warn(
-          '⚠️  Machine User Client Secret の取得に失敗しました。手動で設定してください。\n'
+          '⚠️  Failed to retrieve Machine User Client Secret. Please configure it manually.\n'
         );
         await writeEnvFile(
           path.join(PROJECT_ROOT, 'scripts/test-machine-user.env'),
@@ -363,18 +357,18 @@ async function main() {
       }
     }
 
-    console.log('\n✨ セットアップが完了しました！\n');
-    console.log('📌 次のステップ:');
-    console.log('  1. Frontend を起動: npm run frontend:dev');
-    console.log('  2. Backend を起動: npm run backend:dev');
-    console.log('  3. Agent を起動: npm run agent:dev');
-    console.log('\nまたは、全て一度に起動する場合:');
+    console.log('\n✨ Setup completed!\n');
+    console.log('📌 Next steps:');
+    console.log('  1. Start Frontend: npm run frontend:dev');
+    console.log('  2. Start Backend: npm run backend:dev');
+    console.log('  3. Start Agent: npm run agent:dev');
+    console.log('\nOr start all at once:');
     console.log('  npm run dev\n');
   } catch (error) {
     if (error instanceof Error) {
-      console.error('\n❌ セットアップに失敗しました:', error.message);
+      console.error('\n❌ Setup failed:', error.message);
     } else {
-      console.error('\n❌ セットアップに失敗しました\n');
+      console.error('\n❌ Setup failed\n');
     }
     process.exit(1);
   }

@@ -101,16 +101,17 @@ Body:
 
 ## 🔒 Security Features
 
-### Backend JWT Verification
-- **JWKS Endpoint**: Fetches public keys from Cognito
+### Backend JWT Verification (aws-jwt-verify)
+- **Library**: [aws-jwt-verify](https://github.com/awslabs/aws-jwt-verify) — AWS officially recommended for Node.js
+- **JWKS Management**: Automatic fetching, caching, and key rotation from Cognito JWKS endpoint
 - **Signature Verification**: RS256 algorithm
-- **Claims Validation**: Checks expiration, issuer, audience
-- **Cache**: JWKS cached for 10 minutes
+- **Claims Validation**: Checks expiration, issuer, token_use, client_id (all automatic)
+- **JWKS Hydration**: Pre-loads JWKS cache on server startup for faster first verification
 
-### Development Mode
-- **With JWKS Configuration**: Full JWT verification
-- **Without JWKS Configuration**: Decode only (for local testing)
-- **Production**: Always requires JWKS verification
+### All Environments
+- JWT verification via aws-jwt-verify is **always enforced** regardless of `NODE_ENV`
+- `COGNITO_USER_POOL_ID` and `COGNITO_REGION` are **required** — the server will not start without them
+- No "decode only" fallback mode exists
 
 ### Token Information Extracted
 ```json
@@ -190,12 +191,11 @@ Body:
 
 ### Backend Environment Variables
 ```bash
-# JWT Configuration
+# Cognito Configuration (used by aws-jwt-verify)
 COGNITO_USER_POOL_ID=ap-northeast-1_xxxxxxxxx
 COGNITO_REGION=ap-northeast-1
-JWKS_URI=https://cognito-idp.ap-northeast-1.amazonaws.com/.../.well-known/jwks.json
-JWT_ISSUER=https://cognito-idp.ap-northeast-1.amazonaws.com/...
-JWT_AUDIENCE=your-client-id
+# Optional: restrict accepted tokens to specific client
+# COGNITO_CLIENT_ID=your-app-client-id
 
 # Server Configuration
 PORT=3000

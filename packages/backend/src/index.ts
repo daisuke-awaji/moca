@@ -7,6 +7,7 @@ import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import { config } from './config/index.js';
 import { jwtAuthMiddleware, AuthenticatedRequest, getCurrentAuth } from './middleware/auth.js';
+import { hydrateJWKS } from './utils/jwks.js';
 import agentsRouter from './routes/agents.js';
 import sessionsRouter from './routes/sessions.js';
 import toolsRouter from './routes/tools.js';
@@ -74,9 +75,9 @@ app.get('/ping', (req: Request, res: Response) => {
     service: 'agentcore-backend',
     version: '0.1.0',
     environment: config.nodeEnv,
-    jwks: {
-      configured: !!config.jwks.uri,
-      uri: config.jwks.uri ? '[CONFIGURED]' : null,
+    cognito: {
+      configured: !!config.cognito.userPoolId,
+      userPoolId: config.cognito.userPoolId ? '[CONFIGURED]' : null,
     },
   };
 
@@ -193,12 +194,15 @@ app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
  */
 async function startServer(): Promise<void> {
   try {
+    // Pre-load JWKS cache for faster first verification
+    await hydrateJWKS();
+
     app.listen(config.port, () => {
       console.log(`🚀 AgentCore Backend API server listening on port ${config.port}`);
       console.log(`📋 Health check: http://localhost:${config.port}/ping`);
       console.log(`👤 User info: GET http://localhost:${config.port}/me`);
       console.log(`🌍 Environment: ${config.nodeEnv}`);
-      console.log(`🔐 JWKS configured: ${config.jwks.uri ? '✅' : '❌'}`);
+      console.log(`🔐 Cognito configured: ${config.cognito.userPoolId ? '✅' : '❌'}`);
       console.log(`🔗 CORS origins: ${config.cors.allowedOrigins.join(', ')}`);
     });
   } catch (error) {

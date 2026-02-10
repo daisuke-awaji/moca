@@ -5,7 +5,6 @@
 
 import { Request, Response, NextFunction } from 'express';
 import { verifyJWT, extractJWTFromHeader, CognitoJWTPayload } from '../utils/jwks.js';
-import { config } from '../config/index.js';
 
 /**
  * Authenticated request type definition
@@ -101,78 +100,41 @@ export function jwtAuthMiddleware(
     return;
   }
 
-  // In production: JWKS verification, in development: branch based on configuration
-  if (config.isProduction || config.jwks.uri) {
-    // Execute JWKS verification
-    verifyJWT(token)
-      .then((result) => {
-        if (!result.valid) {
-          console.warn('❌ JWT verification failed (%s):', requestId, result.error);
-          res
-            .status(401)
-            .json(
-              createAuthErrorResponse(
-                'INVALID_JWT',
-                result.error || 'JWT verification failed',
-                requestId
-              )
-            );
-          return;
-        }
-
-        // Verification successful: Add authentication information to request
-        req.jwt = result.payload;
-        req.userId = result.payload?.sub || result.payload?.['cognito:username'];
-
-        next();
-      })
-      .catch((error) => {
-        console.error('💥 JWT verification error (%s):', requestId, error);
+  // Verify JWT via aws-jwt-verify (always enforced)
+  verifyJWT(token)
+    .then((result) => {
+      if (!result.valid) {
+        console.warn('❌ JWT verification failed (%s):', requestId, result.error);
         res
-          .status(500)
+          .status(401)
           .json(
             createAuthErrorResponse(
-              'JWT_VERIFICATION_ERROR',
-              'Internal error during JWT verification',
+              'INVALID_JWT',
+              result.error || 'JWT verification failed',
               requestId
             )
           );
-      });
-  } else {
-    // In development environment with JWKS not configured: decode only (no verification)
-    console.warn(
-      '⚠️  Development environment: Skipping verification due to JWKS not configured (%s)',
-      requestId
-    );
-
-    try {
-      // Base64 decode JWT (no verification)
-      const parts = token.split('.');
-      if (parts.length !== 3) {
-        res
-          .status(401)
-          .json(createAuthErrorResponse('INVALID_JWT_FORMAT', 'Invalid JWT format', requestId));
         return;
       }
 
-      const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
-      req.jwt = payload as CognitoJWTPayload;
-      req.userId = payload.sub || payload['cognito:username'];
-
-      console.log('🔧 JWT decode successful (no verification) (%s):', requestId, {
-        hasUserId: !!req.userId,
-        tokenUse: payload.token_use,
-      });
+      // Verification successful: Add authentication information to request
+      req.jwt = result.payload;
+      req.userId = result.payload?.sub || result.payload?.['cognito:username'];
 
       next();
-    } catch (error) {
-      console.error('❌ JWT decode error (%s):', requestId, error);
+    })
+    .catch((error) => {
+      console.error('💥 JWT verification error (%s):', requestId, error);
       res
-        .status(401)
-        .json(createAuthErrorResponse('JWT_DECODE_ERROR', 'Failed to decode JWT', requestId));
-      return;
-    }
-  }
+        .status(500)
+        .json(
+          createAuthErrorResponse(
+            'JWT_VERIFICATION_ERROR',
+            'Internal error during JWT verification',
+            requestId
+          )
+        );
+    });
 }
 
 /**

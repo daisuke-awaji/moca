@@ -1,6 +1,15 @@
 import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Settings, Brain, HelpCircle, Languages, ChevronDown, Check, Palette } from 'lucide-react';
+import {
+  Settings,
+  Brain,
+  HelpCircle,
+  Languages,
+  ChevronDown,
+  Check,
+  Palette,
+  User,
+} from 'lucide-react';
 import { useMemoryStore } from '../stores/memoryStore';
 import { useSettingsStore } from '../stores/settingsStore';
 import { useThemeStore } from '../stores/themeStore';
@@ -9,10 +18,11 @@ import { PageHeader } from '../components/ui/PageHeader';
 import { Button } from '../components/ui/Button';
 import { Toggle } from '../components/ui/Toggle';
 import { MemoryManagementModal } from '../components/MemoryManagementModal';
+import { getMe, type MeResponse } from '../api/auth';
 
 /**
- * 設定ページ
- * 各種設定を管理するページ（今後設定項目を追加予定）
+ * Settings Page
+ * Manage various application settings
  */
 export function SettingsPage() {
   const { t, i18n } = useTranslation();
@@ -22,6 +32,11 @@ export function SettingsPage() {
   const [showMemoryModal, setShowMemoryModal] = useState(false);
   const [isLanguageDropdownOpen, setIsLanguageDropdownOpen] = useState(false);
   const [isThemeDropdownOpen, setIsThemeDropdownOpen] = useState(false);
+
+  // Account info from /me endpoint
+  const [accountInfo, setAccountInfo] = useState<MeResponse | null>(null);
+  const [accountError, setAccountError] = useState<string | null>(null);
+  const [isLoadingAccount, setIsLoadingAccount] = useState(true);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const themeDropdownRef = useRef<HTMLDivElement>(null);
 
@@ -37,6 +52,31 @@ export function SettingsPage() {
     { value: 'dark', label: t('settings.themeDark') },
     { value: 'system', label: t('settings.themeAuto') },
   ];
+
+  // Fetch account info on mount
+  useEffect(() => {
+    let cancelled = false;
+    getMe()
+      .then((data) => {
+        if (!cancelled) {
+          setAccountInfo(data);
+          setAccountError(null);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setAccountError(t('settings.accountLoadError'));
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setIsLoadingAccount(false);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [t]);
 
   const handleLanguageChange = (lang: string) => {
     i18n.changeLanguage(lang);
@@ -67,9 +107,30 @@ export function SettingsPage() {
     <div className="min-h-screen bg-surface-primary">
       <PageHeader icon={Settings} title={t('settings.title')} />
 
-      {/* メインコンテンツ */}
+      {/* Main content */}
       <main className="flex-1 overflow-y-auto p-6">
-        {/* 言語設定セクション */}
+        {/* Account section */}
+        <div className="mb-8">
+          <div className="flex items-center gap-2 mb-4">
+            <User className="w-5 h-5 text-fg-secondary" />
+            <h2 className="text-lg font-semibold text-fg-default">{t('settings.account')}</h2>
+          </div>
+
+          {isLoadingAccount ? (
+            <div className="h-5 w-48 bg-surface-secondary rounded animate-pulse" />
+          ) : accountError ? (
+            <p className="text-sm text-feedback-error">{accountError}</p>
+          ) : (
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-medium text-fg-secondary w-32">
+                {t('settings.username')}
+              </span>
+              <span className="text-sm text-fg-default">{accountInfo?.user.username ?? '—'}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Language section */}
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-4">
             <Languages className="w-5 h-5 text-fg-secondary" />

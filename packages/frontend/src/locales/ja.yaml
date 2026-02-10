@@ -468,6 +468,10 @@ memory:
 # 設定
 settings:
   title: 設定
+  account: アカウント
+  username: ユーザー名
+  email: メールアドレス
+  accountLoadError: アカウント情報の取得に失敗しました
   language: 言語
   theme: テーマ
   notifications: 通知

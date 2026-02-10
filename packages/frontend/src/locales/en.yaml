@@ -469,6 +469,10 @@ memory:
 # Settings
 settings:
   title: Settings
+  account: Account
+  username: Username
+  email: Email
+  accountLoadError: Failed to load account information
   language: Language
   theme: Theme
   notifications: Notifications

@@ -1,15 +1,30 @@
 /**
- * JWKS (JSON Web Key Set) verification utility
- * Verify JWT by retrieving public key from Cognito User Pool JWKS endpoint
+ * JWT verification utility using aws-jwt-verify
+ * Verify JWT tokens issued by Cognito User Pool
+ *
+ * @see https://github.com/awslabs/aws-jwt-verify
+ * @see https://docs.aws.amazon.com/cognito/latest/developerguide/amazon-cognito-user-pools-using-tokens-verifying-a-jwt.html
  */
 
-import { jwtVerify, createRemoteJWKSet, JWTPayload, JWTVerifyResult } from 'jose';
+import { CognitoJwtVerifier } from 'aws-jwt-verify';
 import { config } from '../config/index.js';
 
 /**
- * JWT payload type definition
+ * JWT payload type definition for Cognito tokens
  */
-export interface CognitoJWTPayload extends JWTPayload {
+export interface CognitoJWTPayload {
+  /** Subject */
+  sub?: string;
+  /** Issuer */
+  iss?: string;
+  /** Audience */
+  aud?: string | string[];
+  /** Expiration Time */
+  exp?: number;
+  /** Issued At */
+  iat?: number;
+  /** JWT ID */
+  jti?: string;
   /** Cognito Username */
   'cognito:username'?: string;
   /** Username (Access Token) */
@@ -43,26 +58,46 @@ export interface JWTVerificationResult {
 }
 
 /**
- * Cache JWKS instance
+ * Cached CognitoJwtVerifier instance
  */
-let jwksInstance: ReturnType<typeof createRemoteJWKSet> | null = null;
+
+let verifierInstance: ReturnType<typeof CognitoJwtVerifier.create> | null = null;
 
 /**
- * Get JWKS instance (lazy initialization)
+ * Get or create CognitoJwtVerifier instance (lazy initialization)
+ *
+ * tokenUse is set to null to accept both 'access' and 'id' tokens,
+ * supporting both regular users and machine users (Client Credentials Flow).
  */
-function getJWKS(): ReturnType<typeof createRemoteJWKSet> {
-  if (!jwksInstance) {
-    if (!config.jwks.uri) {
-      throw new Error('JWKS URI is not configured');
+function getVerifier() {
+  if (!verifierInstance) {
+    if (!config.cognito.userPoolId) {
+      throw new Error('Cognito User Pool ID is not configured (COGNITO_USER_POOL_ID required)');
     }
 
-    console.log(`🔑 Initializing JWKS endpoint: ${config.jwks.uri}`);
-    jwksInstance = createRemoteJWKSet(new URL(config.jwks.uri), {
-      cacheMaxAge: config.jwks.cacheDuration,
+    console.log(`🔑 Initializing CognitoJwtVerifier for User Pool: ${config.cognito.userPoolId}`);
+
+    verifierInstance = CognitoJwtVerifier.create({
+      userPoolId: config.cognito.userPoolId,
+      tokenUse: null, // Accept both 'access' and 'id' tokens
+      clientId: config.cognito.clientId ?? null,
     });
   }
 
-  return jwksInstance;
+  return verifierInstance;
+}
+
+/**
+ * Pre-load JWKS cache (call at server startup for faster first verification)
+ */
+export async function hydrateJWKS(): Promise<void> {
+  try {
+    const verifier = getVerifier();
+    await verifier.hydrate();
+    console.log('🔑 JWKS cache pre-loaded successfully');
+  } catch (error) {
+    console.warn('⚠️  Failed to pre-load JWKS cache:', error);
+  }
 }
 
 /**
@@ -72,29 +107,8 @@ function getJWKS(): ReturnType<typeof createRemoteJWKSet> {
  */
 export async function verifyJWT(token: string): Promise<JWTVerificationResult> {
   try {
-    // Get JWKS instance
-    const JWKS = getJWKS();
-
-    // Verify JWT
-    const verifyOptions: {
-      issuer?: string;
-      audience?: string;
-      algorithms: string[];
-    } = {
-      algorithms: ['RS256'],
-    };
-
-    // Add issuer only if configured
-    if (config.jwt.issuer) {
-      verifyOptions.issuer = config.jwt.issuer;
-    }
-
-    // Add audience only if configured
-    if (config.jwt.audience) {
-      verifyOptions.audience = config.jwt.audience;
-    }
-
-    const { payload }: JWTVerifyResult = await jwtVerify(token, JWKS, verifyOptions);
+    const verifier = getVerifier();
+    const payload = await verifier.verify(token);
 
     return {
       valid: true,
@@ -135,44 +149,12 @@ export function extractJWTFromHeader(authHeader: string): string | null {
 }
 
 /**
- * Decode JWT (without verification)
- * For development and debugging purposes
- * @param token JWT token
- * @returns Decode result
- */
-export function decodeJWTUnsafe(token: string): {
-  payload: CognitoJWTPayload | null;
-  error?: string;
-} {
-  try {
-    // JWT consists of 3 parts (header.payload.signature)
-    const parts = token.split('.');
-    if (parts.length !== 3) {
-      return { payload: null, error: 'Invalid JWT format' };
-    }
-
-    // Base64URL decode
-    const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
-
-    return { payload: payload as CognitoJWTPayload };
-  } catch (error) {
-    return {
-      payload: null,
-      error: error instanceof Error ? error.message : 'Decode failed',
-    };
-  }
-}
-
-/**
  * Check JWKS configuration status
  */
 export function getJWKSStatus() {
   return {
-    configured: !!config.jwks.uri,
-    uri: config.jwks.uri,
-    cacheDuration: config.jwks.cacheDuration,
-    issuer: config.jwt.issuer,
-    audience: config.jwt.audience,
-    algorithms: config.jwt.algorithms,
+    configured: !!config.cognito.userPoolId,
+    userPoolId: config.cognito.userPoolId,
+    clientId: config.cognito.clientId,
   };
 }
