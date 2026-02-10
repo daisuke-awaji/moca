@@ -8,7 +8,7 @@
   },
   "workspaces": [
     "packages/*",
-    "packages/shared/*"
+    "packages/libs/*"
   ],
   "scripts": {
     "build": "npm run build --workspace=@fullstack-agentcore/tool-definitions && npm run build --workspace=@fullstack-agentcore/s3-workspace-sync && npm run build --workspaces --if-present",

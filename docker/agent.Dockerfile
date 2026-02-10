@@ -16,19 +16,23 @@ COPY tsconfig.base.json ./
 # Copy all workspace package.json files
 COPY packages/agent/package*.json ./packages/agent/
 COPY packages/agent/tsconfig.json ./packages/agent/
-COPY packages/shared/tool-definitions/package*.json ./packages/shared/tool-definitions/
-COPY packages/shared/tool-definitions/tsconfig.json ./packages/shared/tool-definitions/
+COPY packages/libs/tool-definitions/package*.json ./packages/libs/tool-definitions/
+COPY packages/libs/tool-definitions/tsconfig.json ./packages/libs/tool-definitions/
+COPY packages/libs/s3-workspace-sync/package*.json ./packages/libs/s3-workspace-sync/
+COPY packages/libs/s3-workspace-sync/tsconfig.json ./packages/libs/s3-workspace-sync/
 
 # Install all dependencies (including workspace dependencies)
 RUN npm ci
 
 # Copy source code for all required packages
-COPY packages/shared/tool-definitions/src/ ./packages/shared/tool-definitions/src/
+COPY packages/libs/tool-definitions/src/ ./packages/libs/tool-definitions/src/
+COPY packages/libs/s3-workspace-sync/src/ ./packages/libs/s3-workspace-sync/src/
 COPY packages/agent/src/ ./packages/agent/src/
 COPY packages/agent/scripts/ ./packages/agent/scripts/
 
-# Build shared packages first
-RUN cd packages/shared/tool-definitions && npm run build
+# Build lib packages first
+RUN cd packages/libs/tool-definitions && npm run build
+RUN cd packages/libs/s3-workspace-sync && npm run build
 
 # Build agent package
 RUN cd packages/agent && npm run build
@@ -73,14 +77,17 @@ COPY --chown=node:node package*.json ./
 
 # Copy workspace package.json files
 COPY --chown=node:node packages/agent/package*.json ./packages/agent/
-COPY --chown=node:node packages/shared/tool-definitions/package*.json ./packages/shared/tool-definitions/
+COPY --chown=node:node packages/libs/tool-definitions/package*.json ./packages/libs/tool-definitions/
+COPY --chown=node:node packages/libs/s3-workspace-sync/package*.json ./packages/libs/s3-workspace-sync/
 
 # Install production dependencies only (skip scripts like husky)
 RUN npm ci --omit=dev --ignore-scripts && npm cache clean --force
 
 # Copy built files from builder stage
-COPY --chown=node:node --from=builder /build/packages/shared/tool-definitions/dist ./packages/shared/tool-definitions/dist
-COPY --chown=node:node --from=builder /build/packages/shared/tool-definitions/package.json ./packages/shared/tool-definitions/
+COPY --chown=node:node --from=builder /build/packages/libs/tool-definitions/dist ./packages/libs/tool-definitions/dist
+COPY --chown=node:node --from=builder /build/packages/libs/tool-definitions/package.json ./packages/libs/tool-definitions/
+COPY --chown=node:node --from=builder /build/packages/libs/s3-workspace-sync/dist ./packages/libs/s3-workspace-sync/dist
+COPY --chown=node:node --from=builder /build/packages/libs/s3-workspace-sync/package.json ./packages/libs/s3-workspace-sync/
 COPY --chown=node:node --from=builder /build/packages/agent/dist ./packages/agent/dist
 COPY --chown=node:node --from=builder /build/packages/agent/scripts ./packages/agent/scripts
 

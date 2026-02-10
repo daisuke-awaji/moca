@@ -29,18 +29,18 @@ COPY tsconfig.base.json ./
 # Copy all workspace package.json files
 COPY packages/backend/package*.json ./packages/backend/
 COPY packages/backend/tsconfig.json ./packages/backend/
-COPY packages/shared/tool-definitions/package*.json ./packages/shared/tool-definitions/
-COPY packages/shared/tool-definitions/tsconfig.json ./packages/shared/tool-definitions/
+COPY packages/libs/tool-definitions/package*.json ./packages/libs/tool-definitions/
+COPY packages/libs/tool-definitions/tsconfig.json ./packages/libs/tool-definitions/
 
 # Install all dependencies (including workspace dependencies)
 RUN npm ci
 
 # Copy source code for all required packages
-COPY packages/shared/tool-definitions/src/ ./packages/shared/tool-definitions/src/
+COPY packages/libs/tool-definitions/src/ ./packages/libs/tool-definitions/src/
 COPY packages/backend/src/ ./packages/backend/src/
 
-# Build shared packages first
-RUN cd packages/shared/tool-definitions && npm run build
+# Build lib packages first
+RUN cd packages/libs/tool-definitions && npm run build
 
 # Build backend package
 RUN cd packages/backend && npm run build
@@ -77,14 +77,14 @@ COPY --chown=node:node package*.json ./
 
 # Copy workspace package.json files
 COPY --chown=node:node packages/backend/package*.json ./packages/backend/
-COPY --chown=node:node packages/shared/tool-definitions/package*.json ./packages/shared/tool-definitions/
+COPY --chown=node:node packages/libs/tool-definitions/package*.json ./packages/libs/tool-definitions/
 
 # Install production dependencies only (skip scripts like husky)
 RUN npm ci --omit=dev --ignore-scripts && npm cache clean --force
 
 # Copy built files from builder stage
-COPY --chown=node:node --from=builder /build/packages/shared/tool-definitions/dist ./packages/shared/tool-definitions/dist
-COPY --chown=node:node --from=builder /build/packages/shared/tool-definitions/package.json ./packages/shared/tool-definitions/
+COPY --chown=node:node --from=builder /build/packages/libs/tool-definitions/dist ./packages/libs/tool-definitions/dist
+COPY --chown=node:node --from=builder /build/packages/libs/tool-definitions/package.json ./packages/libs/tool-definitions/
 COPY --chown=node:node --from=builder /build/packages/backend/dist ./packages/backend/dist
 
 # Set working directory to backend package
