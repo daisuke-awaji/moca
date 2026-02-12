@@ -1,0 +1,83 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "tools": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "inputSchema": { "type": "object" }
+        }
+      }
+    }
+  },
+  "tools": [
+    {
+      "name": "athena-query",
+      "description": "Amazon Athena を使って S3 上のデータに SQL クエリを実行し、結果を取得するツール。SELECT クエリのみ実行可能です。クエリ実行前にまず athena-list-tables や athena-describe-table でテーブル構造を確認してから使用してください。",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "実行する SQL クエリ（SELECT 文のみ許可）"
+          },
+          "database": {
+            "type": "string",
+            "description": "Glue Data Catalog のデータベース名"
+          },
+          "maxRows": {
+            "type": "integer",
+            "description": "返却する最大行数（デフォルト: 100, 最大: 1000）",
+            "default": 100,
+            "minimum": 1,
+            "maximum": 1000
+          }
+        },
+        "required": ["query", "database"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "athena-list-tables",
+      "description": "Glue Data Catalog から指定データベースのテーブル一覧とスキーマ情報を取得するツール。テーブル名、カラム定義、パーティションキー、データ形式などの情報を返します。SQL クエリを実行する前にこのツールでテーブル構造を確認してください。",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "database": {
+            "type": "string",
+            "description": "Glue Data Catalog のデータベース名"
+          },
+          "tableNameFilter": {
+            "type": "string",
+            "description": "テーブル名のフィルタ（前方一致）"
+          }
+        },
+        "required": ["database"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "athena-describe-table",
+      "description": "指定テーブルの詳細なスキーマ情報（カラム定義、パーティション情報、データ形式、SerDe 情報、テーブルパラメータなど）を取得するツール。正確な SQL クエリを組み立てるために使用してください。",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "database": {
+            "type": "string",
+            "description": "Glue Data Catalog のデータベース名"
+          },
+          "tableName": {
+            "type": "string",
+            "description": "テーブル名"
+          }
+        },
+        "required": ["database", "tableName"],
+        "additionalProperties": false
+      }
+    }
+  ]
+}
