@@ -8,6 +8,7 @@ import { readFile, stat } from 'fs/promises';
 import { existsSync } from 'fs';
 import { extname, basename } from 'path';
 import { parseOffice } from 'officeparser';
+import * as XLSX from 'xlsx';
 import { logger } from '../../config/index.js';
 import { getCurrentContext } from '../../context/request-context.js';
 import {
@@ -37,9 +38,26 @@ function formatFileSize(bytes: number): string {
 }
 
 /**
- * Extract text from document using officeparser
+ * Extract text from XLSX using SheetJS
  */
-async function extractText(buffer: Buffer): Promise<string> {
+function extractXlsxText(buffer: Buffer): string {
+  const workbook = XLSX.read(buffer, { type: 'buffer' });
+  const parts: string[] = [];
+
+  for (const sheetName of workbook.SheetNames) {
+    const sheet = workbook.Sheets[sheetName];
+    parts.push(`## ${sheetName}`);
+    const csv = XLSX.utils.sheet_to_csv(sheet);
+    parts.push(csv);
+  }
+
+  return parts.join('\n');
+}
+
+/**
+ * Extract text from document using officeparser (PDF, DOCX, PPTX)
+ */
+async function extractTextWithOfficeParser(buffer: Buffer): Promise<string> {
   const ast = await parseOffice(buffer);
   return ast.toText();
 }
@@ -98,10 +116,14 @@ export const documentReaderTool = tool({
       const buffer = await readFile(filePath);
       logger.info(`📄 File loaded: ${fileName} (${formatFileSize(fileStat.size)}, ${format})`);
 
-      // Extract text
+      // Extract text based on format
       let text: string;
       try {
-        text = await extractText(buffer);
+        if (format === 'xlsx') {
+          text = extractXlsxText(buffer);
+        } else {
+          text = await extractTextWithOfficeParser(buffer);
+        }
       } catch (parseError) {
         const errorMsg = parseError instanceof Error ? parseError.message : 'Unknown parse error';
         logger.error(`❌ Failed to parse document: ${errorMsg}`);
@@ -158,3 +180,4 @@ export const documentReaderTool = tool({
     }
   },
 });
+
