@@ -18,6 +18,11 @@ export const AVAILABLE_MODELS: readonly BedrockModel[] = [
     provider: 'Anthropic',
   },
   {
+    id: 'global.anthropic.claude-sonnet-4-6-v1:0',
+    name: 'Claude Sonnet 4.6',
+    provider: 'Anthropic',
+  },
+  {
     id: 'global.anthropic.claude-sonnet-4-5-20250929-v1:0',
     name: 'Claude Sonnet 4.5',
     provider: 'Anthropic',
@@ -42,7 +47,7 @@ export const AVAILABLE_MODELS: readonly BedrockModel[] = [
 /**
  * Default model ID
  */
-export const DEFAULT_MODEL_ID = 'global.anthropic.claude-sonnet-4-5-20250929-v1:0';
+export const DEFAULT_MODEL_ID = 'global.anthropic.claude-sonnet-4-6-v1:0';
 
 /**
  * Get model by ID
