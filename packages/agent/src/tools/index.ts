@@ -12,6 +12,8 @@ export { novaReelTool } from './nova-reel/index.js';
 export { callAgentTool } from './call-agent.js';
 export { manageAgentTool } from './manage-agent.js';
 export { browserTool } from './browser/index.js';
+export { todoTool } from './todo/index.js';
+export { thinkTool } from './think.js';
 
 // ローカルツール配列のインポート
 import { executeCommandTool } from './execute-command.js';
@@ -27,6 +29,8 @@ import { novaReelTool } from './nova-reel/index.js';
 import { callAgentTool } from './call-agent.js';
 import { manageAgentTool } from './manage-agent.js';
 import { browserTool } from './browser/index.js';
+import { todoTool } from './todo/index.js';
+import { thinkTool } from './think.js';
 
 /**
  * Agent に内蔵されるローカルツール一覧
@@ -46,4 +50,6 @@ export const localTools = [
   callAgentTool,
   manageAgentTool,
   browserTool,
+  todoTool,
+  thinkTool,
 ];

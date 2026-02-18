@@ -580,22 +580,18 @@ export function StorageManagementModal({ isOpen, onClose }: StorageManagementMod
       // ZIP download for folders
       await handleFolderDownload(item.path, item.name);
     } else {
-      // Open window immediately (within user gesture context) to avoid mobile popup blockers
-      const newWindow = window.open('', '_blank');
-
+      // Use <a> tag click pattern instead of window.open to avoid iOS Safari popup blockers
       try {
         const downloadUrl = await generateDownloadUrl(item.path);
-
-        if (newWindow) {
-          newWindow.location.href = downloadUrl;
-        } else {
-          window.location.href = downloadUrl;
-        }
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        document.body.appendChild(link);
+        link.click();
+        setTimeout(() => document.body.removeChild(link), 100);
       } catch (error) {
         console.error('Download error:', error);
-        if (newWindow) {
-          newWindow.close();
-        }
       }
     }
   };
