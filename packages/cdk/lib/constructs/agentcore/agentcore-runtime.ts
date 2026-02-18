@@ -413,6 +413,8 @@ export class AgentCoreRuntime extends Construct {
           'bedrock-agentcore:ListBrowsers',
           'bedrock-agentcore:GetBrowser',
           'bedrock-agentcore:ListBrowserSessions',
+          'bedrock-agentcore:ConnectBrowserAutomationStream',
+          'bedrock-agentcore:ConnectBrowserLiveViewStream',
         ],
         resources: [
           `arn:aws:bedrock-agentcore:${region}:${account}:browser/*`,
