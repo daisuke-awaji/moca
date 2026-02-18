@@ -2,13 +2,15 @@
  * AgentCore Browser client implementation
  *
  * Uses @aws-sdk/client-bedrock-agentcore to manage browser sessions
- * and interact with web pages through the AgentCore Browser service.
+ * and Playwright CDP connection for browser automation.
  *
  * Architecture:
  *   StartBrowserSessionCommand → creates session, returns automationStream endpoint
- *   UpdateBrowserStreamCommand → sends streamUpdate to control the browser
- *   GetBrowserSessionCommand → retrieves session info
+ *   Playwright connect_over_cdp → connects via WebSocket to control the browser
  *   StopBrowserSessionCommand → terminates session
+ *
+ * The automation stream endpoint provides a WebSocket-based CDP (Chrome DevTools Protocol)
+ * connection that Playwright uses for all browser interactions (navigate, click, screenshot, etc.).
  */
 
 import {
@@ -16,9 +18,12 @@ import {
   StartBrowserSessionCommand,
   StopBrowserSessionCommand,
   GetBrowserSessionCommand,
-  UpdateBrowserStreamCommand,
 } from '@aws-sdk/client-bedrock-agentcore';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { SignatureV4 } from '@smithy/signature-v4';
+import { Sha256 } from '@aws-crypto/sha256-js';
+import { defaultProvider } from '@aws-sdk/credential-provider-node';
+import { chromium } from 'playwright-core';
 import { logger } from '../../config/index.js';
 import { getCurrentContext, getCurrentStoragePath } from '../../context/request-context.js';
 import * as crypto from 'crypto';
@@ -45,6 +50,9 @@ const sessionMapping: Map<string, SessionInfo> = new Map();
 
 /**
  * AgentCore Browser client
+ *
+ * Uses Playwright CDP connection for browser automation instead of
+ * UpdateBrowserStreamCommand (which is only for enabling/disabling automation streams).
  */
 export class AgentCoreBrowserClient {
   private region: string;
@@ -69,32 +77,38 @@ export class AgentCoreBrowserClient {
   }
 
   /**
-   * Start a new browser session
+   * Start a new browser session and connect via Playwright CDP
    */
   async startSession(action: StartSessionAction): Promise<ToolResult> {
     const sessionName = action.sessionName || this.defaultSessionName;
 
     logger.info(`[BROWSER] Starting session: ${sessionName}`);
 
-    // Check if session already exists
+    // Check if session already exists and has a live Playwright connection
     if (sessionMapping.has(sessionName)) {
       const existing = sessionMapping.get(sessionName)!;
-      return {
-        status: 'success',
-        content: [
-          {
-            json: {
-              message: `Session '${sessionName}' already exists`,
-              sessionName,
-              sessionId: existing.sessionId,
-              liveViewUrl: existing.liveViewEndpoint,
+      if (existing.browser?.isConnected()) {
+        return {
+          status: 'success',
+          content: [
+            {
+              json: {
+                message: `Session '${sessionName}' already exists and is connected`,
+                sessionName,
+                sessionId: existing.sessionId,
+                liveViewUrl: existing.liveViewEndpoint,
+              },
             },
-          },
-        ],
-      };
+          ],
+        };
+      }
+      // Session exists but Playwright is disconnected - clean up and recreate
+      logger.info(`[BROWSER] Session '${sessionName}' exists but disconnected, recreating`);
+      sessionMapping.delete(sessionName);
     }
 
     try {
+      // Step 1: Create browser session via AgentCore API
       const command = new StartBrowserSessionCommand({
         browserIdentifier: this.browserIdentifier,
         name: sessionName,
@@ -107,19 +121,49 @@ export class AgentCoreBrowserClient {
 
       const response = await this.client.send(command);
 
+      const automationEndpoint = response.streams?.automationStream?.streamEndpoint || '';
+      const liveViewEndpoint = response.streams?.liveViewStream?.streamEndpoint;
+
+      if (!automationEndpoint) {
+        throw new Error('No automation stream endpoint returned from StartBrowserSession');
+      }
+
+      logger.info(
+        `[BROWSER] Session created: ${sessionName} (ID: ${response.sessionId}), ` +
+          `automation endpoint: ${automationEndpoint}`
+      );
+
+      // Step 2: Generate SigV4-signed WebSocket URL and headers for CDP connection
+      const { wsUrl, headers } = await this.generateSignedWebSocketHeaders(automationEndpoint);
+
+      logger.info(`[BROWSER] Connecting to browser via CDP: ${wsUrl}`);
+
+      // Step 3: Connect Playwright via CDP
+      const browser = await chromium.connectOverCDP(wsUrl, {
+        headers,
+      });
+
+      // Get or create context and page
+      const context =
+        browser.contexts().length > 0 ? browser.contexts()[0] : await browser.newContext();
+      const page = context.pages().length > 0 ? context.pages()[0] : await context.newPage();
+
       const sessionInfo: SessionInfo = {
         sessionId: response.sessionId!,
         sessionName,
         browserIdentifier: response.browserIdentifier || this.browserIdentifier,
-        automationEndpoint: response.streams?.automationStream?.streamEndpoint || '',
-        liveViewEndpoint: response.streams?.liveViewStream?.streamEndpoint,
+        automationEndpoint,
+        liveViewEndpoint,
         createdAt: response.createdAt || new Date(),
+        browser,
+        context,
+        page,
       };
 
       sessionMapping.set(sessionName, sessionInfo);
 
       logger.info(
-        `[BROWSER] Session started: ${sessionName} (ID: ${sessionInfo.sessionId})`
+        `[BROWSER] Session started and CDP connected: ${sessionName} (ID: ${sessionInfo.sessionId})`
       );
 
       return {
@@ -130,7 +174,8 @@ export class AgentCoreBrowserClient {
               sessionName,
               sessionId: sessionInfo.sessionId,
               liveViewUrl: sessionInfo.liveViewEndpoint,
-              message: 'Browser session started successfully. You can now navigate to URLs.',
+              message:
+                'Browser session started and CDP connected successfully. You can now navigate to URLs.',
             },
           },
         ],
@@ -154,21 +199,32 @@ export class AgentCoreBrowserClient {
     }
 
     const session = await this.ensureSession(action.sessionName);
+    const page = this.getPage(session);
 
     logger.info(`[BROWSER] Navigating to: ${action.url}`);
 
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const streamUpdate: any = {
-        automationInput: {
-          navigate: {
-            url: action.url,
-          },
-        },
-      };
+      const response = await page.goto(action.url, {
+        waitUntil: 'domcontentloaded',
+        timeout: 30000,
+      });
 
-      const response = await this.sendStreamUpdate(session, streamUpdate);
-      return this.formatAutomationResult('navigate', response, { url: action.url });
+      const title = await page.title();
+
+      return {
+        status: 'success',
+        content: [
+          {
+            json: {
+              action: 'navigate',
+              url: action.url,
+              title,
+              statusCode: response?.status(),
+              success: true,
+            },
+          },
+        ],
+      };
     } catch (error) {
       return this.handleError('navigate', error);
     }
@@ -183,21 +239,33 @@ export class AgentCoreBrowserClient {
     }
 
     const session = await this.ensureSession(action.sessionName);
+    const page = this.getPage(session);
 
     logger.info(`[BROWSER] Clicking: ${action.selector}`);
 
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const streamUpdate: any = {
-        automationInput: {
-          click: {
-            selector: action.selector,
-          },
-        },
-      };
+      await page.click(action.selector, { timeout: 10000 });
 
-      const response = await this.sendStreamUpdate(session, streamUpdate);
-      return this.formatAutomationResult('click', response, { selector: action.selector });
+      // Wait briefly for any navigation or DOM updates
+      await page.waitForTimeout(500);
+
+      const title = await page.title();
+      const url = page.url();
+
+      return {
+        status: 'success',
+        content: [
+          {
+            json: {
+              action: 'click',
+              selector: action.selector,
+              currentUrl: url,
+              currentTitle: title,
+              success: true,
+            },
+          },
+        ],
+      };
     } catch (error) {
       return this.handleError('click', error);
     }
@@ -215,50 +283,71 @@ export class AgentCoreBrowserClient {
     }
 
     const session = await this.ensureSession(action.sessionName);
+    const page = this.getPage(session);
 
     logger.info(`[BROWSER] Typing into: ${action.selector}`);
 
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const streamUpdate: any = {
-        automationInput: {
-          type: {
-            selector: action.selector,
-            text: action.text,
-          },
-        },
-      };
+      // Clear existing content and type new text
+      await page.fill(action.selector, action.text, { timeout: 10000 });
 
-      const response = await this.sendStreamUpdate(session, streamUpdate);
-      return this.formatAutomationResult('type', response, {
-        selector: action.selector,
-        textLength: action.text.length,
-      });
+      return {
+        status: 'success',
+        content: [
+          {
+            json: {
+              action: 'type',
+              selector: action.selector,
+              textLength: action.text.length,
+              success: true,
+            },
+          },
+        ],
+      };
     } catch (error) {
       return this.handleError('type', error);
     }
   }
 
   /**
-   * Take a screenshot and save to S3
+   * Take a screenshot using CDP and save to S3
    */
   async screenshot(action: ScreenshotAction): Promise<ToolResult> {
     const session = await this.ensureSession(action.sessionName);
+    const page = this.getPage(session);
 
     logger.info(`[BROWSER] Taking screenshot`);
 
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const streamUpdate: any = {
-        automationInput: {
-          screenshot: {},
-        },
-      };
+      // Use CDP session for high-quality screenshot capture
+      const cdpSession = await session.context!.newCDPSession(page);
+      const screenshotResult = await cdpSession.send('Page.captureScreenshot', {
+        format: 'png',
+        captureBeyondViewport: false,
+      });
+      await cdpSession.detach();
 
-      const response = await this.sendStreamUpdate(session, streamUpdate);
+      const imageBase64 = screenshotResult.data;
 
-      // Try to extract and save screenshot image to S3
-      const screenshotPath = await this.saveScreenshotToS3(response);
+      if (!imageBase64) {
+        logger.warn('[BROWSER] No screenshot data returned from CDP');
+        return {
+          status: 'success',
+          content: [
+            {
+              json: {
+                action: 'screenshot',
+                message: 'Screenshot captured but no image data was returned.',
+              },
+            },
+          ],
+        };
+      }
+
+      // Save to S3
+      const screenshotPath = await this.saveScreenshotToS3(imageBase64);
+      const title = await page.title();
+      const url = page.url();
 
       if (screenshotPath) {
         return {
@@ -268,6 +357,8 @@ export class AgentCoreBrowserClient {
               json: {
                 action: 'screenshot',
                 imagePath: screenshotPath,
+                currentUrl: url,
+                currentTitle: title,
                 message: `Screenshot saved. Reference it as: ${screenshotPath}`,
               },
             },
@@ -275,7 +366,21 @@ export class AgentCoreBrowserClient {
         };
       }
 
-      return this.formatAutomationResult('screenshot', response);
+      // Fallback: return info without S3 path
+      return {
+        status: 'success',
+        content: [
+          {
+            json: {
+              action: 'screenshot',
+              currentUrl: url,
+              currentTitle: title,
+              message:
+                'Screenshot captured but could not be saved to S3. Check S3 bucket configuration.',
+            },
+          },
+        ],
+      };
     } catch (error) {
       return this.handleError('screenshot', error);
     }
@@ -286,19 +391,30 @@ export class AgentCoreBrowserClient {
    */
   async getContent(action: GetContentAction): Promise<ToolResult> {
     const session = await this.ensureSession(action.sessionName);
+    const page = this.getPage(session);
 
     logger.info(`[BROWSER] Getting page content`);
 
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const streamUpdate: any = {
-        automationInput: {
-          getContent: {},
-        },
-      };
+      const title = await page.title();
+      const url = page.url();
 
-      const response = await this.sendStreamUpdate(session, streamUpdate);
-      return this.formatAutomationResult('getContent', response);
+      const textContent = (await page.evaluate('() => document.body.innerText')) as string;
+
+      return {
+        status: 'success',
+        content: [
+          {
+            json: {
+              action: 'getContent',
+              url,
+              title,
+              textContent: this.truncateContent(textContent, 10000),
+              success: true,
+            },
+          },
+        ],
+      };
     } catch (error) {
       return this.handleError('getContent', error);
     }
@@ -309,6 +425,7 @@ export class AgentCoreBrowserClient {
    */
   async scroll(action: ScrollAction): Promise<ToolResult> {
     const session = await this.ensureSession(action.sessionName);
+    const page = this.getPage(session);
 
     const direction = action.direction || 'down';
     const amount = action.amount || 500;
@@ -316,18 +433,47 @@ export class AgentCoreBrowserClient {
     logger.info(`[BROWSER] Scrolling ${direction} by ${amount}px`);
 
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const streamUpdate: any = {
-        automationInput: {
-          scroll: {
-            direction,
-            amount,
-          },
-        },
-      };
+      // Compute scroll deltas based on direction
+      let deltaX = 0;
+      let deltaY = 0;
+      switch (direction) {
+        case 'down':
+          deltaY = amount;
+          break;
+        case 'up':
+          deltaY = -amount;
+          break;
+        case 'right':
+          deltaX = amount;
+          break;
+        case 'left':
+          deltaX = -amount;
+          break;
+      }
 
-      const response = await this.sendStreamUpdate(session, streamUpdate);
-      return this.formatAutomationResult('scroll', response, { direction, amount });
+      await page.evaluate('({dx, dy}) => window.scrollBy(dx, dy)', { dx: deltaX, dy: deltaY });
+
+      // Wait briefly for scroll to settle
+      await page.waitForTimeout(300);
+
+      const scrollPosition = (await page.evaluate(
+        '() => ({ scrollX: window.scrollX, scrollY: window.scrollY, scrollHeight: document.documentElement.scrollHeight, clientHeight: document.documentElement.clientHeight })'
+      )) as { scrollX: number; scrollY: number; scrollHeight: number; clientHeight: number };
+
+      return {
+        status: 'success',
+        content: [
+          {
+            json: {
+              action: 'scroll',
+              direction,
+              amount,
+              ...scrollPosition,
+              success: true,
+            },
+          },
+        ],
+      };
     } catch (error) {
       return this.handleError('scroll', error);
     }
@@ -338,19 +484,29 @@ export class AgentCoreBrowserClient {
    */
   async back(action: BackAction): Promise<ToolResult> {
     const session = await this.ensureSession(action.sessionName);
+    const page = this.getPage(session);
 
     logger.info(`[BROWSER] Navigating back`);
 
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const streamUpdate: any = {
-        automationInput: {
-          back: {},
-        },
-      };
+      await page.goBack({ waitUntil: 'domcontentloaded', timeout: 15000 });
 
-      const response = await this.sendStreamUpdate(session, streamUpdate);
-      return this.formatAutomationResult('back', response);
+      const title = await page.title();
+      const url = page.url();
+
+      return {
+        status: 'success',
+        content: [
+          {
+            json: {
+              action: 'back',
+              currentUrl: url,
+              currentTitle: title,
+              success: true,
+            },
+          },
+        ],
+      };
     } catch (error) {
       return this.handleError('back', error);
     }
@@ -361,19 +517,29 @@ export class AgentCoreBrowserClient {
    */
   async forward(action: ForwardAction): Promise<ToolResult> {
     const session = await this.ensureSession(action.sessionName);
+    const page = this.getPage(session);
 
     logger.info(`[BROWSER] Navigating forward`);
 
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const streamUpdate: any = {
-        automationInput: {
-          forward: {},
-        },
-      };
+      await page.goForward({ waitUntil: 'domcontentloaded', timeout: 15000 });
 
-      const response = await this.sendStreamUpdate(session, streamUpdate);
-      return this.formatAutomationResult('forward', response);
+      const title = await page.title();
+      const url = page.url();
+
+      return {
+        status: 'success',
+        content: [
+          {
+            json: {
+              action: 'forward',
+              currentUrl: url,
+              currentTitle: title,
+              success: true,
+            },
+          },
+        ],
+      };
     } catch (error) {
       return this.handleError('forward', error);
     }
@@ -391,25 +557,30 @@ export class AgentCoreBrowserClient {
     }
 
     const session = await this.ensureSession(action.sessionName);
+    const page = this.getPage(session);
     const timeoutMs = action.timeoutMs || 10000;
 
     logger.info(`[BROWSER] Waiting for element: ${action.selector} (timeout: ${timeoutMs}ms)`);
 
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const streamUpdate: any = {
-        automationInput: {
-          waitForElement: {
-            selector: action.selector,
-            timeoutMs,
-          },
-        },
-      };
-
-      const response = await this.sendStreamUpdate(session, streamUpdate);
-      return this.formatAutomationResult('waitForElement', response, {
-        selector: action.selector,
+      await page.waitForSelector(action.selector, {
+        timeout: timeoutMs,
+        state: 'visible',
       });
+
+      return {
+        status: 'success',
+        content: [
+          {
+            json: {
+              action: 'waitForElement',
+              selector: action.selector,
+              found: true,
+              success: true,
+            },
+          },
+        ],
+      };
     } catch (error) {
       return this.handleError('waitForElement', error);
     }
@@ -432,6 +603,18 @@ export class AgentCoreBrowserClient {
     logger.info(`[BROWSER] Stopping session: ${sessionName}`);
 
     try {
+      // Step 1: Disconnect Playwright
+      if (session.browser?.isConnected()) {
+        try {
+          await session.browser.close();
+        } catch (closeError) {
+          logger.warn(
+            `[BROWSER] Error closing Playwright browser: ${closeError instanceof Error ? closeError.message : String(closeError)}`
+          );
+        }
+      }
+
+      // Step 2: Stop AgentCore browser session
       const command = new StopBrowserSessionCommand({
         browserIdentifier: session.browserIdentifier,
         sessionId: session.sessionId,
@@ -495,6 +678,7 @@ export class AgentCoreBrowserClient {
               sessionId: session.sessionId,
               exists: true,
               status: response.status || 'UNKNOWN',
+              cdpConnected: session.browser?.isConnected() ?? false,
               createdAt: session.createdAt.toISOString(),
               liveViewUrl: session.liveViewEndpoint,
               activeSessions: Array.from(sessionMapping.keys()),
@@ -514,6 +698,7 @@ export class AgentCoreBrowserClient {
     const sessions = Array.from(sessionMapping.entries()).map(([name, info]) => ({
       sessionName: name,
       sessionId: info.sessionId,
+      cdpConnected: info.browser?.isConnected() ?? false,
       createdAt: info.createdAt.toISOString(),
     }));
 
@@ -533,13 +718,37 @@ export class AgentCoreBrowserClient {
   // ─── Private methods ───
 
   /**
+   * Get the active Page from a session, throwing if not available
+   */
+  private getPage(session: SessionInfo): import('playwright-core').Page {
+    if (!session.page) {
+      throw new Error(
+        `No active page for session '${session.sessionName}'. The CDP connection may have been lost.`
+      );
+    }
+    if (session.page.isClosed()) {
+      throw new Error(
+        `Page is closed for session '${session.sessionName}'. The browser session may have expired.`
+      );
+    }
+    return session.page;
+  }
+
+  /**
    * Ensure a session exists, creating one automatically if needed
    */
   private async ensureSession(sessionName?: string): Promise<SessionInfo> {
     const name = sessionName || this.defaultSessionName;
 
     if (sessionMapping.has(name)) {
-      return sessionMapping.get(name)!;
+      const session = sessionMapping.get(name)!;
+      // Verify CDP connection is still alive
+      if (session.browser?.isConnected()) {
+        return session;
+      }
+      // Connection lost - clean up and recreate
+      logger.warn(`[BROWSER] CDP connection lost for session '${name}', recreating`);
+      sessionMapping.delete(name);
     }
 
     // Auto-create session
@@ -562,105 +771,56 @@ export class AgentCoreBrowserClient {
   }
 
   /**
-   * Send a stream update command to the browser
+   * Generate SigV4-signed WebSocket URL and headers for CDP connection
+   *
+   * The automation stream endpoint needs to be called with SigV4 authentication.
+   * This generates the required authorization headers.
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private async sendStreamUpdate(session: SessionInfo, streamUpdate: any): Promise<any> {
-    const command = new UpdateBrowserStreamCommand({
-      browserIdentifier: session.browserIdentifier,
-      sessionId: session.sessionId,
-      streamUpdate,
+  private async generateSignedWebSocketHeaders(
+    automationEndpoint: string
+  ): Promise<{ wsUrl: string; headers: Record<string, string> }> {
+    const url = new URL(automationEndpoint);
+
+    const signer = new SignatureV4({
+      service: 'bedrock-agentcore',
+      region: this.region,
+      credentials: defaultProvider(),
+      sha256: Sha256,
     });
 
-    return await this.client.send(command);
-  }
+    // Create the request to sign
+    const request = {
+      method: 'GET' as const,
+      protocol: url.protocol,
+      hostname: url.hostname,
+      port: url.port ? parseInt(url.port) : 443,
+      path: url.pathname + url.search,
+      headers: {
+        host: url.hostname,
+      },
+    };
 
-  /**
-   * Format automation result into a ToolResult
-   */
-  private formatAutomationResult(
-    actionName: string,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    response: any,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    extraInfo?: Record<string, any>
-  ): ToolResult {
-    try {
-      // Extract useful information from the response
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const result: Record<string, any> = {
-        action: actionName,
-        success: true,
-      };
+    const signedRequest = await signer.sign(request);
 
-      // Add extra info if provided
-      if (extraInfo) {
-        Object.assign(result, extraInfo);
+    // Build the headers (excluding 'host' which is set automatically by WebSocket)
+    const headers: Record<string, string> = {};
+    for (const [key, value] of Object.entries(signedRequest.headers)) {
+      if (key.toLowerCase() !== 'host') {
+        headers[key] = value as string;
       }
-
-      // Try to extract automation output from response
-      if (response.automationOutput) {
-        result.output = response.automationOutput;
-      }
-
-      // Extract page info if available
-      if (response.pageInfo) {
-        result.pageInfo = response.pageInfo;
-      }
-
-      // Extract content if available (for getContent action)
-      if (response.content) {
-        result.content = typeof response.content === 'string'
-          ? this.truncateContent(response.content, 10000)
-          : response.content;
-      }
-
-      return {
-        status: 'success',
-        content: [{ json: result }],
-      };
-    } catch {
-      // Fallback: return raw response info
-      return {
-        status: 'success',
-        content: [
-          {
-            json: {
-              action: actionName,
-              success: true,
-              rawResponse: JSON.stringify(response).slice(0, 5000),
-            },
-          },
-        ],
-      };
     }
+
+    return { wsUrl: automationEndpoint, headers };
   }
 
   /**
-   * Save screenshot to S3 storage
+   * Save screenshot base64 data to S3 storage
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private async saveScreenshotToS3(response: any): Promise<string | null> {
+  private async saveScreenshotToS3(imageBase64: string): Promise<string | null> {
     try {
       const bucketName = process.env.USER_STORAGE_BUCKET_NAME;
       if (!bucketName) {
         logger.warn('[BROWSER] S3 bucket not configured, skipping screenshot storage');
-        return null;
-      }
-
-      // Try to extract base64 image from response
-      let imageBase64: string | null = null;
-
-      if (response.automationOutput?.screenshot?.imageBase64) {
-        imageBase64 = response.automationOutput.screenshot.imageBase64;
-      } else if (response.screenshot?.imageBase64) {
-        imageBase64 = response.screenshot.imageBase64;
-      } else if (response.image) {
-        imageBase64 = response.image;
-      }
-
-      if (!imageBase64) {
-        logger.info('[BROWSER] No screenshot image data in response');
         return null;
       }
 

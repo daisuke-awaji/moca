@@ -2,6 +2,8 @@
  * AgentCore Browser tool type definitions
  */
 
+import type { Browser, BrowserContext, Page } from 'playwright-core';
+
 /**
  * Tool execution result
  */
@@ -20,6 +22,10 @@ export interface SessionInfo {
   automationEndpoint: string;
   liveViewEndpoint?: string;
   createdAt: Date;
+  // Playwright CDP connection instances
+  browser?: Browser;
+  context?: BrowserContext;
+  page?: Page;
 }
 
 // ─── Action type definitions ───
