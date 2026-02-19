@@ -40,15 +40,6 @@ lint:prettier:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
 
-lint:openapi:
-  <<: *node_template
-  stage: lint
-  script:
-    - npm run docs:lint
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
-
 # ========================================
 # SECURITY STAGE
 # ========================================
@@ -181,23 +172,6 @@ build:packages:
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
-
-# ========================================
-# DEPLOY STAGE
-# ========================================
-
-pages:
-  stage: deploy
-  dependencies:
-    - build:docs
-  script:
-    - echo "Deploying OpenAPI documentation to GitLab Pages"
-    - ls -la public/
-  artifacts:
-    paths:
-      - public/
-  only:
-    - main
 
 # ========================================
 # MANUAL JOBS (for debugging)
