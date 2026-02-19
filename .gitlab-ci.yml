@@ -48,6 +48,7 @@ security:ash:
   stage: security
   image: python:3.12-slim
   before_script:
+    - apt-get update && apt-get install -y --no-install-recommends git
     - pip install uv
   script:
     - uvx 'git+https://github.com/awslabs/automated-security-helper.git@v3.1.5'
