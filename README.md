@@ -64,7 +64,7 @@ This application uses a fully serverless architecture built on Amazon Bedrock Ag
 | Frontend | CloudFront + S3 (React SPA) |
 | Auth | Amazon Cognito (JWT) |
 | API | Lambda + API Gateway (Express.js) |
-| Agent | AgentCore Runtime + Gateway + Memory + CodeInterpreter|
+| Agent | AgentCore Runtime + Gateway + Memory + CodeInterpreter + Browser|
 | Storage | DynamoDB + S3 |
 | Real-time | AppSync Events (WebSocket) |
 | Events | EventBridge Scheduler |
