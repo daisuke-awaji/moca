@@ -1,5 +1,6 @@
 stages:
   - lint
+  - security
   - test
   - build
   - deploy
@@ -44,6 +45,22 @@ lint:openapi:
   stage: lint
   script:
     - npm run docs:lint
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+# ========================================
+# SECURITY STAGE
+# ========================================
+
+security:ash:
+  stage: security
+  image: python:3.12-slim
+  before_script:
+    - pip install uv
+  script:
+    - uvx 'git+https://github.com/awslabs/automated-security-helper.git@v3.1.5'
+  allow_failure: true
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
