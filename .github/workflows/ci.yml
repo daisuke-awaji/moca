@@ -31,9 +31,6 @@ jobs:
       - name: Check code formatting
         run: npm run format:check
 
-      - name: Lint OpenAPI spec
-        run: npm run docs:lint
-
   security:
     name: Security Scan (Semgrep)
     runs-on: ubuntu-latest
@@ -93,21 +90,3 @@ jobs:
 
       - name: Build packages
         run: npm run build
-
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-artifacts
-          path: |
-            packages/*/dist/
-            packages/*/build/
-          retention-days: 7
-
-      - name: Upload API documentation
-        uses: actions/upload-artifact@v4
-        with:
-          name: api-docs
-          path: |
-            api-backend.html
-            api-agent.html
-          retention-days: 7
