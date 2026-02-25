@@ -13,7 +13,7 @@ import {
   AttributeValue,
 } from '@aws-sdk/client-dynamodb';
 import { marshall, unmarshall, NativeAttributeValue } from '@aws-sdk/util-dynamodb';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'node:crypto';
 import { config } from '../config/index.js';
 
 export interface MCPServer {
@@ -175,7 +175,7 @@ export class AgentsService {
   async createAgent(userId: string, input: CreateAgentInput, username?: string): Promise<Agent> {
     try {
       const now = new Date().toISOString();
-      const agentId = uuidv4();
+      const agentId = randomUUID();
 
       const agent: Agent = {
         userId,
@@ -187,7 +187,7 @@ export class AgentsService {
         enabledTools: input.enabledTools,
         scenarios: input.scenarios.map((scenario) => ({
           ...scenario,
-          id: uuidv4(),
+          id: randomUUID(),
         })),
         mcpConfig: input.mcpConfig,
         createdAt: now,
@@ -265,7 +265,7 @@ export class AgentsService {
       if (input.scenarios !== undefined) {
         const scenariosWithIds = input.scenarios.map((scenario) => ({
           ...scenario,
-          id: uuidv4(),
+          id: randomUUID(),
         }));
         updateExpressions.push('#scenarios = :scenarios');
         expressionAttributeNames['#scenarios'] = 'scenarios';

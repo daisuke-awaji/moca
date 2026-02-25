@@ -19,7 +19,7 @@
   ],
   "scripts": {
     "build": "tsc",
-    "clean": "rimraf dist",
+    "clean": "rm -rf dist",
     "test": "NODE_OPTIONS='--experimental-vm-modules --no-warnings' vitest run",
     "test:watch": "NODE_OPTIONS='--experimental-vm-modules --no-warnings' vitest",
     "test:integration": "NODE_OPTIONS='--experimental-vm-modules --no-warnings' vitest run --config vitest.integration.config.ts",
@@ -43,8 +43,7 @@
     "node": ">=18.0.0"
   },
   "dependencies": {
-    "ignore": "^7.0.5",
-    "p-limit": "^6.1.0"
+    "ignore": "^7.0.5"
   },
   "peerDependencies": {
     "@aws-sdk/client-s3": "^3.0.0"
@@ -52,7 +51,6 @@
   "devDependencies": {
     "@aws-sdk/client-s3": "^3.654.0",
     "@types/node": "^20.10.0",
-    "rimraf": "^5.0.5",
     "typescript": "^5.3.0",
     "vitest": "^3.0.0"
   }

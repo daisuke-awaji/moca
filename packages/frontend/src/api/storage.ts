@@ -207,7 +207,7 @@ export async function getFolderDownloadInfo(path: string): Promise<FolderDownloa
 
 /**
  * Download folder as ZIP
- * Note: This uses external libraries (jszip, file-saver) and direct fetch to S3
+ * Note: This uses jszip library and direct fetch to S3
  */
 export async function downloadFolder(
   folderPath: string,
@@ -216,7 +216,6 @@ export async function downloadFolder(
   signal?: AbortSignal
 ): Promise<void> {
   const JSZip = (await import('jszip')).default;
-  const { saveAs } = await import('file-saver');
 
   // Get file info for the folder
   const downloadInfo = await getFolderDownloadInfo(folderPath);
@@ -283,5 +282,12 @@ export async function downloadFolder(
 
   // Generate and download ZIP file
   const zipBlob = await zip.generateAsync({ type: 'blob' });
-  saveAs(zipBlob, `${folderName}.zip`);
+  const url = URL.createObjectURL(zipBlob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${folderName}.zip`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }

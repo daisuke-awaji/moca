@@ -4,7 +4,7 @@
 
 import { DynamoDBClient, PutItemCommand, UpdateItemCommand } from '@aws-sdk/client-dynamodb';
 import { marshall } from '@aws-sdk/util-dynamodb';
-import { nanoid } from 'nanoid';
+import { randomId } from '../utils/random-id.js';
 import { TriggerExecution, TriggerExecutionStatus } from '../types/index.js';
 
 /**
@@ -29,7 +29,7 @@ export class ExecutionRecorder {
    * Start a new execution record
    */
   async startExecution(triggerId: string, userId: string): Promise<string> {
-    const executionId = nanoid();
+    const executionId = randomId();
     const now = new Date().toISOString();
 
     // TTL: 30 days from now

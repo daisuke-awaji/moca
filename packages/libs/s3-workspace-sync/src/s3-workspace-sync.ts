@@ -8,7 +8,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { pipeline } from 'stream/promises';
 import { EventEmitter } from 'events';
-import pLimit from 'p-limit';
+import { pLimit } from './utils/p-limit.js';
 
 import type {
   S3WorkspaceSyncOptions,

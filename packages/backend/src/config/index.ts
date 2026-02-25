@@ -3,11 +3,11 @@
  * Manage environment variables and application settings
  */
 
-import { config as loadEnv } from 'dotenv';
+import { loadEnvFile } from '../utils/load-env.js';
 import { z } from 'zod';
 
 // Load environment variables
-loadEnv();
+loadEnvFile();
 
 /**
  * Environment variable schema definition

@@ -5,7 +5,7 @@
 
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
-import { customAlphabet } from 'nanoid';
+import { customAlphabetId } from '../utils/random-id.js';
 import toast from 'react-hot-toast';
 import {
   fetchSessions,
@@ -21,8 +21,8 @@ import { logger } from '../utils/logger';
 import { extractErrorMessage } from '../utils/store-helpers';
 
 // AWS AgentCore sessionId constraints: [a-zA-Z0-9][a-zA-Z0-9-_]*
-// Custom nanoid with alphanumeric characters only (excluding hyphens and underscores)
-const generateSessionId = customAlphabet(
+// Custom random ID with alphanumeric characters only (excluding hyphens and underscores)
+const generateSessionId = customAlphabetId(
   'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789',
   33
 );

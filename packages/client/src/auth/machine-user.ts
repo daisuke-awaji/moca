@@ -3,7 +3,6 @@
  * Client Credentials Flow for machine-to-machine authentication
  */
 
-import fetch from 'node-fetch';
 import type { MachineUserConfig } from '../config/index.js';
 
 export interface MachineAuthResult {

@@ -12,7 +12,7 @@ import {
   QueryCommand,
 } from '@aws-sdk/client-dynamodb';
 import { marshall, unmarshall } from '@aws-sdk/util-dynamodb';
-import { nanoid } from 'nanoid';
+import { randomId } from '../utils/random-id.js';
 
 /**
  * Trigger type definitions (matching trigger package)
@@ -134,7 +134,7 @@ export class TriggersDynamoDBService {
    * Create a new trigger
    */
   async createTrigger(input: CreateTriggerInput): Promise<Trigger> {
-    const triggerId = nanoid();
+    const triggerId = randomId();
     const now = new Date().toISOString();
 
     const trigger: Trigger = {

@@ -14,7 +14,7 @@ import {
   useAppSyncConnectionStore,
 } from '../stores/appsyncConnectionStore';
 import type { MessageContent, Message } from '../types/index';
-import { nanoid } from 'nanoid';
+import { randomId } from '../utils/random-id.js';
 
 // ============================================================
 // Constants & Channel Configuration
@@ -235,7 +235,7 @@ export function useMessageEventsSubscription(sessionId: string | null) {
 
           // Add message to store
           const newMessage: Message = {
-            id: nanoid(),
+            id: randomId(),
             type: event.message.role,
             contents,
             timestamp: new Date(event.message.timestamp),

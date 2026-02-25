@@ -3,8 +3,7 @@
  * AgentCore Runtime との HTTP 通信クライアント
  */
 
-import fetch from 'node-fetch';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import type { ClientConfig } from '../config/index.js';
 import { getCachedJwtToken } from '../auth/cognito.js';
 import { getCachedMachineUserToken } from '../auth/machine-user.js';
@@ -232,72 +231,46 @@ export class AgentCoreClient {
         throw new Error('レスポンスボディが存在しません');
       }
 
-      // イベントキュー とコントロール用の Promise を準備
-      const eventQueue: AgentStreamEvent[] = [];
-      let streamEnded = false;
-      let streamError: Error | null = null;
-
-      // Node.js の ReadableStream を処理
+      // Web ReadableStream を NDJSON パースしてイベントを yield
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
       let buffer = '';
 
-      const processStream = () => {
-        response.body!.on('data', (chunk: Buffer) => {
-          // バッファに新しいチャンクを追加
-          buffer += chunk.toString('utf-8');
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+
+          if (done) {
+            // 残りのバッファを処理
+            if (buffer.trim()) {
+              try {
+                yield JSON.parse(buffer.trim()) as AgentStreamEvent;
+              } catch (parseError) {
+                console.warn('最終バッファ パースエラー:', parseError, 'バッファ:', buffer);
+              }
+            }
+            break;
+          }
+
+          buffer += decoder.decode(value, { stream: true });
 
           // 改行で分割してNDJSONを処理
           const lines = buffer.split('\n');
-          buffer = lines.pop() || ''; // 最後の不完全な行を保持
+          buffer = lines.pop() || '';
 
           for (const line of lines) {
             const trimmed = line.trim();
             if (trimmed) {
               try {
-                const event: AgentStreamEvent = JSON.parse(trimmed);
-                eventQueue.push(event);
+                yield JSON.parse(trimmed) as AgentStreamEvent;
               } catch (parseError) {
                 console.warn('NDJSON パースエラー:', parseError, 'ライン:', trimmed);
               }
             }
           }
-        });
-
-        response.body!.on('end', () => {
-          // 残りのバッファを処理
-          if (buffer.trim()) {
-            try {
-              const event: AgentStreamEvent = JSON.parse(buffer.trim());
-              eventQueue.push(event);
-            } catch (parseError) {
-              console.warn('最終バッファ パースエラー:', parseError, 'バッファ:', buffer);
-            }
-          }
-          streamEnded = true;
-        });
-
-        response.body!.on('error', (error) => {
-          streamError = error;
-          streamEnded = true;
-        });
-      };
-
-      // ストリーム処理開始
-      processStream();
-
-      // AsyncGenerator でイベントを返す
-      while (!streamEnded || eventQueue.length > 0) {
-        // エラーが発生した場合は例外を投げる
-        if (streamError) {
-          throw streamError;
         }
-
-        // キューにイベントがある場合は返す
-        if (eventQueue.length > 0) {
-          yield eventQueue.shift()!;
-        } else if (!streamEnded) {
-          // キューが空でストリームが続いている場合は少し待つ
-          await new Promise((resolve) => setTimeout(resolve, 10));
-        }
+      } finally {
+        reader.releaseLock();
       }
     } catch (error) {
       if (error instanceof Error) {

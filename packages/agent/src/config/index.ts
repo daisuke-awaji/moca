@@ -1,8 +1,8 @@
-import dotenv from 'dotenv';
+import { loadEnvFile } from '../utils/load-env.js';
 import { z } from 'zod';
 
 // Load environment variables
-dotenv.config();
+loadEnvFile();
 
 /**
  * Environment variable schema definition

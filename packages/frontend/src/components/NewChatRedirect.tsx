@@ -1,12 +1,12 @@
 import { useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
-import { nanoid } from 'nanoid';
+import { randomId } from '../utils/random-id.js';
 
 /**
  * 新規チャット開始時に新しいセッションIDを生成してリダイレクトするコンポーネント
  */
 export function NewChatRedirect() {
-  const sessionId = nanoid(33); // Generate 33+ characters
+  const sessionId = randomId(33); // Generate 33+ characters
 
   useEffect(() => {
     console.log(`🆕 新しいセッションを開始: ${sessionId}`);

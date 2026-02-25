@@ -14,11 +14,11 @@
  */
 
 import { describe, test, expect, beforeAll } from '@jest/globals';
-import { config } from 'dotenv';
+import { loadEnvFile } from '../utils/load-env.js';
 import { handler } from '../index.js';
 
 // Load environment variables from .env file (override existing environment)
-config({ override: true });
+loadEnvFile('.env', { override: true });
 
 // Force AWS_REGION to match .env file (override system environment)
 if (process.env.AWS_REGION) {
