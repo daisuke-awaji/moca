@@ -123,27 +123,17 @@ export class SessionPersistenceHook implements HookProvider {
       });
     }
 
-    // Publish to AppSync Events for cross-tab/cross-device sync
-    // This runs for both main agents (stream mode) and sub-agents (invoke mode),
-    // ensuring real-time UI updates regardless of execution mode.
-    publishMessageEvent(actorId, sessionId, {
-      type: 'MESSAGE_ADDED',
-      sessionId,
-      message: {
-        role: message.role as 'user' | 'assistant',
-        content: message.content,
-        timestamp: new Date().toISOString(),
-      },
-    }).catch((err) => {
-      logger.warn('[SessionPersistenceHook] AppSync Events publish failed (non-critical):', err);
-    });
-
     // DynamoDB session metadata management
+    // This must run BEFORE AppSync publish so that when the frontend receives
+    // the notification, the session record (agentId, storagePath, title) already
+    // exists in DynamoDB and can be loaded by the UI.
     const sessionsService = getSessionsService();
     if (!sessionsService.isConfigured()) {
       logger.debug(
         '[SessionPersistenceHook] SessionsService not configured, skipping DynamoDB operation'
       );
+      // Still publish to AppSync even if DynamoDB is not configured
+      this.publishMessage(actorId, sessionId, message);
       return;
     }
 
@@ -208,6 +198,8 @@ export class SessionPersistenceHook implements HookProvider {
           error,
         });
       }
+      // Publish after DynamoDB session creation/update completes
+      this.publishMessage(actorId, sessionId, message);
       return;
     }
 
@@ -222,6 +214,28 @@ export class SessionPersistenceHook implements HookProvider {
       this.isNewSession = false;
       this.firstUserMessageText = undefined;
     }
+
+    // Publish for non-user messages (assistant, etc.)
+    this.publishMessage(actorId, sessionId, message);
+  }
+
+  /**
+   * Publish message to AppSync Events for cross-tab/cross-device sync.
+   * This runs for both main agents (stream mode) and sub-agents (invoke mode),
+   * ensuring real-time UI updates regardless of execution mode.
+   */
+  private publishMessage(actorId: string, sessionId: string, message: Message): void {
+    publishMessageEvent(actorId, sessionId, {
+      type: 'MESSAGE_ADDED',
+      sessionId,
+      message: {
+        role: message.role as 'user' | 'assistant',
+        content: message.content,
+        timestamp: new Date().toISOString(),
+      },
+    }).catch((err) => {
+      logger.warn('[SessionPersistenceHook] AppSync Events publish failed (non-critical):', err);
+    });
   }
 
   /**
