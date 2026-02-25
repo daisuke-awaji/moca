@@ -451,6 +451,7 @@
                 "properties": {
                   "recipients": {
                     "type": "array",
+                    "maxItems": 100,
                     "items": {
                       "type": "object",
                       "properties": {
@@ -463,6 +464,7 @@
                   },
                   "roles": {
                     "type": "array",
+                    "maxItems": 3,
                     "items": { "type": "string", "enum": ["read", "write", "owner"] },
                     "description": "Permission roles to grant. Use [\"read\"] for view-only, [\"write\"] for edit access"
                   },
@@ -1347,7 +1349,11 @@
       "DriveItemCollection": {
         "type": "object",
         "properties": {
-          "value": { "type": "array", "items": { "$ref": "#/components/schemas/DriveItem" } },
+          "value": {
+            "type": "array",
+            "maxItems": 1000,
+            "items": { "$ref": "#/components/schemas/DriveItem" }
+          },
           "@odata.nextLink": { "type": "string" },
           "@odata.count": { "type": "integer" }
         }
@@ -1364,7 +1370,11 @@
       "WorksheetCollection": {
         "type": "object",
         "properties": {
-          "value": { "type": "array", "items": { "$ref": "#/components/schemas/Worksheet" } }
+          "value": {
+            "type": "array",
+            "maxItems": 255,
+            "items": { "$ref": "#/components/schemas/Worksheet" }
+          }
         }
       },
       "Range": {
@@ -1377,10 +1387,26 @@
           "columnIndex": { "type": "integer" },
           "rowCount": { "type": "integer" },
           "rowIndex": { "type": "integer" },
-          "values": { "type": "array", "items": { "type": "array", "items": {} } },
-          "formulas": { "type": "array", "items": { "type": "array", "items": {} } },
-          "numberFormat": { "type": "array", "items": { "type": "array", "items": {} } },
-          "text": { "type": "array", "items": { "type": "array", "items": {} } }
+          "values": {
+            "type": "array",
+            "maxItems": 10000,
+            "items": { "type": "array", "maxItems": 10000, "items": {} }
+          },
+          "formulas": {
+            "type": "array",
+            "maxItems": 10000,
+            "items": { "type": "array", "maxItems": 10000, "items": {} }
+          },
+          "numberFormat": {
+            "type": "array",
+            "maxItems": 10000,
+            "items": { "type": "array", "maxItems": 10000, "items": {} }
+          },
+          "text": {
+            "type": "array",
+            "maxItems": 10000,
+            "items": { "type": "array", "maxItems": 10000, "items": {} }
+          }
         }
       },
       "ErrorResponse": {
