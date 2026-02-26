@@ -239,8 +239,13 @@ class SubAgentTaskManager {
           sessionType: 'subagent' as const,
         };
 
-        // Add session persistence hook
-        const sessionPersistenceHook = new SessionPersistenceHook(sessionStorage, sessionConfig);
+        // Add session persistence hook (pass agentId and storagePath for DynamoDB session metadata)
+        const sessionPersistenceHook = new SessionPersistenceHook(
+          sessionStorage,
+          sessionConfig,
+          task.agentId,
+          task.storagePath
+        );
         hooks.push(sessionPersistenceHook);
 
         logger.info('💾 Initialized session persistence for sub-agent:', {
