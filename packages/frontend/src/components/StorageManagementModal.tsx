@@ -228,7 +228,6 @@ export function StorageManagementModal({ isOpen, onClose }: StorageManagementMod
   const [newDirectoryName, setNewDirectoryName] = useState('');
   const [showNewDirectoryInput, setShowNewDirectoryInput] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
-  const [deletingItemPath, setDeletingItemPath] = useState<string | null>(null);
   const [contextMenu, setContextMenu] = useState<{
     x: number;
     y: number;
@@ -569,9 +568,7 @@ export function StorageManagementModal({ isOpen, onClose }: StorageManagementMod
 
   // 削除
   const handleDelete = async (item: StorageItem) => {
-    setDeletingItemPath(item.path);
     await deleteItem(item);
-    setDeletingItemPath(null);
   };
 
   // ダウンロード
@@ -985,7 +982,7 @@ export function StorageManagementModal({ isOpen, onClose }: StorageManagementMod
                         onDownload={handleDownload}
                         onContextMenu={handleContextMenu}
                         onSetWorkingDirectory={setAgentWorkingDirectory}
-                        isDeleting={deletingItemPath === item.path}
+                        isDeleting={false}
                       />
                     ))}
 

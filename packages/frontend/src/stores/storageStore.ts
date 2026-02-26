@@ -203,32 +203,65 @@ export const useStorageStore = create<StorageState>()(
           }
         },
 
-        // Create directory
+        // Create directory (optimistic UI)
         createDirectory: async (directoryName: string, path?: string) => {
           const targetPath = path ?? get().currentPath;
+          const previousItems = get().items;
 
-          set({ isLoading: true, error: null });
+          // Optimistic update: add a placeholder directory item immediately
+          const isCurrentPathTarget = targetPath === get().currentPath;
+          if (isCurrentPathTarget) {
+            const newDirPath =
+              targetPath === '/' ? `/${directoryName}` : `${targetPath}/${directoryName}`;
+            const optimisticItem: StorageItem = {
+              name: directoryName,
+              path: newDirPath,
+              type: 'directory',
+            };
+            // Insert at the beginning (directories first), avoiding duplicates
+            const filtered = previousItems.filter((i) => i.path !== newDirPath);
+            const dirs = filtered.filter((i) => i.type === 'directory');
+            const files = filtered.filter((i) => i.type === 'file');
+            set({ items: [...dirs, optimisticItem, ...files], error: null });
+          }
 
           try {
             await storageApi.createDirectory(directoryName, targetPath);
 
-            // Reload list
-            await get().loadItems(targetPath);
+            // Silent sync: reload without showing loading spinner
+            const response = await storageApi.listStorageItems(targetPath);
+            if (targetPath === get().currentPath) {
+              set({ items: response.items, currentPath: response.path });
+            }
 
-            // Update tree
-            await get().loadFolderTree();
+            // Silent tree sync (no loading spinner)
+            try {
+              const treeResponse = await storageApi.fetchFolderTree();
+              set({ folderTree: treeResponse.tree });
+            } catch (treeError) {
+              logger.error('Failed to sync folder tree:', treeError);
+            }
           } catch (error) {
             logger.error('Failed to create directory:', error);
+            // Rollback on failure
+            if (isCurrentPathTarget) {
+              set({ items: previousItems });
+            }
             set({
               error: extractErrorMessage(error, 'Failed to create directory'),
-              isLoading: false,
             });
           }
         },
 
-        // Delete item
+        // Delete item (optimistic UI)
         deleteItem: async (item: StorageItem) => {
-          set({ isLoading: true, error: null });
+          const previousItems = get().items;
+
+          // Optimistic update: remove the item immediately
+          set({
+            items: previousItems.filter((i) => i.path !== item.path),
+            error: null,
+          });
 
           try {
             if (item.type === 'file') {
@@ -238,18 +271,28 @@ export const useStorageStore = create<StorageState>()(
               await storageApi.deleteDirectory(item.path, true);
             }
 
-            // Reload list
-            await get().loadItems();
+            // Silent sync: reload without showing loading spinner
+            const currentPath = get().currentPath;
+            const response = await storageApi.listStorageItems(currentPath);
+            if (currentPath === get().currentPath) {
+              set({ items: response.items, currentPath: response.path });
+            }
 
-            // Update tree if directory was deleted
+            // Silent tree sync if directory was deleted (no loading spinner)
             if (item.type === 'directory') {
-              await get().loadFolderTree();
+              try {
+                const treeResponse = await storageApi.fetchFolderTree();
+                set({ folderTree: treeResponse.tree });
+              } catch (treeError) {
+                logger.error('Failed to sync folder tree:', treeError);
+              }
             }
           } catch (error) {
             logger.error('Failed to delete item:', error);
+            // Rollback on failure
             set({
+              items: previousItems,
               error: extractErrorMessage(error, 'Failed to delete item'),
-              isLoading: false,
             });
           }
         },
