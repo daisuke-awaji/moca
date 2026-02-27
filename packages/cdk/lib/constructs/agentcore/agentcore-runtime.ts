@@ -278,21 +278,10 @@ export class AgentCoreRuntime extends Construct {
     }
 
     // AgentCore Observability (OpenTelemetry) configuration
-    const runtimeName = props.runtimeName;
-    const logGroupName = `/aws/bedrock-agentcore/runtimes/${runtimeName}`;
+    // Note: OTEL environment variables (OTEL_RESOURCE_ATTRIBUTES, OTEL_EXPORTER_OTLP_LOGS_HEADERS, etc.)
+    // are automatically configured by AgentCore Runtime with the correct log group name and endpoints.
+    // Only AGENT_OBSERVABILITY_ENABLED needs to be set explicitly.
     environmentVariables.AGENT_OBSERVABILITY_ENABLED = 'true';
-    environmentVariables.OTEL_RESOURCE_ATTRIBUTES = [
-      `service.name=${runtimeName}`,
-      `aws.log.group.names=${logGroupName}`,
-      `cloud.resource_id=${runtimeName}`,
-    ].join(',');
-    environmentVariables.OTEL_EXPORTER_OTLP_LOGS_HEADERS = [
-      `x-aws-log-group=${logGroupName}`,
-      `x-aws-log-stream=runtime-logs`,
-      `x-aws-metric-namespace=bedrock-agentcore`,
-    ].join(',');
-    environmentVariables.OTEL_EXPORTER_OTLP_PROTOCOL = 'http/protobuf';
-    environmentVariables.OTEL_TRACES_EXPORTER = 'otlp';
 
     // Create AgentCore Runtime
     this.runtime = new agentcore.Runtime(this, 'Runtime', {
