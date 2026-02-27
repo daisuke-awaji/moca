@@ -73,6 +73,6 @@ else
   echo "GITLAB_TOKEN_SECRET_NAME not set, skipping GitLab authentication"
 fi
 
-# アプリケーション起動（OpenTelemetry auto-instrumentation 付き）
-echo "Starting Node.js application with OpenTelemetry auto-instrumentation..."
-exec node --require @opentelemetry/auto-instrumentations-node/register dist/index.js
+# アプリケーション起動（AWS Distro for OpenTelemetry auto-instrumentation 付き）
+echo "Starting Node.js application with AWS ADOT auto-instrumentation..."
+exec node --require @aws/aws-distro-opentelemetry-node-autoinstrumentation/register dist/index.js

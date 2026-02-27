@@ -303,7 +303,7 @@ export class AgentCoreRuntime extends Construct {
       environmentVariables: environmentVariables,
       // Enable Authorization header forwarding for JWT authentication
       requestHeaderConfiguration: {
-        allowlistedHeaders: ['Authorization', 'X-Amzn-Trace-Id'],
+        allowlistedHeaders: ['Authorization'],
       },
     });
 
