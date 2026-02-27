@@ -1,71 +1,71 @@
 /**
- * MCP サーバー設定の型定義
- * stdio / http / sse の3種類のトランスポートに対応
+ * Type definitions for MCP server configuration
+ * Supports three transport types: stdio / http / sse
  */
 
 /**
- * 共通オプション
+ * Common options
  */
 interface MCPServerBase {
-  /** サーバーを有効化するか (デフォルト: true) */
+  /** Whether to enable the server (default: true) */
   enabled?: boolean;
-  /** ツール名にプレフィックスを付与 (競合回避用) */
+  /** Add a prefix to tool names (to avoid conflicts) */
   prefix?: string;
 }
 
 /**
- * stdio トランスポート設定
- * ローカルプロセスを起動して通信
+ * stdio transport configuration
+ * Launches a local process for communication
  */
 export interface StdioMCPServer extends MCPServerBase {
   transport: 'stdio';
-  /** 実行コマンド (例: "uvx", "npx", "python") */
+  /** Execution command (e.g., "uvx", "npx", "python") */
   command: string;
-  /** コマンド引数 */
+  /** Command arguments */
   args?: string[];
-  /** 環境変数 (${VAR} 形式で他の環境変数を参照可能) */
+  /** Environment variables (other env vars can be referenced using ${VAR} format) */
   env?: Record<string, string>;
 }
 
 /**
- * Streamable HTTP トランスポート設定
- * HTTP経由でMCPサーバーと通信
+ * Streamable HTTP transport configuration
+ * Communicates with MCP server via HTTP
  */
 export interface HttpMCPServer extends MCPServerBase {
   transport: 'http';
-  /** MCPサーバーのURL */
+  /** URL of the MCP server */
   url: string;
-  /** リクエストヘッダー (${VAR} 形式で環境変数を参照可能) */
+  /** Request headers (env vars can be referenced using ${VAR} format) */
   headers?: Record<string, string>;
 }
 
 /**
- * SSE (Server-Sent Events) トランスポート設定
- * SSE経由でMCPサーバーと通信
+ * SSE (Server-Sent Events) transport configuration
+ * Communicates with MCP server via SSE
  */
 export interface SseMCPServer extends MCPServerBase {
   transport: 'sse';
-  /** MCPサーバーのURL */
+  /** URL of the MCP server */
   url: string;
-  /** リクエストヘッダー (${VAR} 形式で環境変数を参照可能) */
+  /** Request headers (env vars can be referenced using ${VAR} format) */
   headers?: Record<string, string>;
 }
 
 /**
- * MCPサーバー設定の Union 型
+ * Union type for MCP server configuration
  */
 export type MCPServerConfig = StdioMCPServer | HttpMCPServer | SseMCPServer;
 
 /**
- * mcp.json の全体設定
+ * Overall configuration for mcp.json
  */
 export interface MCPConfig {
-  /** MCPサーバーの定義 (キー: サーバー名) */
+  /** MCP server definitions (key: server name) */
   mcpServers: Record<string, MCPServerConfig>;
 }
 
 /**
- * MCPクライアント生成エラー
+ * MCP client creation error
  */
 export class MCPConfigError extends Error {
   constructor(

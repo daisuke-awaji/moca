@@ -1,11 +1,11 @@
 /**
- * CodeInterpreter ツールの型定義
+ * Type definitions for the CodeInterpreter tool
  */
 
 export type LanguageType = 'python' | 'javascript' | 'typescript';
 
 /**
- * ツールの実行結果
+ * Tool execution result
  */
 export interface ToolResult {
   status: 'success' | 'error';
@@ -13,7 +13,7 @@ export interface ToolResult {
 }
 
 /**
- * セッション初期化アクション
+ * Session initialization action
  */
 export interface InitSessionAction {
   action: 'initSession';
@@ -22,7 +22,7 @@ export interface InitSessionAction {
 }
 
 /**
- * コード実行アクション
+ * Code execution action
  */
 export interface ExecuteCodeAction {
   action: 'executeCode';
@@ -33,7 +33,7 @@ export interface ExecuteCodeAction {
 }
 
 /**
- * コマンド実行アクション
+ * Command execution action
  */
 export interface ExecuteCommandAction {
   action: 'executeCommand';
@@ -42,7 +42,7 @@ export interface ExecuteCommandAction {
 }
 
 /**
- * ファイル読み取りアクション
+ * File read action
  */
 export interface ReadFilesAction {
   action: 'readFiles';
@@ -51,7 +51,7 @@ export interface ReadFilesAction {
 }
 
 /**
- * ファイル一覧表示アクション
+ * File listing action
  */
 export interface ListFilesAction {
   action: 'listFiles';
@@ -60,7 +60,7 @@ export interface ListFilesAction {
 }
 
 /**
- * ファイル削除アクション
+ * File removal action
  */
 export interface RemoveFilesAction {
   action: 'removeFiles';
@@ -69,7 +69,7 @@ export interface RemoveFilesAction {
 }
 
 /**
- * ファイル書き込み用のコンテンツ
+ * Content for file writing
  */
 export interface FileContent {
   path: string;
@@ -77,7 +77,7 @@ export interface FileContent {
 }
 
 /**
- * ファイル書き込みアクション
+ * File write action
  */
 export interface WriteFilesAction {
   action: 'writeFiles';
@@ -86,7 +86,7 @@ export interface WriteFilesAction {
 }
 
 /**
- * ファイルダウンロードアクション
+ * File download action
  */
 export interface DownloadFilesAction {
   action: 'downloadFiles';
@@ -96,14 +96,14 @@ export interface DownloadFilesAction {
 }
 
 /**
- * セッション一覧表示アクション
+ * List local sessions action
  */
 export interface ListLocalSessionsAction {
   action: 'listLocalSessions';
 }
 
 /**
- * CodeInterpreter の全アクション
+ * All actions for CodeInterpreter
  */
 export type CodeInterpreterAction =
   | InitSessionAction
@@ -117,7 +117,7 @@ export type CodeInterpreterAction =
   | ListLocalSessionsAction;
 
 /**
- * セッション情報
+ * Session information
  */
 export interface SessionInfo {
   sessionId: string;
@@ -126,7 +126,7 @@ export interface SessionInfo {
 }
 
 /**
- * CodeInterpreter クライアントのオプション
+ * Options for CodeInterpreter client
  */
 export interface CodeInterpreterOptions {
   region?: string;
@@ -138,7 +138,7 @@ export interface CodeInterpreterOptions {
 }
 
 /**
- * ファイルダウンロード結果
+ * File download result
  */
 export interface DownloadedFile {
   sourcePath: string;
@@ -148,7 +148,7 @@ export interface DownloadedFile {
 }
 
 /**
- * ダウンロード結果
+ * Download result
  */
 export interface DownloadResult {
   downloadedFiles: DownloadedFile[];
