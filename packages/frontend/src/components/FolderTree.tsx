@@ -1,6 +1,6 @@
 /**
  * Folder Tree Component
- * 再帰的なフォルダツリー表示コンポーネント
+ * Recursive folder tree display component
  */
 
 import { ChevronRight, ChevronDown, Folder, FolderOpen, FolderCog } from 'lucide-react';
@@ -62,7 +62,7 @@ function TreeNode({
         onClick={handleClick}
         onContextMenu={handleContextMenu}
       >
-        {/* 展開/折りたたみアイコン */}
+        {/* Expand/collapse icon */}
         <button
           onClick={handleToggle}
           className={`p-0.5 hover:bg-border rounded transition-colors ${
@@ -72,7 +72,7 @@ function TreeNode({
           {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
         </button>
 
-        {/* フォルダアイコン */}
+        {/* Folder icon */}
         {isWorkingDirectory ? (
           <FolderCog className="w-4 h-4 text-amber-500" />
         ) : isExpanded ? (
@@ -81,11 +81,11 @@ function TreeNode({
           <Folder className="w-4 h-4 text-amber-500" />
         )}
 
-        {/* フォルダ名 */}
+        {/* Folder name */}
         <span className="text-sm truncate">{node.name}</span>
       </div>
 
-      {/* 子ノード（展開時のみ表示） */}
+      {/* Child nodes (only shown when expanded) */}
       {isExpanded && hasChildren && (
         <div>
           {node.children.map((child) => (

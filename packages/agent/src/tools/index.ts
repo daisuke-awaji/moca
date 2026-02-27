@@ -15,7 +15,7 @@ export { browserTool } from './browser/index.js';
 export { todoTool } from './todo/index.js';
 export { thinkTool } from './think.js';
 
-// ローカルツール配列のインポート
+// Import local tool array
 import { executeCommandTool } from './execute-command.js';
 import { tavilySearchTool } from './tavily-search.js';
 import { tavilyExtractTool } from './tavily-extract.js';
@@ -33,8 +33,8 @@ import { todoTool } from './todo/index.js';
 import { thinkTool } from './think.js';
 
 /**
- * Agent に内蔵されるローカルツール一覧
- * 新しいツールを追加する場合はここに追加
+ * List of local tools built into the Agent
+ * Add new tools here
  */
 export const localTools = [
   executeCommandTool,

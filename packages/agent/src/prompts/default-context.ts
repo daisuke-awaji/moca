@@ -2,15 +2,15 @@ import { MCPToolDefinition } from '../schemas/types.js';
 
 const WORKSPACE_DIR = '/tmp/ws';
 /**
- * デフォルトコンテキストを生成
- * @param tools 有効なツール一覧
- * @param _mcpTools MCP ツール定義一覧
+ * Generate default context
+ * @param tools List of enabled tools
+ * @param _mcpTools List of MCP tool definitions
  */
 export function generateDefaultContext(
   tools: Array<{ name: string; description?: string }>,
   _mcpTools: MCPToolDefinition[]
 ): string {
-  // 現在時刻を年月日時まで取得（プロンプトキャッシュ最適化のため分秒を除外）
+  // Get current time up to the hour (excluding minutes/seconds for prompt cache optimization)
   const now = new Date();
   const year = now.getUTCFullYear();
   const month = String(now.getUTCMonth() + 1).padStart(2, '0');
@@ -18,18 +18,18 @@ export function generateDefaultContext(
   const hour = String(now.getUTCHours()).padStart(2, '0');
   const currentTime = `${year}-${month}-${day}T${hour}:00:00Z`;
 
-  // Markdown 描画ルールを英語で定義
+  // Define Markdown rendering rules in English
   const markdownRules = `    This system supports the following Markdown formats:
     - Mermaid diagram notation (\`\`\`mermaid ... \`\`\`)
     - LaTeX math notation (inline: $...$, block: $$...$$)
     - Image: ![alt](https://xxx.s3.us-east-1.amazonaws.com/<presignedUrl>)`;
 
-  // S3関連ツールが有効かどうかをチェック
+  // Check if S3-related tools are enabled
   const s3ToolNames = ['s3_list_files', 's3_download_file', 's3_upload_file', 's3_sync_folder'];
   const enabledS3Tools = tools.filter((tool) => s3ToolNames.includes(tool.name));
   const hasS3Tools = enabledS3Tools.length > 0;
 
-  // S3ストレージツールが有効な場合のみセクションを追加
+  // Add section only if S3 storage tools are enabled
   let userStorageSection = '';
   if (hasS3Tools) {
     const enabledToolsList = enabledS3Tools.map((t) => `    - ${t.name}`).join('\n');
@@ -62,7 +62,7 @@ ${enabledToolsList}
   </user_storage>`;
   }
 
-  // Think ツールが有効かどうかをチェック
+  // Check if the Think tool is enabled
   const hasThinkTool = tools.some((tool) => tool.name === 'think');
 
   let thinkToolSection = '';

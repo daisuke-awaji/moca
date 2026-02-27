@@ -50,7 +50,7 @@ export const MessageList: React.FC<MessageListProps> = ({ onScenarioClick }) => 
       className="flex-1 overflow-y-auto bg-surface-primary"
     >
       <div className="max-w-4xl mx-auto p-4 pb-32">
-        {/* エラー表示 */}
+        {/* Error display */}
         {error && (
           <div className="mb-6 bg-feedback-error-bg border border-feedback-error-border rounded-2xl p-4">
             <div className="flex">
@@ -75,10 +75,10 @@ export const MessageList: React.FC<MessageListProps> = ({ onScenarioClick }) => 
           </div>
         )}
 
-        {/* セッション読み込み中はスケルトンを表示（sessionIdがある場合かつメッセージがない場合のみ） */}
+        {/* Show skeleton while loading session (only when sessionId is present and no messages) */}
         {isLoadingEvents && messages.length === 0 && sessionId && <MessageSkeleton />}
 
-        {/* ウェルカムメッセージ（メッセージがない場合かつ読み込み中でない） */}
+        {/* Welcome message (when no messages and not loading) */}
         {messages.length === 0 && !error && !isLoadingEvents && selectedAgent && (
           <div className="text-center py-12">
             <div className="mx-auto w-16 h-16 bg-surface-secondary rounded-2xl flex items-center justify-center mb-4">
@@ -95,7 +95,7 @@ export const MessageList: React.FC<MessageListProps> = ({ onScenarioClick }) => 
               {translateIfKey(selectedAgent.description, t)}
             </p>
 
-            {/* シナリオボタン（グリッド形式） */}
+            {/* Scenario buttons (grid layout) */}
             {selectedAgent.scenarios.length > 0 && (
               <div className="grid grid-cols-3 gap-3 max-w-2xl mx-auto">
                 {selectedAgent.scenarios.map((scenario) => (
@@ -112,11 +112,11 @@ export const MessageList: React.FC<MessageListProps> = ({ onScenarioClick }) => 
           </div>
         )}
 
-        {/* メッセージ一覧 - ローディング中は非表示 */}
+        {/* Message list - hidden while loading */}
         {!isLoadingEvents &&
           messages.map((message) => <Message key={message.id} message={message} />)}
 
-        {/* 自動スクロール用の参照要素 */}
+        {/* Reference element for auto-scrolling */}
         <div ref={messagesEndRef} />
       </div>
     </div>

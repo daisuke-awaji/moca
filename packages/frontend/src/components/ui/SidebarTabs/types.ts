@@ -1,41 +1,41 @@
 import type { ComponentType } from 'react';
 
 /**
- * タブアイテムの型定義
+ * Type definition for tab item
  */
 export interface TabItem<T extends string = string> {
-  /** タブのID（一意な識別子） */
+  /** Tab ID (unique identifier) */
   id: T;
-  /** タブのラベル（表示名） */
+  /** Tab label (display name) */
   label: string;
-  /** タブのアイコンコンポーネント */
+  /** Tab icon component */
   icon: ComponentType<{ className?: string }>;
 }
 
 /**
- * SidebarTabsコンポーネントのprops
+ * Props for SidebarTabs component
  */
 export interface SidebarTabsProps<T extends string = string> {
-  /** タブのリスト */
+  /** List of tabs */
   tabs: TabItem<T>[];
-  /** 現在アクティブなタブのID */
+  /** ID of the currently active tab */
   activeTab: T;
-  /** タブが変更されたときのコールバック */
+  /** Callback when tab changes */
   onTabChange: (tabId: T) => void;
-  /** 追加のクラス名（オプション） */
+  /** Additional class name (optional) */
   className?: string;
 }
 
 /**
- * SidebarTabsLayoutコンポーネントのprops
+ * Props for SidebarTabsLayout component
  */
 export interface SidebarTabsLayoutProps<T extends string = string> {
-  /** タブのリスト */
+  /** List of tabs */
   tabs: TabItem<T>[];
-  /** 現在アクティブなタブのID */
+  /** ID of the currently active tab */
   activeTab: T;
-  /** タブが変更されたときのコールバック */
+  /** Callback when tab changes */
   onTabChange: (tabId: T) => void;
-  /** コンテンツエリアに表示する子要素 */
+  /** Child elements to display in the content area */
   children: React.ReactNode;
 }

@@ -25,7 +25,7 @@ export const Modal: React.FC<ModalProps> = ({
 }) => {
   const { isMobileView } = useUIStore();
 
-  // ESCキーでクローズ
+  // Close on ESC key
   useEffect(() => {
     if (!isOpen || !closeOnEscape) return;
 
@@ -41,7 +41,7 @@ export const Modal: React.FC<ModalProps> = ({
     };
   }, [isOpen, onClose, closeOnEscape]);
 
-  // ボディスクロール制御
+  // Body scroll control
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -53,10 +53,10 @@ export const Modal: React.FC<ModalProps> = ({
 
   if (!isOpen) return null;
 
-  // モバイルでxlサイズの場合はフルスクリーン
+  // Full screen on mobile for xl size
   const isMobileFullscreen = isMobileView && size === 'xl';
 
-  // サイズごとのクラスマッピング
+  // Class mapping for each size
   const sizeClasses: Record<NonNullable<ModalProps['size']>, string> = {
     sm: 'max-w-sm',
     md: 'max-w-md',

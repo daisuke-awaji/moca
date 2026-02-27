@@ -1,40 +1,40 @@
 /**
- * セッションタイプ
- * - user: ユーザーによる通常の会話セッション
- * - event: イベント駆動（EventBridge等）による自動実行セッション
- * - subagent: サブエージェントによる委譲実行セッション
+ * Session type
+ * - user: Normal conversation session by a user
+ * - event: Automated execution session triggered by an event (e.g., EventBridge)
+ * - subagent: Delegated execution session by a sub-agent
  */
 export type SessionType = 'user' | 'event' | 'subagent';
 
 /**
- * セッション設定
- * AgentCore Memory の actor_id + session_id パターンに準拠
+ * Session configuration
+ * Follows the actor_id + session_id pattern of AgentCore Memory
  */
 export interface SessionConfig {
-  /** ユーザーを一意に識別する ID (例: "engineer_alice") */
+  /** ID that uniquely identifies the user (e.g., "engineer_alice") */
   actorId: string;
-  /** セッションを一意に識別する ID (例: "python_study_20250817") */
+  /** ID that uniquely identifies the session (e.g., "python_study_20250817") */
   sessionId: string;
-  /** セッションタイプ (デフォルト: 'user') */
+  /** Session type (default: 'user') */
   sessionType?: SessionType;
 }
 
 /**
- * セッションストレージのインターフェース
- * 将来的に DynamoDB や AgentCore Memory への置き換えを容易にするための抽象化
+ * Interface for session storage
+ * Abstraction to facilitate future replacement with DynamoDB or AgentCore Memory
  */
 export interface SessionStorage {
   /**
-   * 指定されたセッションの会話履歴を読み込む
-   * @param config セッション設定
-   * @returns 会話履歴の Message 配列
+   * Load conversation history for the specified session
+   * @param config Session configuration
+   * @returns Array of Message objects containing conversation history
    */
   loadMessages(config: SessionConfig): Promise<import('@strands-agents/sdk').Message[]>;
 
   /**
-   * 指定されたセッションに会話履歴を保存する
-   * @param config セッション設定
-   * @param messages 保存する Message 配列
+   * Save conversation history to the specified session
+   * @param config Session configuration
+   * @param messages Array of Message objects to save
    */
   saveMessages(
     config: SessionConfig,
@@ -42,16 +42,16 @@ export interface SessionStorage {
   ): Promise<void>;
 
   /**
-   * 指定されたセッションの履歴をクリアする
-   * @param config セッション設定
+   * Clear the history for the specified session
+   * @param config Session configuration
    */
   clearSession(config: SessionConfig): Promise<void>;
 
   /**
-   * 指定されたセッションに単一のメッセージを追加保存する
-   * ストリーミング中のリアルタイム保存用
-   * @param config セッション設定
-   * @param message 追加するメッセージ
+   * Append a single message to the specified session
+   * For real-time saving during streaming
+   * @param config Session configuration
+   * @param message Message to append
    */
   appendMessage(
     config: SessionConfig,

@@ -80,7 +80,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
     <div className="min-h-screen flex items-center justify-center bg-surface-secondary">
       <div className="max-w-md w-full space-y-8 p-8">
         <div className="text-center">
-          {/* メインアイコン */}
+          {/* Main icon */}
           <div className="relative mb-6">
             <div className="absolute inset-0 bg-amber-200 rounded-full blur-2xl opacity-30 scale-125"></div>
             <Coffee className="w-16 h-16 text-amber-600 mx-auto" />

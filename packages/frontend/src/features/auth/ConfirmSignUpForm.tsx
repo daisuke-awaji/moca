@@ -109,7 +109,7 @@ export const ConfirmSignUpForm: React.FC<ConfirmSignUpFormProps> = ({
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-100 via-white to-emerald-100">
       <div className="max-w-md w-full space-y-8 p-8">
         <div className="text-center">
-          {/* メインアイコン */}
+          {/* Main icon */}
           <div className="relative mb-4">
             <div className="absolute inset-0 bg-amber-200 rounded-full blur-2xl opacity-30 scale-125"></div>
             <Coffee className="w-12 h-12 text-amber-600 mx-auto mb-2" />

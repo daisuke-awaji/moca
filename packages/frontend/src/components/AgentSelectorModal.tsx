@@ -152,12 +152,12 @@ export const AgentSelectorModal: React.FC<AgentSelectorModalProps> = ({
           <Modal.CloseButton />
         </Modal.Header>
 
-        {/* フォーム表示モード */}
+        {/* Form display mode */}
         {(mode === 'create' || mode === 'edit') && (
           <>
             <Modal.Content noPadding>
               <div className="h-full">
-                {/* エラー表示 */}
+                {/* Error display */}
                 {error && (
                   <div className="mx-6 mt-6 mb-4 p-4 bg-feedback-error-bg border border-feedback-error-border rounded-lg">
                     <p className="text-sm text-feedback-error">{error}</p>
@@ -194,7 +194,7 @@ export const AgentSelectorModal: React.FC<AgentSelectorModalProps> = ({
           </>
         )}
 
-        {/* Agent一覧表示モード */}
+        {/* Agent list display mode */}
         {mode === 'list' && (
           <>
             <Modal.Content>
@@ -205,13 +205,13 @@ export const AgentSelectorModal: React.FC<AgentSelectorModalProps> = ({
                   </div>
                 )}
 
-                {/* ローディング表示 */}
+                {/* Loading display */}
                 {isLoading && <LoadingIndicator size="lg" spacing="lg" />}
 
-                {/* 検索バーと新規作成ボタン */}
+                {/* Search bar and new creation button */}
                 {!isLoading && agents.length > 0 && (
                   <div className="mb-6 flex items-center gap-4">
-                    {/* 検索バー（左側） */}
+                    {/* Search bar (left side) */}
                     <div className="relative flex-1">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-fg-disabled" />
                       <input
@@ -232,7 +232,7 @@ export const AgentSelectorModal: React.FC<AgentSelectorModalProps> = ({
                       )}
                     </div>
 
-                    {/* 新規作成ボタン（右側） - モバイル: アイコンのみ、デスクトップ: フルテキスト */}
+                    {/* New creation button (right side) - Mobile: icon only, Desktop: full text */}
                     <button
                       onClick={() => setMode('create')}
                       className={`inline-flex items-center text-white bg-action-primary rounded-xl hover:bg-action-primary-hover transition-colors shadow-sm ${
@@ -248,7 +248,7 @@ export const AgentSelectorModal: React.FC<AgentSelectorModalProps> = ({
                   </div>
                 )}
 
-                {/* Agent一覧 */}
+                {/* Agent list */}
                 {!isLoading && agents.length === 0 ? (
                   <div className="text-center py-20">
                     <Bot className="w-16 h-16 text-fg-disabled mx-auto mb-6" />
@@ -331,7 +331,7 @@ export const AgentSelectorModal: React.FC<AgentSelectorModalProps> = ({
                                     <MoreHorizontal className="w-5 h-5" />
                                   </button>
 
-                                  {/* ドロップダウンメニュー */}
+                                  {/* Dropdown menu */}
                                   {openMenuId === agent.agentId && (
                                     <div className="absolute right-0 top-full mt-1 w-40 bg-surface-primary rounded-lg shadow-lg border border-border py-1 z-10">
                                       <button
@@ -411,7 +411,7 @@ export const AgentSelectorModal: React.FC<AgentSelectorModalProps> = ({
         )}
       </Modal>
 
-      {/* 削除確認モーダル */}
+      {/* Delete confirmation modal */}
       {deleteConfirmAgent && (
         <ConfirmModal
           isOpen={!!deleteConfirmAgent}

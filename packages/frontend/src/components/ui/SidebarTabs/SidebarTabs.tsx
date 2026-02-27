@@ -2,9 +2,9 @@ import type { SidebarTabsProps, SidebarTabsLayoutProps } from './types';
 import { useUIStore } from '../../../stores/uiStore';
 
 /**
- * サイドバータブナビゲーションコンポーネント
- * デスクトップ: 左側に縦並びタブ
- * モバイル: 上部に横並びタブ
+ * Sidebar tab navigation component
+ * Desktop: vertical tabs on the left
+ * Mobile: horizontal tabs at the top
  */
 export function SidebarTabs<T extends string>({
   tabs,
@@ -15,7 +15,7 @@ export function SidebarTabs<T extends string>({
   const { isMobileView } = useUIStore();
 
   if (isMobileView) {
-    // モバイル: 上部に横並びタブ
+    // Mobile: horizontal tabs at the top
     return (
       <div className={`w-full border-b border-border flex-shrink-0 ${className}`}>
         <nav className="flex space-x-1 px-4 py-2 overflow-x-auto">
@@ -43,7 +43,7 @@ export function SidebarTabs<T extends string>({
     );
   }
 
-  // デスクトップ: 左側に縦並びタブ
+  // Desktop: vertical tabs on the left
   return (
     <div className={`w-48 border-r border-border flex-shrink-0 ${className}`}>
       <nav className="p-4 space-y-1">
@@ -72,9 +72,9 @@ export function SidebarTabs<T extends string>({
 }
 
 /**
- * サイドバータブレイアウトコンポーネント
- * デスクトップ: サイドバータブ（左）+ コンテンツ（右）
- * モバイル: タブ（上）+ コンテンツ（下）
+ * Sidebar tab layout component
+ * Desktop: sidebar tabs (left) + content (right)
+ * Mobile: tabs (top) + content (bottom)
  */
 export function SidebarTabsLayout<T extends string>({
   tabs,

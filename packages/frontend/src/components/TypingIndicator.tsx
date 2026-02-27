@@ -1,7 +1,7 @@
 import React from 'react';
 
 /**
- * メッセージ入力中を表示するアニメーション付きインジケーター
+ * Animated indicator that displays while a message is being typed
  */
 export const TypingIndicator: React.FC = () => {
   return (

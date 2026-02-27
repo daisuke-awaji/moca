@@ -1,14 +1,14 @@
 /**
- * MCP (Model Context Protocol) 統合モジュール
- * - AgentCore Gateway 経由の HTTP MCP クライアント
- * - ローカル stdio/http/sse MCP サーバーのサポート
+ * MCP (Model Context Protocol) integration module
+ * - HTTP MCP client via AgentCore Gateway
+ * - Support for local stdio/http/sse MCP servers
  */
 
-// AgentCore Gateway クライアント (既存)
+// AgentCore Gateway client (existing)
 export { mcpClient, AgentCoreMCPClient, MCPClientError } from './client.js';
 export type { MCPToolResult } from './client.js';
 
-// ローカル MCP サーバー設定とクライアント（ローカル実装から再エクスポート）
+// Local MCP server configuration and client (re-exported from local implementation)
 export type {
   MCPServerConfig,
   StdioMCPServer,

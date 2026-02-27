@@ -1,6 +1,6 @@
 /**
- * Agent Directory ページ
- * 共有されたエージェントの一覧表示と検索
+ * Agent Directory Page
+ * Displays shared agents list and provides search functionality
  */
 
 import React, { useEffect, useState, useMemo } from 'react';
@@ -22,7 +22,7 @@ import type { Agent } from '../types/agent';
 import { translateIfKey } from '../utils/agent-translation';
 
 /**
- * Agent Directory ページメインコンポーネント
+ * Main component for the Agent Directory page
  */
 export function AgentDirectoryPage() {
   const { t } = useTranslation();
@@ -39,7 +39,7 @@ export function AgentDirectoryPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [localSearchQuery, setLocalSearchQuery] = useState('');
 
-  // 検索フィルタリング
+  // Search filtering
   const filteredAgents = useMemo(() => {
     if (!localSearchQuery.trim()) {
       return sharedAgents;
@@ -53,7 +53,7 @@ export function AgentDirectoryPage() {
     });
   }, [sharedAgents, localSearchQuery, t]);
 
-  // URLパラメータから選択されたエージェントを派生
+  // Derive selected agent from URL parameter
   const selectedAgent = useMemo(() => {
     const agentParam = searchParams.get('agent');
     if (agentParam && sharedAgents.length > 0) {
@@ -62,29 +62,29 @@ export function AgentDirectoryPage() {
     return null;
   }, [searchParams, sharedAgents]);
 
-  // 初回ロード
+  // Initial load
   useEffect(() => {
     fetchSharedAgents();
   }, [fetchSharedAgents]);
 
-  // DynamoDB検索を実行
+  // Execute DynamoDB search
   const handleSearch = () => {
     if (localSearchQuery.trim()) {
       fetchSharedAgents(localSearchQuery);
     }
   };
 
-  // 検索クリア
+  // Clear search
   const handleClearSearch = () => {
     setLocalSearchQuery('');
   };
 
-  // エージェントカードクリック
+  // Agent card click
   const handleAgentClick = (agent: Agent) => {
     setSearchParams({ agent: `${agent.createdBy}-${agent.agentId}` });
   };
 
-  // モーダルをクローズ
+  // Close modal
   const handleCloseModal = () => {
     setSearchParams({});
   };

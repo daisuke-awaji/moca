@@ -1,6 +1,6 @@
 /**
  * Request Context Management
- * リクエストスコープでのコンテキスト管理
+ * Request-scoped context management
  */
 
 import { AsyncLocalStorage } from 'async_hooks';
@@ -8,58 +8,58 @@ import { randomUUID } from 'crypto';
 import type { WorkspaceSync } from '../services/workspace-sync.js';
 
 /**
- * リクエストコンテキストの型定義
+ * Type definition for request context
  */
 export interface RequestContext {
-  /** Authorization ヘッダー（JWT Bearer Token） */
+  /** Authorization header (JWT Bearer Token) */
   authorizationHeader?: string;
-  /** ユーザーID（JWTから抽出可能） */
+  /** User ID (can be extracted from JWT) */
   userId?: string;
-  /** ユーザーが選択しているS3ディレクトリパス */
+  /** S3 directory path selected by the user */
   storagePath?: string;
-  /** ワークスペース同期サービス */
+  /** Workspace sync service */
   workspaceSync?: WorkspaceSync;
-  /** リクエスト固有ID（ログ追跡用） */
+  /** Request-specific ID (for log tracing) */
   requestId: string;
-  /** リクエスト開始時刻 */
+  /** Request start time */
   startTime: Date;
-  /** マシンユーザー（Client Credentials Flow）かどうか */
+  /** Whether this is a machine user (Client Credentials Flow) */
   isMachineUser: boolean;
-  /** クライアントID（マシンユーザーの場合） */
+  /** Client ID (for machine users) */
   clientId?: string;
-  /** OAuthスコープ */
+  /** OAuth scopes */
   scopes?: string[];
 }
 
 /**
- * コンテキストメタデータの型定義
+ * Type definition for context metadata
  */
 export interface ContextMetadata {
-  /** リクエスト固有ID */
+  /** Request-specific ID */
   requestId: string;
-  /** ユーザーID（存在する場合） */
+  /** User ID (if present) */
   userId?: string;
-  /** 認証ヘッダーの有無 */
+  /** Whether authentication header is present */
   hasAuth: boolean;
-  /** リクエスト処理時間（ミリ秒） */
+  /** Request processing time (in milliseconds) */
   duration: number;
 }
 
 /**
- * AsyncLocalStorage を使用したリクエストコンテキスト管理
- * Express リクエストスコープで認証情報を伝播
+ * Request context management using AsyncLocalStorage
+ * Propagate authentication information in Express request scope
  */
 export const requestContextStorage = new AsyncLocalStorage<RequestContext>();
 
 /**
- * 現在のリクエストコンテキストを取得
+ * Get the current request context
  */
 export function getCurrentContext(): RequestContext | undefined {
   return requestContextStorage.getStore();
 }
 
 /**
- * 現在のリクエストの Authorization ヘッダーを取得
+ * Get the Authorization header of the current request
  */
 export function getCurrentAuthHeader(): string | undefined {
   const context = getCurrentContext();
@@ -67,7 +67,7 @@ export function getCurrentAuthHeader(): string | undefined {
 }
 
 /**
- * 現在のリクエストのストレージパスを取得
+ * Get the storage path of the current request
  */
 export function getCurrentStoragePath(): string {
   const context = getCurrentContext();
@@ -75,7 +75,7 @@ export function getCurrentStoragePath(): string {
 }
 
 /**
- * 新しいリクエストコンテキストを作成
+ * Create a new request context
  */
 export function createRequestContext(authorizationHeader?: string): RequestContext {
   return {
@@ -87,14 +87,14 @@ export function createRequestContext(authorizationHeader?: string): RequestConte
 }
 
 /**
- * リクエストコンテキストでコールバック関数を実行
+ * Execute a callback function with request context
  */
 export function runWithContext<T>(context: RequestContext, callback: () => T): T {
   return requestContextStorage.run(context, callback);
 }
 
 /**
- * リクエストコンテキストログ用のメタデータを取得
+ * Get metadata for request context logging
  */
 export function getContextMetadata(): ContextMetadata {
   const context = getCurrentContext();

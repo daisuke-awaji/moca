@@ -1,21 +1,21 @@
 /**
- * 汎用ローディングインジケータコンポーネント
- * アプリケーション全体で一貫したローディング表示を提供
+ * General-purpose loading indicator component
+ * Provides consistent loading display throughout the application
  */
 
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
 export interface LoadingIndicatorProps {
-  /** ローディングメッセージ */
+  /** Loading message */
   message?: string;
-  /** スピナーサイズ */
+  /** Spinner size */
   size?: 'sm' | 'md' | 'lg';
-  /** 中央配置するか */
+  /** Whether to center-align */
   center?: boolean;
-  /** 外側の余白 */
+  /** Outer margin */
   spacing?: 'none' | 'sm' | 'md' | 'lg';
-  /** テキスト色のカスタマイズ */
+  /** Custom text color */
   textColor?: string;
 }
 
@@ -36,7 +36,7 @@ export const LoadingIndicator: React.FC<LoadingIndicatorProps> = ({
     lg: 'w-6 h-6',
   };
 
-  // 外側余白の定義
+  // Outer margin definition
   const spacingClasses = {
     none: '',
     sm: 'py-2',

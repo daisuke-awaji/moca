@@ -1,12 +1,12 @@
 /**
- * Memory API クライアント
- * Backend の Memory API を呼び出すためのクライアント
+ * Memory API Client
+ * Client for calling the Backend Memory API
  */
 
 import { backendClient } from './client/backend-client';
 
 /**
- * メモリレコードの型定義
+ * Type definition for memory record
  */
 export interface MemoryRecord {
   recordId: string;
@@ -17,7 +17,7 @@ export interface MemoryRecord {
 }
 
 /**
- * メモリレコード一覧の型定義
+ * Type definition for memory record list
  */
 export interface MemoryRecordList {
   records: MemoryRecord[];
@@ -25,7 +25,7 @@ export interface MemoryRecordList {
 }
 
 /**
- * セマンティック検索のリクエスト型定義
+ * Type definition for semantic search request
  */
 export interface SearchMemoryRequest {
   query: string;
@@ -34,32 +34,32 @@ export interface SearchMemoryRequest {
 }
 
 /**
- * セマンティック検索のレスポンス型定義
+ * Type definition for semantic search response
  */
 interface SearchMemoryResponse {
   records: MemoryRecord[];
 }
 
 /**
- * メモリレコード一覧を取得
- * @returns メモリレコード一覧
+ * Fetch memory record list
+ * @returns Memory record list
  */
 export async function fetchMemoryRecords(): Promise<MemoryRecordList> {
   return backendClient.get<MemoryRecordList>('/memory/records');
 }
 
 /**
- * メモリレコードを削除
- * @param recordId レコードID
+ * Delete a memory record
+ * @param recordId Record ID
  */
 export async function deleteMemoryRecord(recordId: string): Promise<void> {
   return backendClient.delete<void>(`/memory/records/${recordId}`);
 }
 
 /**
- * メモリレコードをセマンティック検索
- * @param searchRequest 検索リクエスト
- * @returns 検索結果
+ * Semantic search for memory records
+ * @param searchRequest Search request
+ * @returns Search results
  */
 export async function searchMemoryRecords(
   searchRequest: SearchMemoryRequest

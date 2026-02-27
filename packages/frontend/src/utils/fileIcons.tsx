@@ -1,6 +1,6 @@
 /**
  * File Icon Utilities
- * ファイル拡張子に応じたアイコンと色を返すユーティリティ
+ * Utility for returning icons and colors based on file extension
  */
 
 import {
@@ -23,7 +23,7 @@ interface FileIconConfig {
 }
 
 /**
- * ファイル名から拡張子を取得
+ * Get file extension from file name
  */
 function getFileExtension(filename: string): string {
   const parts = filename.split('.');
@@ -34,12 +34,12 @@ function getFileExtension(filename: string): string {
 }
 
 /**
- * 拡張子からアイコンと色を取得
+ * Get icon and color from file extension
  */
 export function getFileIcon(filename: string): FileIconConfig {
   const ext = getFileExtension(filename);
 
-  // ドキュメント系
+  // Documents
   if (ext === 'pdf') {
     return { icon: FileText, color: 'text-feedback-error' };
   }
@@ -50,63 +50,63 @@ export function getFileIcon(filename: string): FileIconConfig {
     return { icon: FileText, color: 'text-fg-muted' };
   }
 
-  // スプレッドシート系
+  // Spreadsheets
   if (['xls', 'xlsx', 'csv'].includes(ext)) {
     return { icon: FileSpreadsheet, color: 'text-green-500' };
   }
 
-  // プレゼンテーション系
+  // Presentations
   if (['ppt', 'pptx', 'pptm', 'odp', 'key'].includes(ext)) {
     return { icon: Presentation, color: 'text-orange-500' };
   }
 
-  // 画像系
+  // Images
   if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'ico', 'bmp'].includes(ext)) {
     return { icon: Image, color: 'text-purple-500' };
   }
 
-  // コード系（JavaScript/TypeScript）
+  // Code (JavaScript/TypeScript)
   if (['js', 'jsx', 'ts', 'tsx', 'mjs', 'cjs'].includes(ext)) {
     return { icon: FileCode, color: 'text-yellow-500' };
   }
 
-  // コード系（Python）
+  // Code (Python)
   if (['py', 'pyc', 'pyd', 'pyw'].includes(ext)) {
     return { icon: FileCode, color: 'text-action-primary' };
   }
 
-  // コード系（Web）
+  // Code (Web)
   if (['html', 'htm', 'css', 'scss', 'sass', 'less'].includes(ext)) {
     return { icon: FileCode, color: 'text-orange-500' };
   }
 
-  // コード系（その他）
+  // Code (Other)
   if (
     ['java', 'c', 'cpp', 'h', 'hpp', 'cs', 'go', 'rs', 'swift', 'kt', 'rb', 'php'].includes(ext)
   ) {
     return { icon: FileCode, color: 'text-cyan-500' };
   }
 
-  // JSON/YAML系
+  // JSON/YAML
   if (['json', 'yaml', 'yml', 'toml', 'xml'].includes(ext)) {
     return { icon: FileJson, color: 'text-orange-600' };
   }
 
-  // アーカイブ系
+  // Archives
   if (['zip', 'tar', 'gz', 'rar', '7z', 'bz2', 'xz', 'tgz'].includes(ext)) {
     return { icon: FileArchive, color: 'text-amber-700' };
   }
 
-  // 動画系
+  // Videos
   if (['mp4', 'mov', 'avi', 'mkv', 'webm', 'flv', 'wmv', 'm4v'].includes(ext)) {
     return { icon: FileVideo, color: 'text-purple-600' };
   }
 
-  // 音声系
+  // Audio
   if (['mp3', 'wav', 'ogg', 'flac', 'aac', 'm4a', 'wma'].includes(ext)) {
     return { icon: FileAudio, color: 'text-teal-500' };
   }
 
-  // デフォルト（不明な拡張子）
+  // Default (unknown extension)
   return { icon: File, color: 'text-action-primary' };
 }
