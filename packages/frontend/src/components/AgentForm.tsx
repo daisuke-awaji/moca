@@ -79,7 +79,7 @@ export const AgentForm: React.FC<AgentFormProps> = ({ agent, onSubmit, isLoading
       newErrors.systemPrompt = t('agent.validationSystemPromptTooShort');
     }
 
-    // シナリオのバリデーション
+    // Scenario validation
     formData.scenarios.forEach((scenario, index) => {
       if (!scenario.title.trim()) {
         newErrors[`scenario_title_${index}`] = t('agent.validationScenarioTitleRequired');
@@ -93,7 +93,7 @@ export const AgentForm: React.FC<AgentFormProps> = ({ agent, onSubmit, isLoading
     return Object.keys(newErrors).length === 0;
   };
 
-  // フォーム送信
+  // Form submission
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -104,7 +104,7 @@ export const AgentForm: React.FC<AgentFormProps> = ({ agent, onSubmit, isLoading
     onSubmit(formData);
   };
 
-  // シナリオ追加
+  // Add scenario
   const addScenario = () => {
     setFormData((prev) => ({
       ...prev,
@@ -118,14 +118,14 @@ export const AgentForm: React.FC<AgentFormProps> = ({ agent, onSubmit, isLoading
     }));
   };
 
-  // シナリオ削除
+  // Remove scenario
   const removeScenario = (index: number) => {
     setFormData((prev) => ({
       ...prev,
       scenarios: prev.scenarios.filter((_, i) => i !== index),
     }));
 
-    // 該当するエラーも削除
+    // Remove corresponding errors as well
     setErrors((prev) => {
       const newErrors = { ...prev };
       delete newErrors[`scenario_title_${index}`];
@@ -134,7 +134,7 @@ export const AgentForm: React.FC<AgentFormProps> = ({ agent, onSubmit, isLoading
     });
   };
 
-  // シナリオ更新
+  // Update scenario
   const updateScenario = (index: number, field: keyof Scenario, value: string) => {
     setFormData((prev) => ({
       ...prev,
@@ -161,13 +161,13 @@ export const AgentForm: React.FC<AgentFormProps> = ({ agent, onSubmit, isLoading
 
     setIsGenerating(true);
 
-    // XMLパース状態を初期化
+    // Initialize XML parse state
     const initialParseState = createInitialXmlState();
 
-    // 利用可能なツール名を取得
+    // Get available tool names
     const availableTools = tools.map((tool) => tool.name);
 
-    // 生成プロンプトを作成
+    // Create generation prompt
     const generationPrompt = createAgentConfigGenerationPrompt(
       formData.name,
       formData.description,
@@ -182,14 +182,14 @@ export const AgentForm: React.FC<AgentFormProps> = ({ agent, onSubmit, isLoading
         onTextDelta: (text: string) => {
           accumulatedXml += text;
 
-          // XMLを逐次解析してフォームに反映
+          // Incrementally parse XML and reflect in form
           const { state: newParseState, updates } = parseStreamingXml(
             accumulatedXml,
             currentParseState
           );
           currentParseState = newParseState;
 
-          // System promptの更新
+          // Update system prompt
           if (updates.systemPrompt !== undefined) {
             setFormData((prev) => ({
               ...prev,
@@ -197,7 +197,7 @@ export const AgentForm: React.FC<AgentFormProps> = ({ agent, onSubmit, isLoading
             }));
           }
 
-          // ツール選択の更新
+          // Update tool selection
           if (updates.newTool) {
             setFormData((prev) => ({
               ...prev,
@@ -205,7 +205,7 @@ export const AgentForm: React.FC<AgentFormProps> = ({ agent, onSubmit, isLoading
             }));
           }
 
-          // シナリオの追加
+          // Add scenario
           if (updates.newScenario) {
             setFormData((prev) => ({
               ...prev,
@@ -236,7 +236,7 @@ export const AgentForm: React.FC<AgentFormProps> = ({ agent, onSubmit, isLoading
     }
   };
 
-  // タブ設定
+  // Tab configuration
   const tabs: TabItem<TabType>[] = [
     { id: 'basic', label: t('agent.basicSettings'), icon: Settings },
     { id: 'tools', label: t('agent.toolsSettings'), icon: Wrench },
@@ -246,9 +246,9 @@ export const AgentForm: React.FC<AgentFormProps> = ({ agent, onSubmit, isLoading
   return (
     <SidebarTabsLayout tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab}>
       <form id="agent-form" onSubmit={handleSubmit} className="flex-1 flex flex-col">
-        {/* パネルコンテンツ */}
+        {/* Panel content */}
         <div className="h-[80vh] overflow-y-auto px-6 py-6">
-          {/* 基本設定パネル */}
+          {/* Basic settings panel */}
           {activeTab === 'basic' && (
             <div className="space-y-6 max-w-5xl mx-auto">
               <h2 className="text-lg font-semibold text-fg-default mb-6">
@@ -454,7 +454,7 @@ export const AgentForm: React.FC<AgentFormProps> = ({ agent, onSubmit, isLoading
             </div>
           )}
 
-          {/* ツールパネル */}
+          {/* Tools panel */}
           {activeTab === 'tools' && (
             <div className="space-y-6 max-w-5xl mx-auto">
               <h2 className="text-lg font-semibold text-fg-default mb-6">
@@ -470,7 +470,7 @@ export const AgentForm: React.FC<AgentFormProps> = ({ agent, onSubmit, isLoading
             </div>
           )}
 
-          {/* MCP パネル */}
+          {/* MCP panel */}
           {activeTab === 'mcp' && (
             <div className="space-y-6 max-w-5xl mx-auto">
               <h2 className="text-lg font-semibold text-fg-default mb-6">

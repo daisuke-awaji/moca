@@ -1,25 +1,25 @@
 /**
- * Agent 翻訳ユーティリティ
- * 翻訳キー形式の Agent データを現在の言語で翻訳するヘルパー関数
+ * Agent Translation Utilities
+ * Helper functions for translating Agent data in translation-key format to the current language
  */
 
 import type { TFunction } from 'i18next';
 import type { Agent, Scenario } from '../types/agent';
 
 /**
- * 翻訳キーかどうかを判定
- * "defaultAgents." で始まる文字列を翻訳キーとみなす
+ * Determine whether the text is a translation key
+ * Strings starting with "defaultAgents." are treated as translation keys
  */
 export const isTranslationKey = (text: string): boolean => {
   return text.startsWith('defaultAgents.');
 };
 
 /**
- * テキストが翻訳キーなら翻訳を適用、そうでなければそのまま返す
+ * Apply translation if the text is a translation key, otherwise return as-is
  *
- * @param text - 翻訳対象のテキスト（翻訳キーまたは通常のテキスト）
- * @param t - i18next の翻訳関数
- * @returns 翻訳されたテキスト、または元のテキスト
+ * @param text - The text to translate (translation key or plain text)
+ * @param t - i18next translation function
+ * @returns Translated text, or the original text
  */
 export const translateIfKey = (text: string, t: TFunction): string => {
   if (!text || typeof text !== 'string') {
@@ -28,7 +28,7 @@ export const translateIfKey = (text: string, t: TFunction): string => {
 
   if (isTranslationKey(text)) {
     const translated = t(text);
-    // 翻訳が見つからない場合はキーが返されるので、その場合は元のテキストを返す
+    // If the translation is not found, the key itself is returned, so return the original text in that case
     return translated === text ? text : translated;
   }
 
@@ -36,11 +36,11 @@ export const translateIfKey = (text: string, t: TFunction): string => {
 };
 
 /**
- * Scenario の表示用テキストを翻訳
+ * Translate display text for a Scenario
  *
- * @param scenario - 翻訳対象の Scenario
- * @param t - i18next の翻訳関数
- * @returns 翻訳された Scenario
+ * @param scenario - The Scenario to translate
+ * @param t - i18next translation function
+ * @returns Translated Scenario
  */
 export const translateScenario = (scenario: Scenario, t: TFunction): Scenario => {
   return {
@@ -51,13 +51,13 @@ export const translateScenario = (scenario: Scenario, t: TFunction): Scenario =>
 };
 
 /**
- * Agent の表示用テキストを翻訳
- * name, description, scenarios の翻訳キーを現在の言語に変換
- * systemPrompt は翻訳しない（実テキストのまま）
+ * Translate display text for an Agent
+ * Converts translation keys for name, description, and scenarios to the current language
+ * systemPrompt is not translated (kept as real text)
  *
- * @param agent - 翻訳対象の Agent
- * @param t - i18next の翻訳関数
- * @returns 翻訳された Agent
+ * @param agent - The Agent to translate
+ * @param t - i18next translation function
+ * @returns Translated Agent
  */
 export const translateAgent = (agent: Agent, t: TFunction): Agent => {
   return {
@@ -69,11 +69,11 @@ export const translateAgent = (agent: Agent, t: TFunction): Agent => {
 };
 
 /**
- * Agent 配列の表示用テキストを翻訳
+ * Translate display text for an Agent array
  *
- * @param agents - 翻訳対象の Agent 配列
- * @param t - i18next の翻訳関数
- * @returns 翻訳された Agent 配列
+ * @param agents - The Agent array to translate
+ * @param t - i18next translation function
+ * @returns Translated Agent array
  */
 export const translateAgents = (agents: Agent[], t: TFunction): Agent[] => {
   return agents.map((agent) => translateAgent(agent, t));

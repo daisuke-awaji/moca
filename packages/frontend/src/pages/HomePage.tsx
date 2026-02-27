@@ -1,6 +1,6 @@
 /**
- * Home ページコンポーネント
- * アプリケーションの紹介とメインナビゲーション
+ * Home Page Component
+ * Application introduction and main navigation
  */
 
 import { useNavigate } from 'react-router-dom';
@@ -15,13 +15,13 @@ export function HomePage() {
     <>
       <main className="flex-1 flex flex-col items-center justify-center px-6 text-center">
         <div className="max-w-2xl space-y-8">
-          {/* メインアイコン */}
+          {/* Main icon */}
           <div className="relative">
             <div className="absolute inset-0 bg-amber-200 rounded-full blur-3xl opacity-30 scale-150"></div>
             <Coffee className="w-24 h-24 text-amber-600 mx-auto" />
           </div>
 
-          {/* タイトルと説明 */}
+          {/* Title and description */}
           <div className="space-y-4">
             <h1 className="text-6xl font-extrabold text-amber-900 tracking-tight">
               {t('auth.welcomeTitle')}
@@ -33,7 +33,7 @@ export function HomePage() {
             </p>
           </div>
 
-          {/* CTA ボタン */}
+          {/* CTA buttons */}
           <div className="pt-8">
             <button
               onClick={() => navigate('/chat')}
@@ -48,7 +48,7 @@ export function HomePage() {
         </div>
       </main>
 
-      {/* フッター */}
+      {/* Footer */}
       <footer className="p-6 text-center">
         <p className="text-sm text-fg-muted">{t('home.footer')}</p>
       </footer>

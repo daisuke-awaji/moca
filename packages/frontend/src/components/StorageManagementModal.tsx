@@ -1,6 +1,6 @@
 /**
  * Storage Management Modal
- * ユーザーファイルストレージの管理モーダル
+ * Modal for managing user file storage
  */
 
 import { useState, useEffect, useRef } from 'react';
@@ -43,7 +43,7 @@ interface StorageManagementModalProps {
 }
 
 /**
- * ファイル/ディレクトリアイテム表示コンポーネント
+ * File/directory item display component
  */
 interface StorageItemComponentProps {
   item: StorageItem;
@@ -134,7 +134,7 @@ function StorageItemComponent({
       }}
     >
       <div className="flex items-center gap-3">
-        {/* アイコン */}
+        {/* Icon */}
         <div className="flex-shrink-0">
           {item.type === 'directory' ? (
             <Folder className="w-5 h-5 text-amber-500" />
@@ -145,7 +145,7 @@ function StorageItemComponent({
           )}
         </div>
 
-        {/* 情報 */}
+        {/* Information */}
         <div className="flex-1 min-w-0">
           <div className="text-sm font-medium text-fg-default truncate">{item.name}</div>
           <div className="flex items-center gap-4 text-xs text-fg-muted mt-1">
@@ -154,7 +154,7 @@ function StorageItemComponent({
           </div>
         </div>
 
-        {/* アクション */}
+        {/* Actions */}
         <div className="flex items-center gap-1 sm:gap-2">
           {item.type === 'directory' && onSetWorkingDirectory && (
             <Tooltip content={t('storage.setAsWorkingDirectory')}>
@@ -288,7 +288,7 @@ export function StorageManagementModal({ isOpen, onClose }: StorageManagementMod
     }
   };
 
-  // モーダル表示時にデータを読み込み
+  // Load data when modal opens
   useEffect(() => {
     if (isOpen) {
       // Use URL hash if explicitly set,
@@ -458,13 +458,13 @@ export function StorageManagementModal({ isOpen, onClose }: StorageManagementMod
 
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     handleFileSelect(e.target.files);
-    // リセット
+    // Reset
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
   };
 
-  // ドラッグ&ドロップ
+  // Drag & drop
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragOver(true);
@@ -548,7 +548,7 @@ export function StorageManagementModal({ isOpen, onClose }: StorageManagementMod
   const handleCreateDirectory = async () => {
     if (!newDirectoryName.trim()) return;
 
-    // バリデーション: 半角スペースまたは全角スペースを含む場合はエラー
+    // Validation: error if it contains half-width or full-width spaces
     if (/[\s\u3000]/.test(newDirectoryName)) {
       alert(t('storage.folderNameSpaceError'));
       return;
@@ -559,7 +559,7 @@ export function StorageManagementModal({ isOpen, onClose }: StorageManagementMod
     setShowNewDirectoryInput(false);
   };
 
-  // ダウンロード
+  // Download
   const handleDownload = async (item: StorageItem) => {
     if (item.type === 'directory') {
       // ZIP download for folders
@@ -605,7 +605,7 @@ export function StorageManagementModal({ isOpen, onClose }: StorageManagementMod
     });
   };
 
-  // パスをコピー
+  // Copy path
   const handleCopyPath = async (path: string, closeMenu: () => void) => {
     try {
       await navigator.clipboard.writeText(path);
@@ -620,7 +620,7 @@ export function StorageManagementModal({ isOpen, onClose }: StorageManagementMod
     }
   };
 
-  // コンテンツパネルのコンテキストメニューからダウンロード
+  // Download from content panel context menu
   const handleContextDownload = async () => {
     if (!contextMenu) return;
     const item = items.find((i) => i.path === contextMenu.path);
@@ -630,7 +630,7 @@ export function StorageManagementModal({ isOpen, onClose }: StorageManagementMod
     setContextMenu(null);
   };
 
-  // コンテンツパネルのコンテキストメニューから削除
+  // Delete from content panel context menu
   const handleContextDelete = async () => {
     if (!contextMenu) return;
     const item = items.find((i) => i.path === contextMenu.path);
@@ -649,7 +649,7 @@ export function StorageManagementModal({ isOpen, onClose }: StorageManagementMod
     }
   };
 
-  // フォルダツリーのコンテキストメニューから削除
+  // Delete from folder tree context menu
   const handleFolderDelete = async () => {
     if (!folderContextMenu) return;
 
@@ -668,9 +668,9 @@ export function StorageManagementModal({ isOpen, onClose }: StorageManagementMod
     }
   };
 
-  // フォルダダウンロード
+  // Folder download
   const handleFolderDownload = async (folderPath: string, folderName: string) => {
-    // モーダルを開いて進捗表示開始
+    // Open modal and start showing progress
     setDownloadStatus('downloading');
     setDownloadError('');
     setDownloadProgress({ current: 0, total: 0, percentage: 0, currentFile: '' });
@@ -689,7 +689,7 @@ export function StorageManagementModal({ isOpen, onClose }: StorageManagementMod
         abortControllerRef.current.signal
       );
 
-      // 成功
+      // Success
       setDownloadStatus('success');
     } catch (error) {
       if (error instanceof Error) {
@@ -708,21 +708,21 @@ export function StorageManagementModal({ isOpen, onClose }: StorageManagementMod
     }
   };
 
-  // ダウンロードキャンセル
+  // Cancel download
   const handleCancelDownload = () => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
     }
   };
 
-  // ダウンロードモーダルを閉じる
+  // Close download modal
   const handleCloseDownloadModal = () => {
     setIsDownloadModalOpen(false);
     setDownloadProgress({ current: 0, total: 0, percentage: 0, currentFile: '' });
     setDownloadError('');
   };
 
-  // コンテキストメニューからフォルダダウンロード
+  // Folder download from context menu
   const handleContextFolderDownload = async () => {
     if (!contextMenu) return;
     const item = items.find((i) => i.path === contextMenu.path);
@@ -732,7 +732,7 @@ export function StorageManagementModal({ isOpen, onClose }: StorageManagementMod
     }
   };
 
-  // フォルダツリーのコンテキストメニューからフォルダダウンロード
+  // Folder download from folder tree context menu
   const handleTreeFolderDownload = async () => {
     if (!folderContextMenu) return;
     setFolderContextMenu(null);
@@ -746,7 +746,7 @@ export function StorageManagementModal({ isOpen, onClose }: StorageManagementMod
       size="xl"
       className="md:max-w-6xl md:h-[85vh] max-w-full h-screen"
     >
-      {/* ヘッダー */}
+      {/* Header */}
       <div className="border-b border-border px-4 md:px-6 py-3 md:py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -771,14 +771,14 @@ export function StorageManagementModal({ isOpen, onClose }: StorageManagementMod
             <X className="w-5 h-5" />
           </button>
         </div>
-        {/* 作業ディレクトリ表示 */}
+        {/* Working directory display */}
         <div className="mt-2 text-xs text-fg-secondary">
           <span className="font-medium">{t('storage.workingDirectory')}:</span>{' '}
           <span className="font-mono">{agentWorkingDirectory}</span>
         </div>
       </div>
 
-      {/* ツールバー */}
+      {/* Toolbar */}
       <div className="px-4 md:px-6 py-2.5 border-b border-border bg-surface-secondary">
         <div className="flex flex-wrap items-center gap-1.5">
           <button
@@ -816,7 +816,7 @@ export function StorageManagementModal({ isOpen, onClose }: StorageManagementMod
           />
         </div>
 
-        {/* アップロード進捗 */}
+        {/* Upload progress */}
         {isUploading && (
           <div className="mt-3">
             <div className="flex items-center justify-between text-xs sm:text-sm text-fg-secondary mb-1">
@@ -840,9 +840,9 @@ export function StorageManagementModal({ isOpen, onClose }: StorageManagementMod
         )}
       </div>
 
-      {/* コンテンツエリア: レスポンシブレイアウト */}
+      {/* Content area: responsive layout */}
       <div className="flex divide-x divide-gray-200 flex-1 min-h-0">
-        {/* 左カラム: フォルダツリー - デスクトップのみ表示 */}
+        {/* Left column: folder tree - desktop only */}
         <div className="hidden md:block md:w-[240px] flex-shrink-0 overflow-y-auto bg-surface-secondary">
           <div className="px-3 py-2">
             <div className="text-xs font-semibold text-fg-muted uppercase tracking-wider mb-2 px-2">
@@ -861,12 +861,12 @@ export function StorageManagementModal({ isOpen, onClose }: StorageManagementMod
           </div>
         </div>
 
-        {/* 右カラム: ファイル一覧 */}
+        {/* Right column: file list */}
         <div className="flex-1 flex flex-col min-w-0">
-          {/* パンくずナビゲーション */}
+          {/* Breadcrumb navigation */}
           <div className="px-4 md:px-6 py-3 border-b border-border bg-surface-primary">
             <div className="flex items-center gap-2">
-              {/* パンくず部分（スクロール可能） */}
+              {/* Breadcrumb section (scrollable) */}
               <div className="flex items-center gap-1 text-sm overflow-x-auto flex-1 min-w-0">
                 <button
                   onClick={handleNavigateToRoot}
@@ -917,7 +917,7 @@ export function StorageManagementModal({ isOpen, onClose }: StorageManagementMod
             </div>
           </div>
 
-          {/* ファイルリスト */}
+          {/* File list */}
           <div
             className={`flex-1 overflow-y-auto px-4 md:px-6 py-4 relative ${
               isDragOver ? 'bg-feedback-info-bg' : ''
@@ -926,7 +926,7 @@ export function StorageManagementModal({ isOpen, onClose }: StorageManagementMod
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
           >
-            {/* エラー表示 */}
+            {/* Error display */}
             {error && (
               <div className="mb-4 p-3 bg-feedback-error-bg border border-feedback-error-border rounded-lg flex items-start gap-2">
                 <AlertCircle className="w-4 h-4 text-feedback-error mt-0.5 flex-shrink-0" />
@@ -942,7 +942,7 @@ export function StorageManagementModal({ isOpen, onClose }: StorageManagementMod
               </div>
             )}
 
-            {/* ローディング */}
+            {/* Loading */}
             {isLoading && (
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="w-6 h-6 animate-spin text-fg-disabled" />
@@ -950,7 +950,7 @@ export function StorageManagementModal({ isOpen, onClose }: StorageManagementMod
               </div>
             )}
 
-            {/* アイテム一覧 */}
+            {/* Item list */}
             {!isLoading && (
               <>
                 {items.length === 0 && !showNewDirectoryInput ? (
@@ -973,7 +973,7 @@ export function StorageManagementModal({ isOpen, onClose }: StorageManagementMod
                       />
                     ))}
 
-                    {/* 新規ディレクトリ入力（リストの末尾） */}
+                    {/* New directory input (at end of list) */}
                     {showNewDirectoryInput && (
                       <div className="border border-feedback-info-border rounded-lg p-3 bg-feedback-info-bg">
                         <div className="flex items-center gap-3">
@@ -1019,7 +1019,7 @@ export function StorageManagementModal({ isOpen, onClose }: StorageManagementMod
               </>
             )}
 
-            {/* ドラッグオーバー時のオーバーレイ */}
+            {/* Overlay when dragging over */}
             {isDragOver && (
               <div className="absolute inset-0 flex items-center justify-center bg-feedback-info-bg/90 pointer-events-none">
                 <div className="text-center">
@@ -1033,7 +1033,7 @@ export function StorageManagementModal({ isOpen, onClose }: StorageManagementMod
           </div>
         </div>
 
-        {/* コンテンツパネルのコンテキストメニュー */}
+        {/* Content panel context menu */}
         {contextMenu && (
           <div
             ref={contextMenuRef}
@@ -1099,7 +1099,7 @@ export function StorageManagementModal({ isOpen, onClose }: StorageManagementMod
           </div>
         )}
 
-        {/* フォルダツリーのコンテキストメニュー */}
+        {/* Folder tree context menu */}
         {folderContextMenu && (
           <div
             ref={folderContextMenuRef}
@@ -1156,7 +1156,7 @@ export function StorageManagementModal({ isOpen, onClose }: StorageManagementMod
         )}
       </div>
 
-      {/* フッター */}
+      {/* Footer */}
       <div className="border-t border-border px-4 md:px-6 py-3 md:py-4 bg-surface-secondary">
         <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-2 sm:gap-0">
           <p className="text-xs text-fg-muted">{t('storage.itemCount', { count: items.length })}</p>
@@ -1169,7 +1169,7 @@ export function StorageManagementModal({ isOpen, onClose }: StorageManagementMod
         </div>
       </div>
 
-      {/* ダウンロード進捗モーダル */}
+      {/* Download progress modal */}
       <DownloadProgressModal
         isOpen={isDownloadModalOpen}
         onClose={handleCloseDownloadModal}

@@ -65,21 +65,21 @@ export const ToolResultBlock: React.FC<ToolResultBlockProps> = ({ toolResult }) 
 
   return (
     <div className="tool-result-block w-full">
-      {/* 白背景・グレー枠線のメインコンテナ */}
+      {/* Main container with white background and gray border */}
       <div className="bg-surface-primary border border-border-strong rounded-lg text-sm hover:shadow-sm transition-shadow">
-        {/* ヘッダー部分（全体クリック可能） */}
+        {/* Header section (entire area is clickable) */}
         <button
           onClick={() => setIsExpanded(!isExpanded)}
           className="flex items-center gap-2 px-3 py-1.5 w-full text-left hover:bg-surface-secondary transition-colors"
           aria-label={isExpanded ? '結果を隠す' : '結果を表示'}
         >
-          {/* アイコンとステータス */}
+          {/* Icon and status */}
           <div className={`flex items-center ${resultStyles.statusColor}`}>{resultStyles.icon}</div>
 
-          {/* ラベル（シンプル化） */}
+          {/* Label (simplified) */}
           <span className="font-medium text-fg-default text-xs">{resultStyles.label}</span>
 
-          {/* 展開ボタン */}
+          {/* Expand button */}
           <div className="text-fg-disabled ml-auto">
             <svg
               className={`w-3 h-3 transform transition-transform duration-200 ${
@@ -99,7 +99,7 @@ export const ToolResultBlock: React.FC<ToolResultBlockProps> = ({ toolResult }) 
           </div>
         </button>
 
-        {/* 詳細コンテンツ（展開時、枠内に統合） */}
+        {/* Detailed content (integrated inside frame when expanded) */}
         {isExpanded && (
           <div className="px-3 pb-3 pt-1 border-t border-border">
             <div className="flex items-center justify-between mb-2">
@@ -115,7 +115,7 @@ export const ToolResultBlock: React.FC<ToolResultBlockProps> = ({ toolResult }) 
               </button>
             </div>
 
-            {/* スクロール可能な結果表示 */}
+            {/* Scrollable result display */}
             <div className="max-h-64 overflow-y-auto">
               <pre
                 className={`
@@ -128,7 +128,7 @@ export const ToolResultBlock: React.FC<ToolResultBlockProps> = ({ toolResult }) 
               </pre>
             </div>
 
-            {/* 統計情報 */}
+            {/* Statistics */}
             {formattedContent.content.length > 500 && (
               <div className="mt-2 pt-2 border-t border-border">
                 <p className="text-fg-disabled text-xs">

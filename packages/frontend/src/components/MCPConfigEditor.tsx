@@ -208,7 +208,7 @@ export const MCPConfigEditor: React.FC<MCPConfigEditorProps> = ({
         <p>{t('tool.mcp.description')}</p>
       </div>
 
-      {/* JSON エディター */}
+      {/* JSON editor */}
       <div>
         <label className="block text-sm font-medium text-fg-secondary mb-2">
           {t('tool.mcp.configLabel')}
@@ -223,9 +223,9 @@ export const MCPConfigEditor: React.FC<MCPConfigEditorProps> = ({
         />
       </div>
 
-      {/* アクションボタン */}
+      {/* Action buttons */}
       <div className="flex items-center space-x-3">
-        {/* サンプル挿入ドロップダウン */}
+        {/* Sample insertion dropdown */}
         <div className="relative">
           <button
             type="button"
@@ -281,7 +281,7 @@ export const MCPConfigEditor: React.FC<MCPConfigEditorProps> = ({
         </button>
       </div>
 
-      {/* Validationエラー */}
+      {/* Validation error */}
       {validationError && (
         <div className="flex items-start space-x-2 p-3 bg-feedback-error-bg border border-feedback-error-border rounded-lg">
           <AlertCircle className="w-5 h-5 text-feedback-error flex-shrink-0 mt-0.5" />
@@ -291,14 +291,14 @@ export const MCPConfigEditor: React.FC<MCPConfigEditorProps> = ({
         </div>
       )}
 
-      {/* ツールプレビューとエラー */}
+      {/* Tool preview and errors */}
       {(toolsPreview.length > 0 || serverErrors.length > 0) && (
         <div className="space-y-3">
           <h3 className="text-sm font-medium text-fg-secondary">
             {t('tool.mcp.connectionResults')}
           </h3>
 
-          {/* 接続成功したサーバー */}
+          {/* Successfully connected servers */}
           {toolsPreview.length > 0 && (
             <div className="p-4 bg-feedback-success-bg border border-feedback-success-border rounded-lg space-y-4">
               {Object.entries(groupedTools).map(([serverName, tools]) => (
@@ -329,7 +329,7 @@ export const MCPConfigEditor: React.FC<MCPConfigEditorProps> = ({
             </div>
           )}
 
-          {/* 接続失敗したサーバー */}
+          {/* Failed to connect servers */}
           {serverErrors.length > 0 && (
             <div className="p-4 bg-feedback-error-bg border border-feedback-error-border rounded-lg space-y-3">
               <h4 className="text-sm font-medium text-feedback-error flex items-center space-x-2">
@@ -344,7 +344,7 @@ export const MCPConfigEditor: React.FC<MCPConfigEditorProps> = ({
                       <div className="font-medium text-feedback-error">{error.serverName}</div>
                       <div className="text-feedback-error mt-1 text-xs">{error.message}</div>
 
-                      {/* 詳細情報の表示 */}
+                      {/* Display detailed information */}
                       {error.details && (
                         <div className="mt-2">
                           <button

@@ -40,13 +40,13 @@ export function SettingsPage() {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const themeDropdownRef = useRef<HTMLDivElement>(null);
 
-  // 言語選択オプション
+  // Language selection options
   const languageOptions = [
     { value: 'ja', label: t('settings.languageJa') },
     { value: 'en', label: t('settings.languageEn') },
   ];
 
-  // テーマ選択オプション
+  // Theme selection options
   const themeOptions: { value: Theme; label: string }[] = [
     { value: 'light', label: t('settings.themeLight') },
     { value: 'dark', label: t('settings.themeDark') },
@@ -83,7 +83,7 @@ export function SettingsPage() {
     setIsLanguageDropdownOpen(false);
   };
 
-  // ドロップダウン外クリックで閉じる
+  // Close on click outside dropdown
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -137,9 +137,9 @@ export function SettingsPage() {
             <h2 className="text-lg font-semibold text-fg-default">{t('settings.language')}</h2>
           </div>
 
-          {/* カスタムドロップダウン */}
+          {/* Custom dropdown */}
           <div ref={dropdownRef} className="relative w-full">
-            {/* トリガーボタン */}
+            {/* Trigger button */}
             <button
               onClick={() => setIsLanguageDropdownOpen(!isLanguageDropdownOpen)}
               className="w-full px-4 py-3 bg-surface-primary border border-border-strong rounded-lg focus:outline-none focus:ring-2 focus:ring-border-focus focus:border-transparent text-fg-default font-medium cursor-pointer hover:border-border-strong transition-colors flex items-center justify-between"
@@ -152,7 +152,7 @@ export function SettingsPage() {
               />
             </button>
 
-            {/* ドロップダウンメニュー */}
+            {/* Dropdown menu */}
             {isLanguageDropdownOpen && (
               <div className="absolute z-10 w-full mt-2 bg-surface-primary border border-border rounded-lg shadow-lg overflow-hidden animate-subtle-fade-in">
                 {languageOptions.map((option) => (
@@ -180,7 +180,7 @@ export function SettingsPage() {
           </div>
         </div>
 
-        {/* テーマ設定セクション */}
+        {/* Theme settings section */}
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-4">
             <Palette className="w-5 h-5 text-fg-secondary" />
@@ -228,7 +228,7 @@ export function SettingsPage() {
           </div>
         </div>
 
-        {/* メモリ管理セクション */}
+        {/* Memory management section */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-2">
@@ -258,7 +258,7 @@ export function SettingsPage() {
           </div>
         </div>
 
-        {/* 詳細設定セクション */}
+        {/* Advanced settings section */}
         <div className="mb-8">
           <h2 className="text-lg font-semibold text-fg-default mb-6">{t('settings.advanced')}</h2>
 
@@ -271,7 +271,7 @@ export function SettingsPage() {
               {t('settings.enterBehaviorSuffix')}
             </p>
 
-            {/* ラジオボタン選択 */}
+            {/* Radio button selection */}
             <div className="space-y-3">
               <label className="flex items-center gap-3 cursor-pointer">
                 <input
@@ -310,7 +310,7 @@ export function SettingsPage() {
           </div>
         </div>
 
-        {/* メモリ管理モーダル */}
+        {/* Memory management modal */}
         <MemoryManagementModal isOpen={showMemoryModal} onClose={() => setShowMemoryModal(false)} />
       </main>
     </div>
