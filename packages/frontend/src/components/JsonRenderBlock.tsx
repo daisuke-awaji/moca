@@ -1,5 +1,5 @@
 import React from 'react';
-import { Renderer } from '@json-render/react';
+import { Renderer, JSONUIProvider } from '@json-render/react';
 import type { Spec } from '@json-render/core';
 import { registry } from './moca-catalog';
 
@@ -33,7 +33,9 @@ export const JsonRenderBlock: React.FC<JsonRenderBlockProps> = ({ content }) => 
 
   return (
     <div className="moca-ui-render p-3">
-      <Renderer spec={spec} registry={registry} />
+      <JSONUIProvider registry={registry}>
+        <Renderer spec={spec} registry={registry} />
+      </JSONUIProvider>
     </div>
   );
 };
