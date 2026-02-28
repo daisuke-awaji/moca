@@ -80,9 +80,12 @@ export function MemoryManagementModal({ isOpen, onClose }: MemoryManagementModal
   const {
     records,
     isLoading,
+    isLoadingMore,
     isDeleting,
     error,
+    nextToken,
     loadMemoryRecords,
+    loadMoreMemoryRecords,
     deleteMemoryRecord,
     searchMemoryRecords,
     clearError,
@@ -253,6 +256,24 @@ export function MemoryManagementModal({ isOpen, onClose }: MemoryManagementModal
                     isDeleting={isDeleting === record.recordId}
                   />
                 ))}
+                {!searchQuery && nextToken && (
+                  <div className="flex justify-center pt-2">
+                    <button
+                      onClick={loadMoreMemoryRecords}
+                      disabled={isLoadingMore}
+                      className="px-4 py-2 text-sm font-medium text-fg-secondary bg-surface-primary border border-border-strong rounded-md hover:bg-surface-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                    >
+                      {isLoadingMore ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          {t('common.loading')}
+                        </>
+                      ) : (
+                        t('memory.loadMore')
+                      )}
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </>
