@@ -7,7 +7,7 @@
  */
 
 import { tool } from '@strands-agents/sdk';
-import { memorySearchDefinition } from '@fullstack-agentcore/tool-definitions';
+import { memorySearchDefinition } from '@moca/tool-definitions';
 import { retrieveLongTermMemory } from '../session/memory-retriever.js';
 import { getCurrentContext } from '../context/request-context.js';
 import { config, logger } from '../config/index.js';
