@@ -8,7 +8,8 @@
   },
   "workspaces": [
     "packages/*",
-    "packages/libs/*"
+    "packages/libs/*",
+    "packages/shared/*"
   ],
   "scripts": {
     "build": "npm run build --workspace=@moca/tool-definitions && npm run build --workspace=@moca/s3-workspace-sync && npm run build --workspaces --if-present",

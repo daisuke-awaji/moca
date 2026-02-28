@@ -16,12 +16,54 @@ import { validateUISpec } from './catalog.js';
 import type { MocaUISpecOutput } from './types.js';
 
 /**
- * Extract JSON spec from CodeInterpreter output
+ * Check if an object looks like a valid UI spec (has root + elements)
+ */
+function isUISpec(obj: unknown): boolean {
+  return (
+    obj !== null &&
+    typeof obj === 'object' &&
+    !Array.isArray(obj) &&
+    typeof (obj as Record<string, unknown>).root === 'string' &&
+    typeof (obj as Record<string, unknown>).elements === 'object'
+  );
+}
+
+/**
+ * Extract JSON spec from CodeInterpreter output.
+ *
+ * The output may be:
+ *  - A raw JSON UI spec string: '{"root":"main","elements":{...}}'
+ *  - A CodeInterpreter content array: '[{"type":"text","text":"{...}"}]'
+ *  - Mixed text with embedded JSON
  */
 function extractJsonFromOutput(output: string): unknown {
   // Try to parse the entire output as JSON first
   try {
-    return JSON.parse(output.trim());
+    const parsed = JSON.parse(output.trim());
+
+    // If it's already a valid UI spec, return directly
+    if (isUISpec(parsed)) {
+      return parsed;
+    }
+
+    // If it's an array (CodeInterpreter response envelope), unwrap text items
+    if (Array.isArray(parsed)) {
+      for (const item of parsed) {
+        if (item && typeof item === 'object') {
+          // Handle {type:"text", text:"..."} format
+          const textValue = item.text || item.resource?.text;
+          if (typeof textValue === 'string') {
+            const nested = extractJsonFromOutput(textValue);
+            if (nested && isUISpec(nested)) {
+              return nested;
+            }
+          }
+        }
+      }
+    }
+
+    // Return whatever we parsed (caller will validate)
+    return parsed;
   } catch {
     // Look for the last JSON object in the output
     const jsonMatches = output.match(/\{[\s\S]*\}/g);
@@ -30,7 +72,7 @@ function extractJsonFromOutput(output: string): unknown {
       for (let i = jsonMatches.length - 1; i >= 0; i--) {
         try {
           const parsed = JSON.parse(jsonMatches[i]);
-          if (parsed.root && parsed.elements) {
+          if (isUISpec(parsed)) {
             return parsed;
           }
         } catch {
@@ -74,25 +116,17 @@ export const generateUiTool = tool({
         const language = input.language || 'python';
         const sessionName = input.sessionName || `generate-ui-${Date.now()}`;
 
-        logger.info(
-          `🎨 generate_ui code mode: language=${language}, session=${sessionName}`
-        );
+        logger.info(`🎨 generate_ui code mode: language=${language}, session=${sessionName}`);
 
         const storagePath = getCurrentStoragePath();
         const client = new AgentCoreCodeInterpreterClient({
           autoCreate: true,
           persistSessions: true,
           storagePath: storagePath,
-        });
-
-        // Initialize session
-        await client.initSession({
-          action: 'initSession',
           sessionName,
-          description: `generate_ui code execution (${language})`,
         });
 
-        // Execute code
+        // Execute code (ensureSession handles session creation/reuse automatically)
         const result = await client.executeCode({
           action: 'executeCode',
           sessionName,
@@ -101,9 +135,7 @@ export const generateUiTool = tool({
         });
 
         if (result.status === 'error') {
-          const errorText = result.content
-            .map((c) => c.text || JSON.stringify(c.json))
-            .join('\n');
+          const errorText = result.content.map((c) => c.text || JSON.stringify(c.json)).join('\n');
           logger.error(`🎨 generate_ui code execution failed: ${errorText}`);
           return JSON.stringify({
             error: `Code execution failed: ${errorText}`,

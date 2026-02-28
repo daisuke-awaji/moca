@@ -29,15 +29,23 @@ const DataTable = ({ props }: BaseComponentProps<DataTableProps>): React.ReactNo
           </tr>
         </thead>
         <tbody className="bg-surface-primary divide-y divide-border">
-          {rows.map((row, rowIdx) => (
-            <tr key={rowIdx} className="hover:bg-surface-secondary transition-colors">
-              {row.map((cell, cellIdx) => (
-                <td key={cellIdx} className="px-4 py-2.5 text-fg-secondary">
-                  {cell}
-                </td>
-              ))}
+          {rows.length === 0 ? (
+            <tr>
+              <td colSpan={columns.length} className="px-4 py-6 text-center text-sm text-fg-muted">
+                No data available
+              </td>
             </tr>
-          ))}
+          ) : (
+            rows.map((row, rowIdx) => (
+              <tr key={rowIdx} className="hover:bg-surface-secondary transition-colors">
+                {row.map((cell, cellIdx) => (
+                  <td key={cellIdx} className="px-4 py-2.5 text-fg-secondary">
+                    {cell}
+                  </td>
+                ))}
+              </tr>
+            ))
+          )}
         </tbody>
       </table>
     </div>
@@ -45,4 +53,3 @@ const DataTable = ({ props }: BaseComponentProps<DataTableProps>): React.ReactNo
 };
 
 export default DataTable;
-

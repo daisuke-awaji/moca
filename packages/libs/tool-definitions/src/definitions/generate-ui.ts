@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { zodToJsonSchema } from '../utils/schema-converter.js';
 import type { ToolDefinition } from '../types.js';
+import { generateComponentPrompt } from '@moca/generative-ui-catalog';
 
 export const generateUiSchema = z.object({
   mode: z
@@ -32,30 +33,37 @@ export const generateUiSchema = z.object({
     ),
 });
 
+/**
+ * Build the tool description dynamically from the shared catalog.
+ * catalog.prompt() generates a complete description of all available components,
+ * their props, and usage guidelines — derived from the Zod schemas in the catalog.
+ */
+const catalogPrompt = generateComponentPrompt();
+
+const toolDescription =
+  'Generate rich UI components for display in the chat interface. ' +
+  'Use this tool to render structured data as tables, metric cards, charts, and other visual components. ' +
+  'Two modes are available:\n' +
+  '- "spec" mode: Provide a json-render UI spec directly (for simple/static UI)\n' +
+  '- "code" mode: Provide code that reads data files and generates a UI spec (for data-heavy scenarios like CSV/DB queries - saves tokens)\n\n' +
+  'The UI spec uses a flat element tree format:\n' +
+  '```json\n' +
+  '{\n' +
+  '  "root": "root_key",\n' +
+  '  "elements": {\n' +
+  '    "root_key": { "type": "Stack", "props": { "gap": 4 }, "children": ["child1"] },\n' +
+  '    "child1": { "type": "DataTable", "props": { "columns": ["A","B"], "rows": [["1","2"]] }, "children": [] }\n' +
+  '  }\n' +
+  '}\n' +
+  '```\n\n' +
+  'Available components (auto-generated from catalog):\n' +
+  catalogPrompt +
+  '\n\n' +
+  'In "code" mode, the code runs in a sandboxed CodeInterpreter. Print ONLY the JSON spec to stdout.';
+
 export const generateUiDefinition: ToolDefinition<typeof generateUiSchema> = {
   name: 'generate_ui',
-  description:
-    'Generate rich UI components for display in the chat interface. ' +
-    'Use this tool to render structured data as tables, metric cards, and other visual components. ' +
-    'Two modes are available:\n' +
-    '- "spec" mode: Provide a json-render UI spec directly (for simple/static UI)\n' +
-    '- "code" mode: Provide code that reads data files and generates a UI spec (for data-heavy scenarios like CSV/DB queries - saves tokens)\n\n' +
-    'The UI spec uses a flat element tree format:\n' +
-    '```json\n' +
-    '{\n' +
-    '  "root": "root_key",\n' +
-    '  "elements": {\n' +
-    '    "root_key": { "type": "Stack", "props": { "gap": 4 }, "children": ["child1"] },\n' +
-    '    "child1": { "type": "DataTable", "props": { "columns": ["A","B"], "rows": [["1","2"]] }, "children": [] }\n' +
-    '  }\n' +
-    '}\n' +
-    '```\n\n' +
-    'Available components:\n' +
-    '- Stack: Vertical layout container. Props: { gap?: number }. Has children.\n' +
-    '- Grid: Grid layout container. Props: { cols?: number, gap?: number }. Has children.\n' +
-    '- DataTable: Table display. Props: { columns: string[], rows: string[][], caption?: string }.\n' +
-    '- MetricCard: KPI/metric display. Props: { title: string, value: string, description?: string, change?: string, changeType?: "positive"|"negative"|"neutral" }.\n\n' +
-    'In "code" mode, the code runs in a sandboxed CodeInterpreter. Print ONLY the JSON spec to stdout.',
+  description: toolDescription,
   zodSchema: generateUiSchema,
   jsonSchema: zodToJsonSchema(generateUiSchema),
 };

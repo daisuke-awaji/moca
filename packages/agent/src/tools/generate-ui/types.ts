@@ -2,10 +2,12 @@
  * Type definitions for the generate_ui tool
  */
 
+import { COMPONENT_NAMES } from '@moca/generative-ui-catalog';
+
 /**
- * Supported component types in the moca UI catalog
+ * Supported component types in the UI catalog — derived from the shared catalog (SSoT).
  */
-export const MOCA_COMPONENT_TYPES = ['Stack', 'Grid', 'DataTable', 'MetricCard'] as const;
+export const MOCA_COMPONENT_TYPES = COMPONENT_NAMES;
 export type MocaComponentType = (typeof MOCA_COMPONENT_TYPES)[number];
 
 /**

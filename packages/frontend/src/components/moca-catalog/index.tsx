@@ -1,60 +1,27 @@
-import { defineCatalog } from '@json-render/core';
-import { schema, defineRegistry } from '@json-render/react';
-import { z } from 'zod';
+import { defineRegistry } from '@json-render/react';
+import { catalog } from '@moca/generative-ui-catalog';
 import DataTable from './DataTable';
 import MetricCard from './MetricCard';
 import Stack from './Stack';
 import Grid from './Grid';
+import BarChart from './BarChart';
+import LineChart from './LineChart';
+import PieChart from './PieChart';
 
-const catalog = defineCatalog(schema, {
-  components: {
-    Stack: {
-      props: z.object({
-        gap: z.number().optional(),
-      }),
-      slots: ['default'],
-      description: 'Vertical layout container',
-    },
-    Grid: {
-      props: z.object({
-        cols: z.number().optional(),
-        gap: z.number().optional(),
-      }),
-      slots: ['default'],
-      description: 'Grid layout container',
-    },
-    DataTable: {
-      props: z.object({
-        columns: z.array(z.string()),
-        rows: z.array(z.array(z.string())),
-        caption: z.string().optional(),
-      }),
-      slots: [],
-      description: 'Table display for tabular data',
-    },
-    MetricCard: {
-      props: z.object({
-        title: z.string(),
-        value: z.string(),
-        description: z.string().optional(),
-        change: z.string().optional(),
-        changeType: z.enum(['positive', 'negative', 'neutral']).optional(),
-      }),
-      slots: [],
-      description: 'KPI/metric display card',
-    },
-  },
-  actions: {},
-});
-
+/**
+ * Registry maps catalog component definitions to React implementations.
+ * The catalog (SSoT) is defined in @moca/generative-ui-catalog.
+ */
 const { registry } = defineRegistry(catalog, {
   components: {
     Stack,
     Grid,
     DataTable,
     MetricCard,
+    BarChart,
+    LineChart,
+    PieChart,
   },
 });
 
 export { catalog, registry };
-
