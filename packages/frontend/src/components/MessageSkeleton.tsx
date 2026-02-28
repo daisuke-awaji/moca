@@ -1,6 +1,6 @@
 /**
- * メッセージ読み込み中のスケルトンコンポーネント
- * セッション切り替え時のローディング状態を表示
+ * Skeleton component for loading messages
+ * Displays loading state during session switching
  */
 
 import React from 'react';
@@ -9,12 +9,12 @@ import { LoadingIndicator } from './ui/LoadingIndicator';
 export const MessageSkeleton: React.FC = () => {
   return (
     <div className="animate-pulse space-y-6 p-4">
-      {/* ユーザーメッセージ風のスケルトン */}
+      {/* User message-style skeleton */}
       <div className="flex justify-end">
         <div className="bg-border rounded-2xl rounded-tr-md h-16 w-80 max-w-[70%]"></div>
       </div>
 
-      {/* アシスタントメッセージ風のスケルトン */}
+      {/* Assistant message-style skeleton */}
       <div className="flex justify-start">
         <div className="bg-surface-secondary rounded-2xl rounded-tl-md p-4 w-96 max-w-[80%] space-y-2">
           <div className="h-4 bg-border rounded w-full"></div>
@@ -23,12 +23,12 @@ export const MessageSkeleton: React.FC = () => {
         </div>
       </div>
 
-      {/* 2番目のユーザーメッセージ風のスケルトン */}
+      {/* Second user message-style skeleton */}
       <div className="flex justify-end">
         <div className="bg-border rounded-2xl rounded-tr-md h-12 w-64 max-w-[60%]"></div>
       </div>
 
-      {/* 2番目のアシスタントメッセージ風のスケルトン */}
+      {/* Second assistant message-style skeleton */}
       <div className="flex justify-start">
         <div className="bg-surface-secondary rounded-2xl rounded-tl-md p-4 w-80 max-w-[75%] space-y-2">
           <div className="h-4 bg-border rounded w-full"></div>
@@ -36,7 +36,7 @@ export const MessageSkeleton: React.FC = () => {
         </div>
       </div>
 
-      {/* ローディングテキスト */}
+      {/* Loading text */}
       <LoadingIndicator message="会話履歴を読み込み中..." />
     </div>
   );

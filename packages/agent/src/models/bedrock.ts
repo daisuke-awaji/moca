@@ -10,7 +10,7 @@ export interface BedrockModelOptions {
 }
 
 /**
- * Bedrock モデルを作成
+ * Create a Bedrock model
  */
 export function createBedrockModel(options?: BedrockModelOptions): BedrockModel {
   const modelId = options?.modelId || config.BEDROCK_MODEL_ID;

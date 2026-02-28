@@ -21,12 +21,13 @@ const DEFAULT_CONFIG = {
   logRetentionDays: 7,
   tavilyApiKeySecretName: 'agentcore/default/tavily-api-key',
   githubTokenSecretName: 'agentcore/default/github-token',
+  gitlabTokenSecretName: 'agentcore/default/gitlab-token',
 };
 
 /**
  * Generate default resource prefix from environment name
  * @param env Environment name
- * @returns Resource prefix (e.g., 'donuts', 'donutsdev', 'donutspr123')
+ * @returns Resource prefix (e.g., 'moca', 'mocadev', 'mocapr123')
  */
 function getDefaultResourcePrefix(env: Environment): string {
   if (env === 'default') {
@@ -44,7 +45,12 @@ function getDefaultResourcePrefix(env: Environment): string {
  */
 function resolveConfig(env: Environment, input: EnvironmentConfigInput): EnvironmentConfig {
   return {
-    env: env,
+    // Spread input first so optional properties are automatically passed through.
+    // Adding a new optional property to EnvironmentConfig no longer requires
+    // updating this function — only properties with defaults need explicit entries below.
+    ...input,
+    // Required properties (derived or with defaults)
+    env,
     resourcePrefix: input.resourcePrefix ?? getDefaultResourcePrefix(env),
     deletionProtection: input.deletionProtection ?? DEFAULT_CONFIG.deletionProtection,
     corsAllowedOrigins: input.corsAllowedOrigins ?? DEFAULT_CONFIG.corsAllowedOrigins,
@@ -54,14 +60,9 @@ function resolveConfig(env: Environment, input: EnvironmentConfigInput): Environ
     cognitoDeletionProtection:
       input.cognitoDeletionProtection ?? DEFAULT_CONFIG.cognitoDeletionProtection,
     logRetentionDays: input.logRetentionDays ?? DEFAULT_CONFIG.logRetentionDays,
-    // Pass through optional properties
-    awsAccount: input.awsAccount,
     tavilyApiKeySecretName: input.tavilyApiKeySecretName ?? DEFAULT_CONFIG.tavilyApiKeySecretName,
     githubTokenSecretName: input.githubTokenSecretName ?? DEFAULT_CONFIG.githubTokenSecretName,
-    allowedSignUpEmailDomains: input.allowedSignUpEmailDomains,
-    customDomain: input.customDomain,
-    testUser: input.testUser,
-    eventRules: input.eventRules,
+    gitlabTokenSecretName: input.gitlabTokenSecretName ?? DEFAULT_CONFIG.gitlabTokenSecretName,
   };
 }
 
@@ -79,7 +80,7 @@ function getPrEnvironmentConfig(env: string): EnvironmentConfigInput {
   }
 
   return {
-    // resourcePrefix is auto-generated as 'donutspr123' from env 'pr-123'
+    // resourcePrefix is auto-generated as 'mocapr123' from env 'pr-123'
     memoryExpirationDays: 7, // Short retention for PR environments
     logRetentionDays: 3, // Short retention for PR environments
     tavilyApiKeySecretName: 'agentcore/dev/tavily-api-key', // Use dev secrets

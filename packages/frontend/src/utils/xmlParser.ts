@@ -1,5 +1,5 @@
 /**
- * ストリーミングXML解析用のヘルパー関数
+ * Helper functions for streaming XML parsing
  */
 
 export interface ParsedAgentConfig {
@@ -28,7 +28,7 @@ export interface XmlParseState {
 }
 
 /**
- * XMLパーサーの初期状態を作成
+ * Create initial state for the XML parser
  */
 export const createInitialXmlState = (): XmlParseState => ({
   currentTag: null,
@@ -44,8 +44,8 @@ export const createInitialXmlState = (): XmlParseState => ({
 });
 
 /**
- * ストリーミングXMLテキストを逐次解析
- * 完全なタグが閉じられた時点で内容を返す
+ * Incrementally parse streaming XML text
+ * Returns content when a complete tag is closed
  */
 export const parseStreamingXml = (
   xmlChunk: string,
@@ -70,12 +70,12 @@ export const parseStreamingXml = (
     };
   } = {};
 
-  // tool の処理用の正規表現
+  // Regular expression for processing tool tags
   const toolTagRegex = /<tool>(.*?)<\/tool>/g;
 
   const workingChunk = xmlChunk;
 
-  // system_prompt の処理
+  // Process system_prompt
   const systemPromptMatch = workingChunk.match(/<system_prompt>([\s\S]*?)(?:<\/system_prompt>|$)/);
   if (systemPromptMatch) {
     const content = systemPromptMatch[1];
@@ -85,7 +85,7 @@ export const parseStreamingXml = (
     }
   }
 
-  // tool の処理（完全なタグのみ）
+  // Process tool tags (complete tags only)
   let toolMatch;
   while ((toolMatch = toolTagRegex.exec(workingChunk)) !== null) {
     const toolName = toolMatch[1].trim();
@@ -95,7 +95,7 @@ export const parseStreamingXml = (
     }
   }
 
-  // scenario の処理
+  // Process scenario tags
   const scenarioMatches = workingChunk.match(/<scenario>([\s\S]*?)<\/scenario>/g);
   if (scenarioMatches) {
     scenarioMatches.forEach((scenarioXml) => {
@@ -106,7 +106,7 @@ export const parseStreamingXml = (
         const title = titleMatch[1].trim();
         const prompt = promptMatch[1].trim();
 
-        // 既に同じタイトルのシナリオが存在しない場合のみ追加
+        // Only add if a scenario with the same title does not already exist
         const existingScenario = state.scenarios.find((s) => s.title === title);
         if (!existingScenario) {
           const newScenario = { title, prompt };
@@ -121,7 +121,7 @@ export const parseStreamingXml = (
 };
 
 /**
- * 完成したParsedAgentConfigオブジェクトを返す
+ * Returns the completed ParsedAgentConfig object
  */
 export const getFinalConfig = (state: XmlParseState): ParsedAgentConfig => ({
   systemPrompt: state.systemPrompt,

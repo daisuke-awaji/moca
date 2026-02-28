@@ -1,5 +1,5 @@
 /**
- * Strands Message と AgentCore Memory PayloadType の変換ユーティリティ
+ * Conversion utilities for Strands Message and AgentCore Memory PayloadType
  */
 import {
   Message,
@@ -11,7 +11,7 @@ import {
 } from '@strands-agents/sdk';
 
 /**
- * ToolUse データの型定義
+ * Type definition for ToolUse data
  */
 interface ToolUseData {
   toolType: 'toolUse';
@@ -21,7 +21,7 @@ interface ToolUseData {
 }
 
 /**
- * ToolResult データの型定義
+ * Type definition for ToolResult data
  */
 interface ToolResultData {
   toolType: 'toolResult';
@@ -31,12 +31,12 @@ interface ToolResultData {
 }
 
 /**
- * ツールデータの Union 型
+ * Union type for tool data
  */
 type ToolData = ToolUseData | ToolResultData;
 
 /**
- * ImageBlock データの型定義（シリアライズ用）
+ * Type definition for ImageBlock data (for serialization)
  */
 interface ImageBlockData {
   type: 'imageBlock';
@@ -45,7 +45,7 @@ interface ImageBlockData {
 }
 
 /**
- * AgentCore Memory のConversational Payload型定義
+ * Type definition for AgentCore Memory Conversational Payload
  */
 export interface ConversationalPayload {
   conversational: {
@@ -55,19 +55,19 @@ export interface ConversationalPayload {
 }
 
 /**
- * AgentCore Memory のBlob Payload型定義
+ * Type definition for AgentCore Memory Blob Payload
  */
 export interface BlobPayload {
   blob: Uint8Array;
 }
 
 /**
- * シリアライズ可能なコンテンツブロック型
+ * Serializable content block type
  */
 type SerializableContentBlock = ContentBlock | ImageBlockData;
 
 /**
- * blob データの内容型定義（新形式）
+ * Type definition for blob data content (new format)
  */
 interface BlobData {
   messageType: 'content';
@@ -76,7 +76,7 @@ interface BlobData {
 }
 
 /**
- * 旧形式のblob データの内容型定義（後方互換性）
+ * Type definition for legacy blob data content (for backward compatibility)
  */
 interface LegacyBlobData {
   messageType: 'tool';
@@ -90,19 +90,19 @@ interface LegacyBlobData {
 }
 
 /**
- * AgentCore Memory のPayloadType型定義（Union型）
+ * Type definition for AgentCore Memory PayloadType (Union type)
  */
 export type AgentCorePayload = ConversationalPayload | BlobPayload;
 
 /**
- * ImageBlockをシリアライズ可能な形式に変換
+ * Convert ImageBlock to a serializable format
  * @param block ImageBlock
- * @returns ImageBlockData (Base64形式)
+ * @returns ImageBlockData (in Base64 format)
  */
 function serializeImageBlock(block: ContentBlock): ImageBlockData | null {
   if (block.type !== 'imageBlock') return null;
 
-  // ImageBlock の source から bytes を取得
+  // Get bytes from ImageBlock source
   const imageBlock = block as unknown as {
     type: 'imageBlock';
     format?: string;
@@ -111,7 +111,7 @@ function serializeImageBlock(block: ContentBlock): ImageBlockData | null {
 
   if (!imageBlock.source?.bytes) return null;
 
-  // Uint8Array を Base64 に変換
+  // Convert Uint8Array to Base64
   const base64 = Buffer.from(imageBlock.source.bytes).toString('base64');
 
   return {
@@ -122,26 +122,26 @@ function serializeImageBlock(block: ContentBlock): ImageBlockData | null {
 }
 
 /**
- * Strands Message から AgentCore Payload に変換
+ * Convert Strands Message to AgentCore Payload
  * @param message Strands Message
  * @returns AgentCore Payload (ConversationalPayload or BlobPayload)
  */
 export function messageToAgentCorePayload(message: Message): AgentCorePayload {
-  // content 配列が空または存在しない場合
+  // When content array is empty or does not exist
   if (!message.content || message.content.length === 0) {
     const agentCoreRole = message.role === 'user' ? 'USER' : 'ASSISTANT';
     return {
       conversational: {
-        content: { text: ' ' }, // 最小限の1文字
+        content: { text: ' ' }, // Minimum 1 character
         role: agentCoreRole,
       },
     };
   }
 
-  // content 配列にテキスト以外（toolUse/toolResult/imageBlock）が含まれるかチェック
+  // Check if content array contains non-text content (toolUse/toolResult/imageBlock)
   const hasNonTextContent = message.content.some((block) => block.type !== 'textBlock');
 
-  // テキストのみのシンプルなメッセージの場合は conversational payload
+  // Use conversational payload for simple text-only messages
   if (!hasNonTextContent && message.content.length === 1) {
     const textBlock = message.content[0];
     if (textBlock.type === 'textBlock' && 'text' in textBlock) {
@@ -155,8 +155,8 @@ export function messageToAgentCorePayload(message: Message): AgentCorePayload {
     }
   }
 
-  // 複雑なメッセージ（toolUse/toolResult/imageBlock含む、または複数のコンテンツブロック）は blob payload
-  // ImageBlock は Base64 にシリアライズして保存
+  // Complex messages (containing toolUse/toolResult/imageBlock, or multiple content blocks) use blob payload
+  // ImageBlock is serialized to Base64 for storage
   const serializedContent: SerializableContentBlock[] = message.content.map((block) => {
     if (block.type === 'imageBlock') {
       const serialized = serializeImageBlock(block);
@@ -171,7 +171,7 @@ export function messageToAgentCorePayload(message: Message): AgentCorePayload {
     content: serializedContent,
   };
 
-  // JSON文字列にシリアライズしてからUint8Arrayにエンコード
+  // Serialize to JSON string then encode as Uint8Array
   const encoder = new TextEncoder();
   return {
     blob: encoder.encode(JSON.stringify(blobData)),
@@ -179,12 +179,12 @@ export function messageToAgentCorePayload(message: Message): AgentCorePayload {
 }
 
 /**
- * AgentCore Payload から Strands Message に変換
+ * Convert AgentCore Payload to Strands Message
  * @param payload AgentCore Payload (ConversationalPayload or BlobPayload)
  * @returns Strands Message
  */
 export function agentCorePayloadToMessage(payload: AgentCorePayload): Message {
-  // conversational payload の場合
+  // When conversational payload
   if ('conversational' in payload) {
     const strandsRole = payload.conversational.role === 'USER' ? 'user' : 'assistant';
     const textBlock = new TextBlock(payload.conversational.content.text);
@@ -194,7 +194,7 @@ export function agentCorePayloadToMessage(payload: AgentCorePayload): Message {
     });
   }
 
-  // blob payload の場合
+  // When blob payload
   if ('blob' in payload && payload.blob) {
     // console.log('Blob payload received:', {
     //   type: typeof payload.blob,
@@ -211,51 +211,51 @@ export function agentCorePayloadToMessage(payload: AgentCorePayload): Message {
     try {
       let blobData: BlobData | null = null;
 
-      // 1. Uint8Array の場合（新形式）
+      // 1. When Uint8Array (new format)
       if (payload.blob instanceof Uint8Array) {
         // console.log('Processing as Uint8Array');
         const decoder = new TextDecoder();
         const blobString = decoder.decode(payload.blob);
         blobData = JSON.parse(blobString);
       }
-      // 2. Buffer の場合
+      // 2. When Buffer
       else if (typeof Buffer !== 'undefined' && Buffer.isBuffer && Buffer.isBuffer(payload.blob)) {
         // console.log('Processing as Buffer');
         const blobString = (payload.blob as Buffer).toString('utf8');
         blobData = JSON.parse(blobString);
       }
-      // 3. 直接オブジェクトの場合（古い形式 - 後方互換性）
+      // 3. When direct object (old format - backward compatibility)
       else if (typeof payload.blob === 'object' && payload.blob !== null) {
         // console.log('Processing as direct object (backward compatibility)');
         const blobObj = payload.blob as Record<string, unknown>;
 
-        // 古い形式のチェック
+        // Check for old format
         if (blobObj.messageType === 'tool') {
           blobData = blobObj as unknown as BlobData;
         }
       }
-      // 4. 文字列の場合（base64 エンコードされた可能性）
+      // 4. When string (possibly base64 encoded)
       else if (typeof payload.blob === 'string') {
         // console.log('Processing as string');
         try {
-          // base64 デコードを試行
+          // Attempt base64 decoding
           const decodedString = Buffer.from(payload.blob, 'base64').toString('utf8');
           blobData = JSON.parse(decodedString);
         } catch {
-          // base64 でない場合は直接 JSON パース
+          // If not base64, parse directly as JSON
           blobData = JSON.parse(payload.blob);
         }
       }
 
-      // blobData が取得できた場合の処理
+      // Process when blobData is obtained
       if (blobData && (blobData.messageType === 'content' || blobData.messageType === 'tool')) {
         const strandsRole = blobData.role as Role;
 
-        // 新形式: content配列全体を保存
+        // New format: save the entire content array
         if (blobData.messageType === 'content') {
-          // ImageBlockData を ImageBlock に復元
+          // Restore ImageBlockData to ImageBlock
           const restoredContent: ContentBlock[] = blobData.content.map((block) => {
-            // ImageBlockData の場合は ImageBlock に復元
+            // Restore ImageBlockData to ImageBlock
             if (
               block.type === 'imageBlock' &&
               'base64' in block &&
@@ -277,7 +277,7 @@ export function agentCorePayloadToMessage(payload: AgentCorePayload): Message {
           });
         }
 
-        // 旧形式: 後方互換性のため単一toolUse/toolResultを処理
+        // Old format: process single toolUse/toolResult for backward compatibility
         if (blobData.messageType === 'tool') {
           const legacyBlobData = blobData as unknown as LegacyBlobData;
           const content = createContentBlockFromToolData(legacyBlobData);
@@ -292,11 +292,11 @@ export function agentCorePayloadToMessage(payload: AgentCorePayload): Message {
     } catch (error) {
       console.error('Failed to parse blob data:', error);
       console.error('Raw blob payload:', payload.blob);
-      // パースエラーの場合はフォールバックに進む
+      // Proceed to fallback on parse error
     }
   }
 
-  // フォールバック: 不明なペイロードの場合
+  // Fallback: for unknown payload types
   console.warn('Unknown payload type, creating empty message');
   return new Message({
     role: 'assistant',
@@ -305,8 +305,8 @@ export function agentCorePayloadToMessage(payload: AgentCorePayload): Message {
 }
 
 /**
- * AgentCore Event から eventId を抽出
- * @param event AgentCore Event オブジェクト
+ * Extract eventId from AgentCore Event
+ * @param event AgentCore Event object
  * @returns eventId
  */
 export function extractEventId(event: { eventId?: string }): string {
@@ -314,13 +314,13 @@ export function extractEventId(event: { eventId?: string }): string {
 }
 
 /**
- * ツールデータから Strands ContentBlock を作成
- * @param toolData ツールデータ（ToolData または LegacyBlobData）
+ * Create Strands ContentBlock from tool data
+ * @param toolData Tool data (ToolData or LegacyBlobData)
  * @returns ContentBlock
  */
 function createContentBlockFromToolData(toolData: ToolData | LegacyBlobData): ContentBlock {
   if (toolData.toolType === 'toolUse') {
-    // ToolUseBlock を作成（Strands SDK の正確な型に基づく）
+    // Create ToolUseBlock (based on exact type from Strands SDK)
     return {
       type: 'toolUseBlock',
       name: toolData.name,
@@ -330,25 +330,25 @@ function createContentBlockFromToolData(toolData: ToolData | LegacyBlobData): Co
   }
 
   if (toolData.toolType === 'toolResult') {
-    // ToolResultBlock を作成（Strands SDK の正確な型に基づく）
+    // Create ToolResultBlock (based on exact type from Strands SDK)
     return {
       type: 'toolResultBlock',
       toolUseId: toolData.toolUseId,
       content: toolData.content,
       isError: toolData.isError,
-      status: 'success', // Strands SDK で必要なプロパティ
+      status: 'success', // Required property in Strands SDK
     } as unknown as ContentBlock;
   }
 
-  // フォールバック（通常ここには来ない）
+  // Fallback (normally unreachable)
   return new TextBlock(
     `[Unknown tool data: ${JSON.stringify(toolData)}]`
   ) as unknown as ContentBlock;
 }
 
 /**
- * 現在のタイムスタンプを取得（AgentCore Event用）
- * @returns Date オブジェクト
+ * Get the current timestamp (for AgentCore Event)
+ * @returns Date object
  */
 export function getCurrentTimestamp(): Date {
   return new Date();

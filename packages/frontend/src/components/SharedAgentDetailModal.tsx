@@ -1,6 +1,6 @@
 /**
- * 共有エージェント詳細モーダル
- * 共有されたエージェントの詳細情報を表示し、マイエージェントに追加する機能を提供
+ * Shared Agent Detail Modal
+ * Displays detailed information of a shared agent and provides functionality to add it to My Agents
  */
 
 import React from 'react';
@@ -128,7 +128,7 @@ export const SharedAgentDetailModal: React.FC<SharedAgentDetailModalProps> = ({
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6 min-h-0">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full">
-            {/* 左側: System Prompt */}
+            {/* Left side: System Prompt */}
             <div className="flex flex-col min-h-0">
               <h3 className="text-sm font-semibold text-fg-default mb-3">
                 {t('agent.systemPromptLabel2')}
@@ -140,7 +140,7 @@ export const SharedAgentDetailModal: React.FC<SharedAgentDetailModalProps> = ({
               </div>
             </div>
 
-            {/* 右側: Tools & Scenarios */}
+            {/* Right side: Tools & Scenarios */}
             <div className="space-y-6">
               {/* Tools */}
               <div>

@@ -1,6 +1,6 @@
 /**
- * メモリ管理モーダル
- * 保存されたメモリレコードの一覧・検索・削除機能を提供
+ * Memory Management Modal
+ * Provides list, search, and delete functionality for saved memory records
  */
 
 import { useState, useEffect } from 'react';
@@ -16,7 +16,7 @@ interface MemoryManagementModalProps {
 }
 
 /**
- * メモリレコード表示コンポーネント
+ * Memory record display component
  */
 interface MemoryRecordItemProps {
   record: MemoryRecord;
@@ -33,11 +33,11 @@ function MemoryRecordItem({ record, onDelete, isDeleting }: MemoryRecordItemProp
     }
   };
 
-  // コンテンツを100文字に制限
+  // Truncate content to 100 characters
   const truncatedContent =
     record.content.length > 100 ? record.content.slice(0, 100) + '...' : record.content;
 
-  // recordIdが空の場合は削除ボタンを無効化
+  // Disable delete button if recordId is empty
   const canDelete = Boolean(record.recordId && record.recordId.trim());
 
   return (
@@ -73,16 +73,19 @@ function MemoryRecordItem({ record, onDelete, isDeleting }: MemoryRecordItemProp
 }
 
 /**
- * メモリ管理モーダル
+ * Memory management modal
  */
 export function MemoryManagementModal({ isOpen, onClose }: MemoryManagementModalProps) {
   const { t } = useTranslation();
   const {
     records,
     isLoading,
+    isLoadingMore,
     isDeleting,
     error,
+    nextToken,
     loadMemoryRecords,
+    loadMoreMemoryRecords,
     deleteMemoryRecord,
     searchMemoryRecords,
     clearError,
@@ -92,14 +95,14 @@ export function MemoryManagementModal({ isOpen, onClose }: MemoryManagementModal
   const [searchResults, setSearchResults] = useState<MemoryRecord[]>([]);
   const [isSearching, setIsSearching] = useState(false);
 
-  // モーダル表示時にデータを読み込み
+  // Load data when modal opens
   useEffect(() => {
     if (isOpen) {
       loadMemoryRecords();
     }
   }, [isOpen, loadMemoryRecords]);
 
-  // 検索実行
+  // Execute search
   const handleSearch = async () => {
     if (!searchQuery.trim()) {
       setSearchResults([]);
@@ -117,30 +120,30 @@ export function MemoryManagementModal({ isOpen, onClose }: MemoryManagementModal
     }
   };
 
-  // Enterキーでの検索
+  // Search on Enter key
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       handleSearch();
     }
   };
 
-  // 検索クリア
+  // Clear search
   const handleClearSearch = () => {
     setSearchQuery('');
     setSearchResults([]);
   };
 
-  // 削除処理
+  // Delete processing
   const handleDelete = (recordId: string) => {
     deleteMemoryRecord(recordId);
   };
 
-  // 表示するレコード（検索中は検索結果、通常時は全レコード）
+  // Records to display (search results when searching, all records otherwise)
   const displayRecords = searchQuery ? searchResults : records;
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="xl" className="max-w-4xl h-[70vh] flex flex-col">
-      {/* ヘッダー */}
+      {/* Header */}
       <div className="border-b border-border px-6 py-4 flex-shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -157,7 +160,7 @@ export function MemoryManagementModal({ isOpen, onClose }: MemoryManagementModal
         <p className="text-sm text-fg-secondary mt-2">{t('memory.description')}</p>
       </div>
 
-      {/* 検索セクション */}
+      {/* Search section */}
       <div className="px-6 py-4 border-b border-border flex-shrink-0">
         <div className="flex gap-3">
           <div className="flex-1 relative">
@@ -191,9 +194,9 @@ export function MemoryManagementModal({ isOpen, onClose }: MemoryManagementModal
         </div>
       </div>
 
-      {/* コンテンツエリア */}
+      {/* Content area */}
       <div className="px-6 py-4 overflow-y-auto flex-1 min-h-0">
-        {/* エラー表示 */}
+        {/* Error display */}
         {error && (
           <div className="mb-4 p-3 bg-feedback-error-bg border border-feedback-error-border rounded-lg flex items-start gap-2">
             <AlertCircle className="w-4 h-4 text-feedback-error mt-0.5 flex-shrink-0" />
@@ -209,7 +212,7 @@ export function MemoryManagementModal({ isOpen, onClose }: MemoryManagementModal
           </div>
         )}
 
-        {/* ローディング */}
+        {/* Loading */}
         {isLoading && (
           <div className="flex items-center justify-center py-8">
             <Loader2 className="w-6 h-6 animate-spin text-fg-disabled" />
@@ -217,7 +220,7 @@ export function MemoryManagementModal({ isOpen, onClose }: MemoryManagementModal
           </div>
         )}
 
-        {/* メモリレコード一覧 */}
+        {/* Memory record list */}
         {!isLoading && (
           <>
             {searchQuery && (
@@ -253,13 +256,31 @@ export function MemoryManagementModal({ isOpen, onClose }: MemoryManagementModal
                     isDeleting={isDeleting === record.recordId}
                   />
                 ))}
+                {!searchQuery && nextToken && (
+                  <div className="flex justify-center pt-2">
+                    <button
+                      onClick={loadMoreMemoryRecords}
+                      disabled={isLoadingMore}
+                      className="px-4 py-2 text-sm font-medium text-fg-secondary bg-surface-primary border border-border-strong rounded-md hover:bg-surface-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                    >
+                      {isLoadingMore ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          {t('common.loading')}
+                        </>
+                      ) : (
+                        t('memory.loadMore')
+                      )}
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </>
         )}
       </div>
 
-      {/* フッター */}
+      {/* Footer */}
       <div className="border-t border-border px-6 py-4 bg-surface-secondary flex-shrink-0">
         <div className="flex justify-between items-center">
           <p className="text-xs text-fg-muted">

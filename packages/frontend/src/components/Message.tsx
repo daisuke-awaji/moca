@@ -212,7 +212,7 @@ export const Message: React.FC<MessageProps> = ({ message }) => {
           hasToolContent ? 'max-w-full' : isUser ? 'max-w-3xl ml-auto' : 'max-w-4xl'
         }`}
       >
-        {/* メッセージバブル */}
+        {/* Message bubble */}
         <div
           className={`relative ${
             hasToolContent
@@ -222,7 +222,7 @@ export const Message: React.FC<MessageProps> = ({ message }) => {
                 : 'message-bubble message-assistant'
           } ${message.isStreaming ? 'bg-opacity-90' : ''}`}
         >
-          {/* エラーアイコン表示 */}
+          {/* Error icon display */}
           {message.isError && (
             <div className="flex items-center gap-2 mb-2 text-feedback-error">
               <AlertTriangle className="w-5 h-5" />
@@ -230,7 +230,7 @@ export const Message: React.FC<MessageProps> = ({ message }) => {
             </div>
           )}
 
-          {/* メッセージ内容 */}
+          {/* Message content */}
           <div className="prose prose-sm max-w-none">
             <div className="message-contents space-y-2">
               {message.contents.map((content, index) => {
@@ -289,7 +289,7 @@ export const Message: React.FC<MessageProps> = ({ message }) => {
                 }
               })}
 
-              {/* ストリーミング中で、次のコンテンツを待っている状態でTypingIndicatorを表示 */}
+              {/* Show TypingIndicator while streaming, waiting for the next content */}
               {message.isStreaming &&
                 (message.contents.length === 0 ||
                   message.contents[message.contents.length - 1]?.type === 'toolResult') && (

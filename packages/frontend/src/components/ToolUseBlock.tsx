@@ -10,7 +10,7 @@ export const ToolUseBlock: React.FC<ToolUseBlockProps> = ({ toolUse }) => {
   const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
 
-  // ステータスに基づくスタイル（白背景統一、アイコンのみ変更）
+  // Styles based on status (unified white background, only icon changes)
   const getStatusStyles = () => {
     switch (toolUse.status) {
       case 'pending':
@@ -102,24 +102,24 @@ export const ToolUseBlock: React.FC<ToolUseBlockProps> = ({ toolUse }) => {
 
   return (
     <div className="tool-use-block w-full">
-      {/* 白背景・グレー枠線のメインコンテナ */}
+      {/* Main container with white background and gray border */}
       <div className="bg-surface-primary border border-border-strong rounded-lg text-sm hover:shadow-sm transition-shadow">
-        {/* ヘッダー部分（全体クリック可能） */}
+        {/* Header section (entire area is clickable) */}
         <button
           onClick={() => setIsExpanded(!isExpanded)}
           className="flex items-center gap-2 px-3 py-1.5 w-full text-left hover:bg-surface-secondary transition-colors"
           aria-label={isExpanded ? '入力を隠す' : '入力を表示'}
         >
-          {/* アイコンとステータス */}
+          {/* Icon and status */}
           <div className={`flex items-center ${statusStyles.statusColor}`}>{statusStyles.icon}</div>
 
-          {/* ツール名 */}
+          {/* Tool name */}
           <span className="font-medium text-fg-default">{toolUse.name}</span>
 
-          {/* ステータス */}
+          {/* Status */}
           <span className={`text-xs ${statusStyles.statusColor} capitalize`}>{toolUse.status}</span>
 
-          {/* 展開ボタン */}
+          {/* Expand button */}
           <div className="text-fg-disabled ml-auto">
             <svg
               className={`w-3 h-3 transform transition-transform duration-200 ${
@@ -139,7 +139,7 @@ export const ToolUseBlock: React.FC<ToolUseBlockProps> = ({ toolUse }) => {
           </div>
         </button>
 
-        {/* 入力内容（展開時、枠内に統合） */}
+        {/* Input content (integrated inside frame when expanded) */}
         {isExpanded && (
           <div className="px-3 pb-3 pt-1 border-t border-border">
             <div className="flex items-center justify-between mb-2">

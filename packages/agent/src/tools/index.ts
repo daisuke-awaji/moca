@@ -12,8 +12,11 @@ export { novaReelTool } from './nova-reel/index.js';
 export { callAgentTool } from './call-agent.js';
 export { manageAgentTool } from './manage-agent.js';
 export { memorySearchTool } from './memory-search.js';
+export { browserTool } from './browser/index.js';
+export { todoTool } from './todo/index.js';
+export { thinkTool } from './think.js';
 
-// ローカルツール配列のインポート
+// Import local tool array
 import { executeCommandTool } from './execute-command.js';
 import { tavilySearchTool } from './tavily-search.js';
 import { tavilyExtractTool } from './tavily-extract.js';
@@ -27,10 +30,13 @@ import { novaReelTool } from './nova-reel/index.js';
 import { callAgentTool } from './call-agent.js';
 import { manageAgentTool } from './manage-agent.js';
 import { memorySearchTool } from './memory-search.js';
+import { browserTool } from './browser/index.js';
+import { todoTool } from './todo/index.js';
+import { thinkTool } from './think.js';
 
 /**
- * Agent に内蔵されるローカルツール一覧
- * 新しいツールを追加する場合はここに追加
+ * List of local tools built into the Agent
+ * Add new tools here
  */
 export const localTools = [
   executeCommandTool,
@@ -46,4 +52,7 @@ export const localTools = [
   callAgentTool,
   manageAgentTool,
   memorySearchTool,
+  browserTool,
+  todoTool,
+  thinkTool,
 ];

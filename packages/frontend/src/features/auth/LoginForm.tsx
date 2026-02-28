@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ZodError } from 'zod';
-import { Donut } from 'lucide-react';
+import { Coffee } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import { createLoginSchema, type LoginFormData } from '../../schemas/auth';
 import { Button } from '../../components/ui/Button';
@@ -80,10 +80,10 @@ export const LoginForm: React.FC<LoginFormProps> = ({
     <div className="min-h-screen flex items-center justify-center bg-surface-secondary">
       <div className="max-w-md w-full space-y-8 p-8">
         <div className="text-center">
-          {/* メインアイコン */}
+          {/* Main icon */}
           <div className="relative mb-6">
             <div className="absolute inset-0 bg-amber-200 rounded-full blur-2xl opacity-30 scale-125"></div>
-            <Donut className="w-16 h-16 text-amber-600 mx-auto" />
+            <Coffee className="w-16 h-16 text-amber-600 mx-auto" />
           </div>
           <h2 className="text-3xl font-bold text-amber-900 mb-2">{t('auth.welcomeTitle')}</h2>
           <p className="text-fg-secondary text-sm">{t('auth.welcomeDescription')}</p>

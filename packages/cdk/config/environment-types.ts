@@ -23,7 +23,7 @@ export interface EnvironmentConfig {
    * Resource name prefix
    * Used as common prefix for all resources (Gateway, Cognito, S3, API, etc.)
    * Must contain only lowercase letters and numbers (no hyphens or underscores)
-   * Examples: 'donuts', 'donutsdev', 'donutsstg', 'donutsprd'
+   * Examples: 'moca', 'mocadev', 'mocastg', 'mocaprd'
    */
   resourcePrefix: string;
 
@@ -86,6 +86,22 @@ export interface EnvironmentConfig {
   githubTokenSecretName?: string;
 
   /**
+   * GitLab Token Secret Name (Secrets Manager)
+   * Set for environments to retrieve GitLab token from Secrets Manager
+   * Used for glab CLI authentication and git credential configuration
+   * NOTE: This is a secret NAME/ID reference, not the actual secret value
+   * pragma: allowlist secret
+   */
+  gitlabTokenSecretName?: string;
+
+  /**
+   * GitLab Host (optional)
+   * Hostname of the GitLab instance (e.g., 'gitlab.com' or 'gitlab.example.com')
+   * @default 'gitlab.com'
+   */
+  gitlabHost?: string;
+
+  /**
    * Allowed email domains for sign-up (optional)
    * If set, only emails from these domains can sign up
    * Example: ['amazon.com', 'amazon.jp']
@@ -130,6 +146,24 @@ export interface EnvironmentConfig {
      */
     password: string;
   };
+
+  /**
+   * Microsoft Graph OAuth2 Credential Provider ARN (optional)
+   * Created via AgentCore Identity management console.
+   * When set together with microsoftGraphOAuthSecretArn, enables OneDrive OpenAPI target.
+   * Format: arn:aws:bedrock-agentcore:{region}:{account}:token-vault/{id}/oauth2credentialprovider/{name}
+   */
+  microsoftGraphOAuthProviderArn?: string;
+
+  /**
+   * Microsoft Graph OAuth2 Secret ARN (optional)
+   * The Secrets Manager secret ARN auto-generated when creating the OAuth2 credential provider.
+   * Required together with microsoftGraphOAuthProviderArn to enable OneDrive OpenAPI target.
+   * Format: arn:aws:secretsmanager:{region}:{account}:secret:{name}
+   * NOTE: This is a secret ARN reference, not the actual secret value
+   * pragma: allowlist secret
+   */
+  microsoftGraphOAuthSecretArn?: string;
 
   /**
    * Event rules configuration (optional)

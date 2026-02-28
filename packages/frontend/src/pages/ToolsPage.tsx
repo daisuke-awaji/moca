@@ -1,6 +1,6 @@
 /**
- * ツール一覧ページ
- * AgentCore Gateway のツール一覧・検索機能を提供
+ * Tools List Page
+ * Provides tool list and search functionality for AgentCore Gateway
  */
 
 import { useState, useEffect } from 'react';
@@ -20,7 +20,7 @@ import { getToolIcon } from '../utils/toolIcons';
 import type { MCPTool } from '../api/tools';
 
 /**
- * ツールアイテムコンポーネント
+ * Tool item component
  */
 interface ToolItemProps {
   tool: MCPTool;
@@ -107,7 +107,7 @@ function ToolItem({ tool }: ToolItemProps) {
 }
 
 /**
- * ツール一覧ページメインコンポーネント
+ * Main component for the tools list page
  */
 export function ToolsPage() {
   const { t } = useTranslation();

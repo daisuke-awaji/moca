@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ZodError, z } from 'zod';
-import { Donut, ArrowLeft } from 'lucide-react';
+import { Coffee, ArrowLeft } from 'lucide-react';
 import { forgotPassword } from '../../lib/cognito';
 import { useTranslation } from 'react-i18next';
 
@@ -76,10 +76,10 @@ export const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({
     <div className="min-h-screen flex items-center justify-center bg-surface-secondary">
       <div className="max-w-md w-full space-y-8 p-8">
         <div className="text-center">
-          {/* メインアイコン */}
+          {/* Main icon */}
           <div className="relative mb-6">
             <div className="absolute inset-0 bg-amber-200 rounded-full blur-2xl opacity-30 scale-125"></div>
-            <Donut className="w-16 h-16 text-amber-600 mx-auto" />
+            <Coffee className="w-16 h-16 text-amber-600 mx-auto" />
           </div>
           <h2 className="text-3xl font-bold text-amber-900 mb-2">
             {t('auth.forgotPassword.title')}

@@ -4,15 +4,15 @@ import type { Environment, EnvironmentConfigInput } from './environment-types';
 /**
  * Base prefix for resource naming
  * All resources are named in the format: {BASE_PREFIX}{env}
- * Examples: donuts, donutsdev, donutsstg, donutsprd
+ * Examples: moca, mocadev, mocastg, mocaprd
  */
-export const BASE_PREFIX = 'donuts';
+export const BASE_PREFIX = 'moca';
 
 /**
  * Environment-specific configurations
  *
  * - env: Automatically derived from object key
- * - resourcePrefix: Auto-generated as 'donuts' + env if not specified
+ * - resourcePrefix: Auto-generated as 'moca' + env if not specified
  * - Others: Default values applied if not specified
  *
  * Default values:
@@ -25,6 +25,7 @@ export const BASE_PREFIX = 'donuts';
  *   - logRetentionDays: 7
  *   - tavilyApiKeySecretName: 'agentcore/default/tavily-api-key'
  *   - githubTokenSecretName: 'agentcore/default/github-token'
+ *   - gitlabTokenSecretName: 'agentcore/default/gitlab-token'
  */
 export const environments: Record<Environment, EnvironmentConfigInput> = {
   /**
@@ -38,6 +39,7 @@ export const environments: Record<Environment, EnvironmentConfigInput> = {
   dev: {
     tavilyApiKeySecretName: 'agentcore/dev/tavily-api-key',
     githubTokenSecretName: 'agentcore/dev/github-token',
+    gitlabTokenSecretName: 'agentcore/dev/gitlab-token',
     eventRules: [
       {
         id: 's3-upload',
@@ -48,7 +50,7 @@ export const environments: Record<Environment, EnvironmentConfigInput> = {
           detailType: ['Object Created'],
           detail: {
             bucket: {
-              name: [{ prefix: 'donuts-user-storage-' }],
+              name: [{ prefix: 'moca-user-storage-' }],
             },
           },
         },
@@ -83,6 +85,7 @@ export const environments: Record<Environment, EnvironmentConfigInput> = {
     logRetentionDays: 14,
     tavilyApiKeySecretName: 'agentcore/stg/tavily-api-key',
     githubTokenSecretName: 'agentcore/stg/github-token',
+    gitlabTokenSecretName: 'agentcore/stg/gitlab-token',
   },
 
   /**
@@ -98,5 +101,6 @@ export const environments: Record<Environment, EnvironmentConfigInput> = {
     logRetentionDays: 30,
     tavilyApiKeySecretName: 'agentcore/prd/tavily-api-key',
     githubTokenSecretName: 'agentcore/prd/github-token',
+    gitlabTokenSecretName: 'agentcore/prd/gitlab-token',
   },
 };

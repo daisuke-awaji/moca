@@ -11,6 +11,9 @@ export * from './call-agent.js';
 export * from './nova-reel.js';
 export * from './manage-agent.js';
 export * from './memory-search.js';
+export * from './browser.js';
+export * from './todo.js';
+export * from './think.js';
 
 import { executeCommandDefinition } from './execute-command.js';
 import { fileEditorDefinition } from './file-editor.js';
@@ -25,6 +28,9 @@ import { callAgentDefinition } from './call-agent.js';
 import { novaReelDefinition } from './nova-reel.js';
 import { manageAgentDefinition } from './manage-agent.js';
 import { memorySearchDefinition } from './memory-search.js';
+import { browserDefinition } from './browser.js';
+import { todoDefinition } from './todo.js';
+import { thinkDefinition } from './think.js';
 
 /**
  * All tool definitions array
@@ -43,6 +49,9 @@ export const allToolDefinitions = [
   novaReelDefinition,
   manageAgentDefinition,
   memorySearchDefinition,
+  browserDefinition,
+  todoDefinition,
+  thinkDefinition,
 ];
 
 /**

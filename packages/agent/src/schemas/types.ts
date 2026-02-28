@@ -1,5 +1,5 @@
 /**
- * JSON Schema プロパティの型定義
+ * Type definition for JSON Schema properties
  */
 export interface JSONSchemaProperty {
   type: string;
@@ -7,7 +7,7 @@ export interface JSONSchemaProperty {
 }
 
 /**
- * JSON Schema の型定義
+ * Type definition for JSON Schema
  */
 export interface JSONSchema {
   type: string;
@@ -16,7 +16,7 @@ export interface JSONSchema {
 }
 
 /**
- * MCP ツール定義の型
+ * Type definition for MCP tool
  */
 export interface MCPToolDefinition {
   name: string;
@@ -25,6 +25,6 @@ export interface MCPToolDefinition {
 }
 
 /**
- * ツール入力の型定義
+ * Type definition for tool input
  */
 export type ToolInput = Record<string, unknown>;

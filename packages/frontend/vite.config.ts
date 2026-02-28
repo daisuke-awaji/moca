@@ -10,8 +10,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'icons/*.png'],
       manifest: {
-        name: 'Donuts Chat',
-        short_name: 'Donuts',
+        name: 'Moca Chat',
+        short_name: 'Moca',
         description: 'AI Chat Application powered by AgentCore',
         start_url: '/',
         scope: '/',
@@ -70,7 +70,7 @@ export default defineConfig({
     }),
   ],
   define: {
-    global: 'globalThis', // Node.js の global を globalThis にマッピング
+    global: 'globalThis', // Map Node.js global to globalThis
   },
   server: {
     proxy: {
@@ -85,15 +85,15 @@ export default defineConfig({
     },
   },
   build: {
-    // Rollup の出力設定
+    // Rollup output settings
     rollupOptions: {
       output: {
-        // 大きなライブラリを別チャンクに分離してキャッシュ効率を向上
+        // Separate large libraries into separate chunks to improve cache efficiency
         manualChunks: {
-          // React 関連（コアライブラリ）
+          // React related (core libraries)
           'vendor-react': ['react', 'react-dom', 'react-router-dom'],
 
-          // Markdown レンダリング関連（比較的大きい）
+          // Markdown rendering related (relatively large)
           'vendor-markdown': [
             'react-markdown',
             'remark-gfm',
@@ -102,34 +102,34 @@ export default defineConfig({
             'katex',
           ],
 
-          // Mermaid ダイアグラム（非常に大きい）
+          // Mermaid diagrams (very large)
           'vendor-mermaid': ['mermaid'],
 
-          // シンタックスハイライト（大きい）
+          // Syntax highlighting (large)
           'vendor-syntax': ['react-syntax-highlighter'],
 
-          // 認証関連
+          // Authentication related
           'vendor-auth': ['amazon-cognito-identity-js'],
 
-          // 状態管理とユーティリティ
+          // State management and utilities
           'vendor-utils': ['zustand', 'zod', 'uuid', 'nanoid'],
         },
       },
     },
 
-    // チャンクサイズ警告の閾値（500KB）
+    // Chunk size warning threshold (500KB)
     chunkSizeWarningLimit: 500,
 
-    // Source map を production では無効化（サイズ削減）
+    // Disable source maps in production (reduce size)
     sourcemap: false,
 
-    // CSS のコード分割
+    // CSS code splitting
     cssCodeSplit: true,
 
-    // 最小化設定
+    // Minification settings
     minify: 'esbuild',
 
-    // Target を modern browsers に設定してより小さなバンドルを生成
+    // Set target to modern browsers for smaller bundle
     target: 'es2020',
   },
 });

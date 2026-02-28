@@ -4,7 +4,7 @@ import { ModalContent } from './ModalContent';
 import { ModalFooter } from './ModalFooter';
 import { ConfirmModal } from './ConfirmModal';
 
-// Compound Components パターンでエクスポート
+// Export using Compound Components pattern
 export const Modal = Object.assign(ModalRoot, {
   Header: ModalHeader,
   Icon: ModalIcon,
@@ -14,12 +14,12 @@ export const Modal = Object.assign(ModalRoot, {
   Footer: ModalFooter,
 });
 
-// 個別エクスポート（必要に応じて）
+// Individual exports (as needed)
 export { ModalRoot };
 export { ModalHeader, ModalIcon, ModalTitle, ModalCloseButton };
 export { ModalContent };
 export { ModalFooter };
 export { ConfirmModal };
 
-// 型エクスポート
+// Type exports
 export type * from './types';

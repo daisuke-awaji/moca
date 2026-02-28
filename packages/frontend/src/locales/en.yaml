@@ -62,9 +62,9 @@ auth:
   checkEmail: Please check your email
   enterVerificationCode: Enter the verification code to activate your account
   resendCode: Resend Code
-  welcomeTitle: Donuts
-  welcomeDescription: This is a demo application of your own
-  welcomeDescriptionLine2: AI Agent powered by Amazon Bedrock AgentCore
+  welcomeTitle: Moca
+  welcomeDescription: Create. Connect. Delegate.
+  welcomeDescriptionLine2: Your own AI agent team
   placeholderUsername: Enter username
   placeholderPassword: Enter password
   placeholderConfirmPassword: Re-enter password
@@ -418,7 +418,7 @@ storage:
   dropFiles: Drop files
   folderNamePlaceholder: Enter folder name
   folderNameSpaceError: Folder name cannot contain spaces
-  itemCount: '{{count}} items • Max file size: 5MB'
+  itemCount: '{{count}} items • Max file size: 500MB'
   setAsWorkingDirectory: Set as working directory
   currentWorkingDirectory: Current working directory
   workingDirectory: Working directory
@@ -465,6 +465,7 @@ memory:
   cannotDeleteTooltip: Cannot delete (Invalid record ID)
   deleteConfirm: Are you sure you want to delete this memory?
   searching: Searching
+  loadMore: Load More
 
 # Settings
 settings:
@@ -770,11 +771,11 @@ triggers:
 
 # Home Page
 home:
-  title: Your Personal AI Agent
-  description: From questions to consultations and idea organization.
-  descriptionLine2: Like a sweet donut, always by your side.
+  title: Build your AI agents.
+  description: Create. Connect. Delegate.
+  descriptionLine2: Your own AI agent team
   getStarted: Get Started
-  footer: © 2025 Donuts AI Assistant. Made with ❤️ and a lot of coffee.
+  footer: Moca — Multi-agent Orchestratn Chat on AgentCore
 
 # Modal
 modal:
@@ -1565,3 +1566,25 @@ defaultAgents:
       taskAutomation:
         title: Create Task Automation Agent
         prompt: "I want to create an agent that automates specific tasks.\n\nTask to automate: \nInput format: \nExpected output: \nFrequency: \n\nPlease design an agent optimized for this workflow."
+  browserAgent:
+    name: Web Browser Agent
+    description: An agent that operates websites and performs web tasks on your behalf, showing progress with screenshots at every step
+    scenarios:
+      infoGathering:
+        title: Website Information Gathering
+        prompt: "Please visit the following URL and collect the key information from the page.\n\nURL: https://example.com\n\nTake screenshots at each step and summarize the content."
+      pageCapture:
+        title: Page Screenshot Capture
+        prompt: "Please visit the following URL and take screenshots.\n\nURL: https://example.com\n\nScroll through the entire page and capture multiple screenshots."
+      webSearch:
+        title: Web Search + Browse
+        prompt: "Search for the latest information about \"Amazon Bedrock AgentCore\", then open the top results in the browser to verify the details. Report back with screenshots."
+      formOperation:
+        title: Form Operations
+        prompt: "Please visit the following website and fill in the form with the specified information. Show screenshots at each step.\n\nURL: \nInput data: "
+      siteExploration:
+        title: Site Exploration
+        prompt: "Please explore the following website to understand the site structure and main content. Follow the main links from the top page, take screenshots of each page, and create a sitemap.\n\nURL: https://example.com"
+      monitoring:
+        title: Page Status Check
+        prompt: "Please visit the following URL and check the current page status with screenshots. Verify whether the page displays correctly and check for any errors.\n\nURL: https://example.com"
