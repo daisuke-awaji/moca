@@ -13,6 +13,7 @@ import { useThemeStore } from '../stores/themeStore';
 import { TypingIndicator } from './TypingIndicator';
 import { ToolUseBlock } from './ToolUseBlock';
 import { ToolResultBlock } from './ToolResultBlock';
+import { JsonRenderBlock } from './JsonRenderBlock';
 import { MermaidDiagram } from './MermaidDiagram';
 import { S3FileLink } from './S3FileLink';
 import { S3Image } from './S3Image';
@@ -253,13 +254,30 @@ export const Message: React.FC<MessageProps> = ({ message }) => {
                       <ToolUseBlock key={`tool-use-${index}`} toolUse={content.toolUse} />
                     ) : null;
 
-                  case 'toolResult':
-                    return content.toolResult ? (
+                  case 'toolResult': {
+                    if (!content.toolResult) return null;
+                    const correspondingToolUse = message.contents.find(
+                      (c) =>
+                        c.type === 'toolUse' &&
+                        c.toolUse &&
+                        (c.toolUse.id === content.toolResult!.toolUseId ||
+                          c.toolUse.originalToolUseId === content.toolResult!.toolUseId)
+                    );
+                    if (correspondingToolUse?.toolUse?.name === 'generate_ui') {
+                      return (
+                        <JsonRenderBlock
+                          key={`json-render-${index}`}
+                          content={content.toolResult.content}
+                        />
+                      );
+                    }
+                    return (
                       <ToolResultBlock
                         key={`tool-result-${index}`}
                         toolResult={content.toolResult}
                       />
-                    ) : null;
+                    );
+                  }
 
                   case 'image': {
                     if (!content.image) return null;
