@@ -26,6 +26,7 @@ interface MemoryState {
 
   // Loading state
   isLoading: boolean;
+  isLoadingMore: boolean;
   isDeleting: string | null; // Record ID being deleted
 
   // Error state
@@ -54,6 +55,7 @@ export const useMemoryStore = create<MemoryState>()(
         isMemoryEnabled: true, // Default is ON
         records: [],
         isLoading: false,
+        isLoadingMore: false,
         isDeleting: null,
         error: null,
 
@@ -97,7 +99,7 @@ export const useMemoryStore = create<MemoryState>()(
           if (!nextToken) return;
 
           try {
-            set({ isLoading: true, error: null });
+            set({ isLoadingMore: true, error: null });
 
             const data = await fetchMemoryRecords(nextToken);
 
@@ -112,7 +114,7 @@ export const useMemoryStore = create<MemoryState>()(
             set({ error: errorMessage });
             logger.error('[MemoryStore] Error loading more records:', error);
           } finally {
-            set({ isLoading: false });
+            set({ isLoadingMore: false });
           }
         },
 
