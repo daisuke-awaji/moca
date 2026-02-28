@@ -44,10 +44,7 @@ const browserSchema = z.object({
     .describe('Browser viewport height in pixels (for startSession, default: 720)'),
 
   // For navigate
-  url: z
-    .string()
-    .optional()
-    .describe('URL to navigate to (REQUIRED for navigate action)'),
+  url: z.string().optional().describe('URL to navigate to (REQUIRED for navigate action)'),
 
   // For click / type / waitForElement
   selector: z

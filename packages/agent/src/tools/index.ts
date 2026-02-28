@@ -11,6 +11,7 @@ export { imageToTextTool } from './image-to-text/index.js';
 export { novaReelTool } from './nova-reel/index.js';
 export { callAgentTool } from './call-agent.js';
 export { manageAgentTool } from './manage-agent.js';
+export { memorySearchTool } from './memory-search.js';
 export { browserTool } from './browser/index.js';
 export { todoTool } from './todo/index.js';
 export { thinkTool } from './think.js';
@@ -28,6 +29,7 @@ import { imageToTextTool } from './image-to-text/index.js';
 import { novaReelTool } from './nova-reel/index.js';
 import { callAgentTool } from './call-agent.js';
 import { manageAgentTool } from './manage-agent.js';
+import { memorySearchTool } from './memory-search.js';
 import { browserTool } from './browser/index.js';
 import { todoTool } from './todo/index.js';
 import { thinkTool } from './think.js';
@@ -49,6 +51,7 @@ export const localTools = [
   novaReelTool,
   callAgentTool,
   manageAgentTool,
+  memorySearchTool,
   browserTool,
   todoTool,
   thinkTool,
