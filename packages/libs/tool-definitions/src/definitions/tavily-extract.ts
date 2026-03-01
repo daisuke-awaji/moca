@@ -1,6 +1,5 @@
 import { z } from 'zod';
-import { zodToJsonSchema } from '../utils/schema-converter.js';
-import type { ToolDefinition } from '../types.js';
+import { defineToolDefinition } from '../types.js';
 
 export const tavilyExtractSchema = z.object({
   urls: z
@@ -28,10 +27,9 @@ export const tavilyExtractSchema = z.object({
   timeout: z.number().min(1).max(60).default(30).describe('Timeout in seconds (1-60)'),
 });
 
-export const tavilyExtractDefinition: ToolDefinition<typeof tavilyExtractSchema> = {
+export const tavilyExtractDefinition = defineToolDefinition({
   name: 'tavily_extract',
   description:
     'Extract content from specified URLs using Tavily API. Get webpage content as structured text.',
   zodSchema: tavilyExtractSchema,
-  jsonSchema: zodToJsonSchema(tavilyExtractSchema),
-};
+});

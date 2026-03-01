@@ -1,6 +1,5 @@
 import { z } from 'zod';
-import { zodToJsonSchema } from '../utils/schema-converter.js';
-import type { ToolDefinition } from '../types.js';
+import { defineToolDefinition } from '../types.js';
 
 export const callAgentSchema = z.object({
   action: z
@@ -39,7 +38,7 @@ export const callAgentSchema = z.object({
   maxWaitTime: z.number().default(1200).describe('Max wait time in seconds (default: 1200)'),
 });
 
-export const callAgentDefinition: ToolDefinition<typeof callAgentSchema> = {
+export const callAgentDefinition = defineToolDefinition({
   name: 'call_agent',
   description: `Invoke specialized sub-agents asynchronously to handle specific tasks that require different expertise.
 
@@ -65,5 +64,4 @@ Then use those agentIds with action='start_task' to invoke them.
 - Use polling (waitForCompletion=true) for shorter tasks
 - Use immediate checks (waitForCompletion=false) for long-running tasks`,
   zodSchema: callAgentSchema,
-  jsonSchema: zodToJsonSchema(callAgentSchema),
-};
+});

@@ -1,6 +1,5 @@
 import { z } from 'zod';
-import { zodToJsonSchema } from '../utils/schema-converter.js';
-import type { ToolDefinition } from '../types.js';
+import { defineToolDefinition } from '../types.js';
 
 const scenarioSchema = z.object({
   title: z.string().describe('Scenario title (e.g., "Code Review Request")'),
@@ -37,7 +36,7 @@ export const manageAgentSchema = z.object({
     .describe('Predefined scenarios/prompts for quick access'),
 });
 
-export const manageAgentDefinition: ToolDefinition<typeof manageAgentSchema> = {
+export const manageAgentDefinition = defineToolDefinition({
   name: 'manage_agent',
   description: `Create, update, or retrieve AI agent configurations.
 
@@ -80,5 +79,4 @@ export const manageAgentDefinition: ToolDefinition<typeof manageAgentSchema> = {
 - For create/update: agentId, name, success status
 - For get: Full agent configuration`,
   zodSchema: manageAgentSchema,
-  jsonSchema: zodToJsonSchema(manageAgentSchema),
-};
+});

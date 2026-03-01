@@ -1,37 +1,52 @@
 import { z } from 'zod';
-import { zodToJsonSchema } from '../utils/schema-converter.js';
-import type { ToolDefinition } from '../types.js';
+import { defineToolDefinition } from '../types.js';
 import { generateComponentPrompt } from '@moca/generative-ui-catalog';
 
-export const generateUiSchema = z.object({
+/**
+ * Discriminated union schema for the generate_ui tool.
+ *
+ * - mode="spec": AI provides a json-render UI spec directly (spec is required)
+ * - mode="code": AI provides code that generates a spec via CodeInterpreter (code is required)
+ */
+const specModeSchema = z.object({
   mode: z
-    .enum(['spec', 'code'])
+    .literal('spec')
     .describe(
       'Execution mode. "spec": provide a json-render UI spec directly. "code": provide code that generates a json-render UI spec via stdout.'
     ),
   spec: z
     .record(z.string(), z.unknown())
-    .optional()
     .describe(
-      'json-render UI spec JSON object (required when mode="spec"). Must follow the flat element tree format with "root" and "elements" keys.'
+      'json-render UI spec JSON object. Must follow the flat element tree format with "root" and "elements" keys.'
+    ),
+});
+
+const codeModeSchema = z.object({
+  mode: z
+    .literal('code')
+    .describe(
+      'Execution mode. "spec": provide a json-render UI spec directly. "code": provide code that generates a json-render UI spec via stdout.'
     ),
   code: z
     .string()
-    .optional()
     .describe(
-      'Code that generates a json-render UI spec and prints it to stdout as JSON (required when mode="code"). The code should print ONLY the JSON spec, nothing else.'
+      'Code that generates a json-render UI spec and prints it to stdout as JSON. The code should print ONLY the JSON spec, nothing else.'
     ),
   language: z
     .enum(['python', 'javascript', 'typescript'])
     .optional()
-    .describe('Programming language for the code (used when mode="code", default: "python")'),
+    .describe('Programming language for the code (default: "python")'),
   sessionName: z
     .string()
     .optional()
     .describe(
-      'CodeInterpreter session name (used when mode="code"). Reuse an existing session to access previously uploaded files.'
+      'CodeInterpreter session name. Reuse an existing session to access previously uploaded files.'
     ),
 });
+
+export const generateUiSchema = z.discriminatedUnion('mode', [specModeSchema, codeModeSchema]);
+
+export type GenerateUiInput = z.infer<typeof generateUiSchema>;
 
 /**
  * Build the tool description dynamically from the shared catalog.
@@ -88,9 +103,8 @@ const toolDescription =
   '\n\n' +
   'In "code" mode, the code runs in a sandboxed CodeInterpreter. Print ONLY the JSON spec to stdout.';
 
-export const generateUiDefinition: ToolDefinition<typeof generateUiSchema> = {
+export const generateUiDefinition = defineToolDefinition({
   name: 'generate_ui',
   description: toolDescription,
   zodSchema: generateUiSchema,
-  jsonSchema: zodToJsonSchema(generateUiSchema),
-};
+});

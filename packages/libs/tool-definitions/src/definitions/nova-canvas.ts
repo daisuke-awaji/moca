@@ -1,6 +1,5 @@
 import { z } from 'zod';
-import { zodToJsonSchema } from '../utils/schema-converter.js';
-import type { ToolDefinition } from '../types.js';
+import { defineToolDefinition } from '../types.js';
 
 export const novaCanvasSchema = z.object({
   prompt: z
@@ -38,10 +37,9 @@ export const novaCanvasSchema = z.object({
     .describe('Custom output filename (default: auto-generated with timestamp)'),
 });
 
-export const novaCanvasDefinition: ToolDefinition<typeof novaCanvasSchema> = {
+export const novaCanvasDefinition = defineToolDefinition({
   name: 'nova_canvas',
   description:
     'Generate images using Amazon Nova Canvas on Bedrock. Convert text prompts into high-quality images with configurable size and seed for reproducibility. Automatically saves generated images to user S3 storage.',
   zodSchema: novaCanvasSchema,
-  jsonSchema: zodToJsonSchema(novaCanvasSchema),
-};
+});

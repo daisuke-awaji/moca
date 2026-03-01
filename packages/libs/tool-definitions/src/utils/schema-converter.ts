@@ -1,24 +1,52 @@
 import { z } from 'zod';
 
-/**
- * Convert Zod schema to JSON Schema
- *
- * Note: Complete conversion is complex, so this implementation is limited to Zod features used in the project
- */
-export function zodToJsonSchema(schema: z.ZodObject<z.ZodRawShape>): {
+type JsonSchema = {
   type: 'object';
   properties: Record<string, unknown>;
   required?: string[];
-} {
-  const shape = schema.shape;
+};
+
+// ---------------------------------------------------------------------------
+// Zod v4 internal accessor — localizes all `_def as any` access
+// ---------------------------------------------------------------------------
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function zodDef(zodType: z.ZodTypeAny): Record<string, any> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return zodType._def as any;
+}
+
+// ---------------------------------------------------------------------------
+// Public entry point
+// ---------------------------------------------------------------------------
+
+/**
+ * Convert a Zod schema to JSON Schema.
+ *
+ * Supports ZodObject and ZodDiscriminatedUnion (flattened into a merged object
+ * for LLM tool-calling API compatibility).
+ */
+export function zodToJsonSchema(schema: z.ZodObject<z.ZodRawShape> | z.ZodType): JsonSchema {
+  if (schema instanceof z.ZodDiscriminatedUnion) {
+    return discriminatedUnionToJsonSchema(schema);
+  }
+  if (schema instanceof z.ZodObject) {
+    return objectToJsonSchema(schema);
+  }
+  throw new Error(`zodToJsonSchema: unsupported schema type "${schema.constructor.name}"`);
+}
+
+// ---------------------------------------------------------------------------
+// Top-level schema converters
+// ---------------------------------------------------------------------------
+
+function objectToJsonSchema(schema: z.ZodObject<z.ZodRawShape>): JsonSchema {
   const properties: Record<string, unknown> = {};
   const required: string[] = [];
 
-  for (const [key, value] of Object.entries(shape)) {
+  for (const [key, value] of Object.entries(schema.shape)) {
     const zodType = value as z.ZodTypeAny;
     properties[key] = convertZodType(zodType);
-
-    // Check if field is optional
     if (!isOptional(zodType)) {
       required.push(key);
     }
@@ -31,73 +59,123 @@ export function zodToJsonSchema(schema: z.ZodObject<z.ZodRawShape>): {
   };
 }
 
+/**
+ * Flatten a ZodDiscriminatedUnion into a single merged object schema.
+ *
+ * LLM tool-calling APIs (Bedrock Converse, OpenAI, etc.) require `type: "object"`
+ * at the top level and generally don't support `oneOf`. This merges all variant
+ * properties into one flat object where only the discriminator is required.
+ */
+function discriminatedUnionToJsonSchema(schema: z.ZodDiscriminatedUnion): JsonSchema {
+  const { discriminator, options } = zodDef(schema) as {
+    discriminator: string;
+    options: z.ZodObject<z.ZodRawShape>[];
+  };
+
+  const properties: Record<string, unknown> = {};
+  const discriminatorValues: string[] = [];
+
+  for (const option of options) {
+    for (const [key, value] of Object.entries(option.shape)) {
+      if (key === discriminator) {
+        const zodType = value as z.ZodTypeAny;
+        if (zodType instanceof z.ZodLiteral) {
+          discriminatorValues.push(zodType.value as string);
+        }
+        continue;
+      }
+      if (!properties[key]) {
+        properties[key] = convertZodType(value as z.ZodTypeAny);
+      }
+    }
+  }
+
+  const firstDiscriminator = options[0]?.shape?.[discriminator] as z.ZodTypeAny | undefined;
+  properties[discriminator] = {
+    type: 'string',
+    enum: discriminatorValues,
+    ...(firstDiscriminator?.description ? { description: firstDiscriminator.description } : {}),
+  };
+
+  return { type: 'object', properties, required: [discriminator] };
+}
+
+// ---------------------------------------------------------------------------
+// Per-type conversion (unwrap → convert inner type → attach metadata)
+// ---------------------------------------------------------------------------
+
 function convertZodType(zodType: z.ZodTypeAny): Record<string, unknown> {
-  // Unwrap ZodOptional / ZodDefault
+  const { innerType, description, defaultValue } = unwrap(zodType);
+  return {
+    ...convertInnerType(innerType),
+    ...(description ? { description } : {}),
+    ...(defaultValue !== undefined ? { default: defaultValue } : {}),
+  };
+}
+
+function unwrap(zodType: z.ZodTypeAny): {
+  innerType: z.ZodTypeAny;
+  description: string | undefined;
+  defaultValue: unknown;
+} {
   let innerType = zodType;
-  const description = zodType.description;
   let defaultValue: unknown;
 
   if (zodType instanceof z.ZodOptional) {
     innerType = zodType.unwrap() as z.ZodTypeAny;
   }
   if (zodType instanceof z.ZodDefault) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const defValue = (zodType._def as any).defaultValue;
-    defaultValue = typeof defValue === 'function' ? defValue() : defValue;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    innerType = (zodType._def as any).innerType;
+    const def = zodDef(zodType);
+    defaultValue = typeof def.defaultValue === 'function' ? def.defaultValue() : def.defaultValue;
+    innerType = def.innerType;
   }
 
+  return { innerType, description: zodType.description, defaultValue };
+}
+
+function convertInnerType(type: z.ZodTypeAny): Record<string, unknown> {
+  if (type instanceof z.ZodString) return { type: 'string', ...stringChecks(type) };
+  if (type instanceof z.ZodNumber) return { type: 'number', ...numberChecks(type) };
+  if (type instanceof z.ZodBoolean) return { type: 'boolean' };
+  if (type instanceof z.ZodEnum) return { type: 'string', enum: Object.values(zodDef(type).entries) };
+  if (type instanceof z.ZodLiteral) return { type: typeof type.value === 'number' ? 'number' : 'string', enum: [type.value] };
+  if (type instanceof z.ZodArray) return { type: 'array', items: convertZodType(zodDef(type).type) };
+  if (type instanceof z.ZodObject) {
+    const nested = objectToJsonSchema(type);
+    return { type: 'object', properties: nested.properties, ...(nested.required ? { required: nested.required } : {}) };
+  }
+  if (type instanceof z.ZodRecord) return { type: 'object', additionalProperties: convertZodType(zodDef(type).valueType) };
+  if (type instanceof z.ZodUnion) return { oneOf: (zodDef(type).options as z.ZodTypeAny[]).map(convertZodType) };
+  return { type: 'string' };
+}
+
+// ---------------------------------------------------------------------------
+// Zod v4 check extraction
+// ---------------------------------------------------------------------------
+
+function stringChecks(type: z.ZodString): Record<string, unknown> {
   const result: Record<string, unknown> = {};
-
-  // Type conversion
-  if (innerType instanceof z.ZodString) {
-    result.type = 'string';
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const checks = (innerType._def as any).checks || [];
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    for (const check of checks as any[]) {
-      if (check.kind === 'min') result.minLength = check.value;
-      if (check.kind === 'max') result.maxLength = check.value;
-    }
-  } else if (innerType instanceof z.ZodNumber) {
-    result.type = 'number';
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const checks = (innerType._def as any).checks || [];
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    for (const check of checks as any[]) {
-      if (check.kind === 'min') result.minimum = check.value;
-      if (check.kind === 'max') result.maximum = check.value;
-    }
-  } else if (innerType instanceof z.ZodBoolean) {
-    result.type = 'boolean';
-  } else if (innerType instanceof z.ZodEnum) {
-    result.type = 'string';
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    result.enum = (innerType._def as any).values;
-  } else if (innerType instanceof z.ZodArray) {
-    result.type = 'array';
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    result.items = convertZodType((innerType._def as any).type);
-  } else if (innerType instanceof z.ZodObject) {
-    const nested = zodToJsonSchema(innerType);
-    result.type = 'object';
-    result.properties = nested.properties;
-    if (nested.required) result.required = nested.required;
-  } else if (innerType instanceof z.ZodUnion) {
-    // Handle union types (oneOf)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const options = (innerType._def as any).options as z.ZodTypeAny[];
-    result.oneOf = options.map((opt) => convertZodType(opt));
-  } else {
-    result.type = 'string'; // Fallback
+  for (const check of zodDef(type).checks || []) {
+    const def = check._zod.def;
+    if (def.check === 'min_length') result.minLength = def.minimum;
+    if (def.check === 'max_length') result.maxLength = def.maximum;
   }
-
-  if (description) result.description = description;
-  if (defaultValue !== undefined) result.default = defaultValue;
-
   return result;
 }
+
+function numberChecks(type: z.ZodNumber): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
+  for (const check of zodDef(type).checks || []) {
+    const def = check._zod.def;
+    if (def.check === 'greater_than') result.minimum = def.value;
+    if (def.check === 'less_than') result.maximum = def.value;
+  }
+  return result;
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
 
 function isOptional(zodType: z.ZodTypeAny): boolean {
   return zodType instanceof z.ZodOptional || zodType.isOptional();

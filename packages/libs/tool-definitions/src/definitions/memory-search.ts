@@ -1,6 +1,5 @@
 import { z } from 'zod';
-import { zodToJsonSchema } from '../utils/schema-converter.js';
-import type { ToolDefinition } from '../types.js';
+import { defineToolDefinition } from '../types.js';
 
 export const memorySearchSchema = z.object({
   query: z
@@ -17,7 +16,7 @@ export const memorySearchSchema = z.object({
     .describe('Maximum number of memory records to retrieve (1-50, default: 10)'),
 });
 
-export const memorySearchDefinition: ToolDefinition<typeof memorySearchSchema> = {
+export const memorySearchDefinition = defineToolDefinition({
   name: 'memory_search',
   description:
     'Search long-term memory for information about the current user. ' +
@@ -28,5 +27,4 @@ export const memorySearchDefinition: ToolDefinition<typeof memorySearchSchema> =
     'Note: Some memories are already loaded at session start and included in the system prompt. ' +
     'Use this tool when you need to search for additional or more specific memories mid-conversation.',
   zodSchema: memorySearchSchema,
-  jsonSchema: zodToJsonSchema(memorySearchSchema),
-};
+});

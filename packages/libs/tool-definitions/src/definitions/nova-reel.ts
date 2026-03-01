@@ -1,6 +1,5 @@
 import { z } from 'zod';
-import { zodToJsonSchema } from '../utils/schema-converter.js';
-import type { ToolDefinition } from '../types.js';
+import { defineToolDefinition } from '../types.js';
 
 export const novaReelSchema = z.object({
   action: z
@@ -43,7 +42,7 @@ export const novaReelSchema = z.object({
     .describe('Sort order (default: Descending)'),
 });
 
-export const novaReelDefinition: ToolDefinition<typeof novaReelSchema> = {
+export const novaReelDefinition = defineToolDefinition({
   name: 'nova_reel',
   description: `Generate videos using Amazon Nova Reel.
 
@@ -63,5 +62,4 @@ Examples:
 2. Check status: action="status", invocationArn="arn:aws:..."
 3. Get job list: action="list"`,
   zodSchema: novaReelSchema,
-  jsonSchema: zodToJsonSchema(novaReelSchema),
-};
+});

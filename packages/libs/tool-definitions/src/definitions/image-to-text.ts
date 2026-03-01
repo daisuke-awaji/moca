@@ -1,6 +1,5 @@
 import { z } from 'zod';
-import { zodToJsonSchema } from '../utils/schema-converter.js';
-import type { ToolDefinition } from '../types.js';
+import { defineToolDefinition } from '../types.js';
 
 // Vision models with global inference profile
 const VISION_MODELS = [
@@ -36,10 +35,9 @@ export const imageToTextSchema = z.object({
     ),
 });
 
-export const imageToTextDefinition: ToolDefinition<typeof imageToTextSchema> = {
+export const imageToTextDefinition = defineToolDefinition({
   name: 'image_to_text',
   description:
     'Analyze images and convert them to text descriptions using Bedrock Converse API. Supports S3 URIs and local file paths. Use vision-capable models to extract text, describe content, or analyze images. Useful for OCR, image understanding, and visual content analysis.',
   zodSchema: imageToTextSchema,
-  jsonSchema: zodToJsonSchema(imageToTextSchema),
-};
+});

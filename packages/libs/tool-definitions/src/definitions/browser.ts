@@ -1,6 +1,5 @@
 import { z } from 'zod';
-import { zodToJsonSchema } from '../utils/schema-converter.js';
-import type { ToolDefinition } from '../types.js';
+import { defineToolDefinition } from '../types.js';
 
 const browserSchema = z.object({
   // Action type (required)
@@ -78,7 +77,7 @@ const browserSchema = z.object({
     .describe('Timeout in milliseconds for waitForElement (default: 10000)'),
 });
 
-export const browserDefinition: ToolDefinition<typeof browserSchema> = {
+export const browserDefinition = defineToolDefinition({
   name: 'browser',
   description: `AgentCore Browser tool for interacting with web applications through a managed Chrome browser.
 
@@ -105,5 +104,4 @@ This tool provides a secure, cloud-based browser environment that enables:
 - Screenshots are automatically saved to the user's S3 storage
 - The browser runs in a secure, isolated cloud environment`,
   zodSchema: browserSchema,
-  jsonSchema: zodToJsonSchema(browserSchema),
-};
+});

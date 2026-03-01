@@ -1,6 +1,5 @@
 import { z } from 'zod';
-import { zodToJsonSchema } from '../utils/schema-converter.js';
-import type { ToolDefinition } from '../types.js';
+import { defineToolDefinition } from '../types.js';
 
 export const tavilySearchSchema = z.object({
   query: z.string().describe('Search query (required)'),
@@ -32,10 +31,9 @@ export const tavilySearchSchema = z.object({
     .describe('Prioritize results from specific country (e.g., japan, united states)'),
 });
 
-export const tavilySearchDefinition: ToolDefinition<typeof tavilySearchSchema> = {
+export const tavilySearchDefinition = defineToolDefinition({
   name: 'tavily_search',
   description:
     'Execute high-quality web search using Tavily API. Get comprehensive search results for latest information, news, and general topics.',
   zodSchema: tavilySearchSchema,
-  jsonSchema: zodToJsonSchema(tavilySearchSchema),
-};
+});
