@@ -95,6 +95,18 @@ function discriminatedUnionToJsonSchema(schema: z.ZodDiscriminatedUnion): JsonSc
   };
 }
 
+/**
+ * Extract check definitions from Zod v4 check objects.
+ * Zod v4 stores check info in check._zod.def instead of check.kind/check.value.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function getCheckDef(check: any): Record<string, unknown> {
+  // Zod v4: check._zod.def contains { check: "kind", value/minimum/maximum: ... }
+  if (check?._zod?.def) return check._zod.def;
+  // Zod v3 fallback: check itself has { kind, value, ... }
+  return check || {};
+}
+
 function convertZodType(zodType: z.ZodTypeAny): Record<string, unknown> {
   // Unwrap ZodOptional / ZodDefault
   let innerType = zodType;
@@ -119,26 +131,36 @@ function convertZodType(zodType: z.ZodTypeAny): Record<string, unknown> {
     result.type = 'string';
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const checks = (innerType._def as any).checks || [];
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    for (const check of checks as any[]) {
-      if (check.kind === 'min') result.minLength = check.value;
-      if (check.kind === 'max') result.maxLength = check.value;
+    for (const check of checks) {
+      const def = getCheckDef(check);
+      // Zod v4: check="min_length" with minimum / check="max_length" with maximum
+      // Zod v3: kind="min" with value / kind="max" with value
+      if (def.check === 'min_length') result.minLength = def.minimum;
+      else if (def.check === 'max_length') result.maxLength = def.maximum;
+      else if (def.kind === 'min') result.minLength = def.value;
+      else if (def.kind === 'max') result.maxLength = def.value;
     }
   } else if (innerType instanceof z.ZodNumber) {
     result.type = 'number';
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const checks = (innerType._def as any).checks || [];
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    for (const check of checks as any[]) {
-      if (check.kind === 'min') result.minimum = check.value;
-      if (check.kind === 'max') result.maximum = check.value;
+    for (const check of checks) {
+      const def = getCheckDef(check);
+      // Zod v4: check="greater_than" with value / check="less_than" with value
+      // Zod v3: kind="min" with value / kind="max" with value
+      if (def.check === 'greater_than') result.minimum = def.value;
+      else if (def.check === 'less_than') result.maximum = def.value;
+      else if (def.kind === 'min') result.minimum = def.value;
+      else if (def.kind === 'max') result.maximum = def.value;
     }
   } else if (innerType instanceof z.ZodBoolean) {
     result.type = 'boolean';
   } else if (innerType instanceof z.ZodEnum) {
     result.type = 'string';
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    result.enum = (innerType._def as any).values;
+    const def = innerType._def as any;
+    // Zod v4: entries is { key: value } object; Zod v3: values is string[]
+    result.enum = def.entries ? Object.values(def.entries) : def.values;
   } else if (innerType instanceof z.ZodArray) {
     result.type = 'array';
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -160,7 +182,6 @@ function convertZodType(zodType: z.ZodTypeAny): Record<string, unknown> {
       result.additionalProperties = convertZodType(valueDef);
     }
   } else if (innerType instanceof z.ZodUnion) {
-    // Handle union types (oneOf)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const options = (innerType._def as any).options as z.ZodTypeAny[];
     result.oneOf = options.map((opt) => convertZodType(opt));
