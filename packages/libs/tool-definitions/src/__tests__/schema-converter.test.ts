@@ -147,6 +147,43 @@ describe('zodToJsonSchema', () => {
       expect(prop.type).toBe('object');
       expect(prop.additionalProperties).toEqual({ type: 'number' });
     });
+
+    it('preserves description on optional fields', () => {
+      const schema = z.object({
+        name: z.string().optional().describe('Optional name'),
+      });
+      const result = zodToJsonSchema(schema);
+      const prop = result.properties['name'] as Record<string, unknown>;
+      expect(prop.type).toBe('string');
+      expect(prop.description).toBe('Optional name');
+    });
+
+    it('converts literal type with number value', () => {
+      const schema = z.object({
+        version: z.literal(42),
+      });
+      const result = zodToJsonSchema(schema);
+      const prop = result.properties['version'] as Record<string, unknown>;
+      expect(prop.type).toBe('number');
+      expect(prop.enum).toEqual([42]);
+    });
+
+    it('falls back to string type for unknown Zod types', () => {
+      const schema = z.object({
+        data: z.unknown(),
+      });
+      const result = zodToJsonSchema(schema);
+      const prop = result.properties['data'] as Record<string, unknown>;
+      expect(prop.type).toBe('string');
+    });
+
+    it('handles empty object schema', () => {
+      const schema = z.object({});
+      expect(zodToJsonSchema(schema)).toEqual({
+        type: 'object',
+        properties: {},
+      });
+    });
   });
 
   describe('ZodDiscriminatedUnion', () => {
@@ -219,6 +256,17 @@ describe('zodToJsonSchema', () => {
       const shared = result.properties['shared'] as Record<string, unknown>;
       expect(shared.type).toBe('string');
       expect(shared.description).toBe('from variant a');
+    });
+
+    it('omits description when discriminator has no describe()', () => {
+      const schema = z.discriminatedUnion('type', [
+        z.object({ type: z.literal('x'), x: z.string() }),
+        z.object({ type: z.literal('y'), y: z.number() }),
+      ]);
+      const result = zodToJsonSchema(schema);
+      const typeProp = result.properties['type'] as Record<string, unknown>;
+      expect(typeProp.enum).toEqual(['x', 'y']);
+      expect(typeProp).not.toHaveProperty('description');
     });
   });
 
