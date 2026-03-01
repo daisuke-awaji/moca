@@ -141,3 +141,44 @@ export function generateComponentPrompt(options?: {
 }): string {
   return catalog.prompt(options);
 }
+
+// --- Shared Types ---
+
+export interface UIElement {
+  type: string;
+  props?: Record<string, unknown>;
+  children?: string[];
+  visible?: unknown;
+}
+
+export interface UISpec {
+  root: string;
+  elements: Record<string, UIElement>;
+}
+
+export interface UISpecOutput {
+  __generative_ui_spec: true;
+  spec: UISpec;
+}
+
+// --- Type Guards ---
+
+export function isUISpec(obj: unknown): obj is UISpec {
+  return (
+    obj !== null &&
+    typeof obj === 'object' &&
+    !Array.isArray(obj) &&
+    typeof (obj as Record<string, unknown>).root === 'string' &&
+    typeof (obj as Record<string, unknown>).elements === 'object' &&
+    (obj as Record<string, unknown>).elements !== null
+  );
+}
+
+export function isUISpecOutput(obj: unknown): obj is UISpecOutput {
+  return (
+    obj !== null &&
+    typeof obj === 'object' &&
+    (obj as Record<string, unknown>).__generative_ui_spec === true &&
+    isUISpec((obj as Record<string, unknown>).spec)
+  );
+}

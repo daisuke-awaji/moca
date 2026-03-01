@@ -229,7 +229,9 @@ export class Frontend extends Construct {
     }
 
     // Frontend Build and Deployment using deploy-time-build
-    // Include project root for workspace resolution (shared packages like @moca/generative-ui-catalog)
+    // Uses multiple assets (include-list pattern) so that only workspace packages
+    // required for the frontend build are shipped to the CodeBuild environment.
+    // When adding a new workspace dependency for frontend, add a corresponding asset entry below.
     const frontendBuild = new NodejsBuild(this, 'FrontendBuild', {
       assets: [
         {
@@ -242,7 +244,6 @@ export class Frontend extends Construct {
             '.env.*',
             'cdk.out/**',
             'coverage/**',
-            // Exclude packages not needed for frontend build
             'packages/agent/**',
             'packages/backend/**',
             'packages/cdk/**',

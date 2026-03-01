@@ -14,6 +14,7 @@ import { TypingIndicator } from './TypingIndicator';
 import { ToolUseBlock } from './ToolUseBlock';
 import { ToolResultBlock } from './ToolResultBlock';
 import { JsonRenderBlock } from './JsonRenderBlock';
+import { extractUISpec } from '../utils/generative-ui';
 import { MermaidDiagram } from './MermaidDiagram';
 import { S3FileLink } from './S3FileLink';
 import { S3Image } from './S3Image';
@@ -263,12 +264,12 @@ export const Message: React.FC<MessageProps> = ({ message }) => {
                         (c.toolUse.id === content.toolResult!.toolUseId ||
                           c.toolUse.originalToolUseId === content.toolResult!.toolUseId)
                     );
-                    // Detect generate_ui by tool name or by content containing __generative_ui_spec
+                    // Detect generate_ui by tool name or by content shape
                     // (content detection is needed for session history reload where toolUse name
                     //  may not be available)
                     const isGenerateUi =
                       correspondingToolUse?.toolUse?.name === 'generate_ui' ||
-                      content.toolResult.content.includes('__generative_ui_spec');
+                      extractUISpec(content.toolResult.content) !== null;
                     if (isGenerateUi) {
                       return (
                         <JsonRenderBlock
