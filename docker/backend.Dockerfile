@@ -5,7 +5,6 @@
 # ========================================
 # Stage 1: Build
 # ========================================
-# Use ECR Public Gallery to avoid Docker Hub rate limits in CodeBuild
 FROM public.ecr.aws/docker/library/node:22-slim AS builder
 
 WORKDIR /build
@@ -22,37 +21,19 @@ RUN curl -LsSf https://astral.sh/uv/install.sh | sh && \
     mv /root/.local/bin/uvx /usr/local/bin/uvx && \
     chmod +x /usr/local/bin/uv /usr/local/bin/uvx
 
-# Copy workspace root package files
-COPY package*.json ./
-COPY tsconfig.base.json ./
+# Copy entire monorepo (.dockerignore controls what's excluded)
+COPY . .
 
-# Copy all workspace package.json files
-COPY packages/backend/package*.json ./packages/backend/
-COPY packages/backend/tsconfig.json ./packages/backend/
-COPY packages/libs/tool-definitions/package*.json ./packages/libs/tool-definitions/
-COPY packages/libs/tool-definitions/tsconfig.json ./packages/libs/tool-definitions/
-COPY packages/shared/generative-ui-catalog/package*.json ./packages/shared/generative-ui-catalog/
-COPY packages/shared/generative-ui-catalog/tsconfig.json ./packages/shared/generative-ui-catalog/
-
-# Install all dependencies (including workspace dependencies)
+# Install all dependencies and build
+# 1. tsc --build: builds shared libs with dependency resolution (generative-ui-catalog → tool-definitions)
+# 2. npm run build: builds backend package
 RUN npm ci
-
-# Copy source code for all required packages
-COPY packages/libs/tool-definitions/src/ ./packages/libs/tool-definitions/src/
-COPY packages/shared/generative-ui-catalog/src/ ./packages/shared/generative-ui-catalog/src/
-COPY packages/backend/src/ ./packages/backend/src/
-
-# Build shared and lib packages first (order matters: generative-ui-catalog → tool-definitions)
-RUN cd packages/shared/generative-ui-catalog && npm run build
-RUN cd packages/libs/tool-definitions && npm run build
-
-# Build backend package
-RUN cd packages/backend && npm run build
+RUN npx tsc --build tsconfig.build.json
+RUN npm run build --workspace=@moca/backend
 
 # ========================================
 # Stage 2: Production Runtime
 # ========================================
-# Use ECR Public Gallery to avoid Docker Hub rate limits in CodeBuild
 FROM public.ecr.aws/docker/library/node:22-slim
 
 # 必要なツールをインストール（Python、MCP サーバー実行用）
@@ -76,23 +57,19 @@ COPY --from=public.ecr.aws/awsguru/aws-lambda-adapter:0.9.1 /lambda-adapter /opt
 
 WORKDIR /app
 
-# Copy workspace root package files
+# Copy workspace root package files for npm workspace resolution
 COPY --chown=node:node package*.json ./
+COPY --chown=node:node packages/backend/package.json ./packages/backend/
+COPY --chown=node:node packages/libs/tool-definitions/package.json ./packages/libs/tool-definitions/
+COPY --chown=node:node packages/libs/generative-ui-catalog/package.json ./packages/shared/generative-ui-catalog/
 
-# Copy workspace package.json files
-COPY --chown=node:node packages/backend/package*.json ./packages/backend/
-COPY --chown=node:node packages/libs/tool-definitions/package*.json ./packages/libs/tool-definitions/
-COPY --chown=node:node packages/shared/generative-ui-catalog/package*.json ./packages/shared/generative-ui-catalog/
-
-# Install production dependencies only (skip scripts like husky)
+# Install production dependencies only
 RUN npm ci --omit=dev --ignore-scripts && npm cache clean --force
 
-# Copy built files from builder stage
-COPY --chown=node:node --from=builder /build/packages/libs/tool-definitions/dist ./packages/libs/tool-definitions/dist
-COPY --chown=node:node --from=builder /build/packages/libs/tool-definitions/package.json ./packages/libs/tool-definitions/
-COPY --chown=node:node --from=builder /build/packages/shared/generative-ui-catalog/dist ./packages/shared/generative-ui-catalog/dist
-COPY --chown=node:node --from=builder /build/packages/shared/generative-ui-catalog/package.json ./packages/shared/generative-ui-catalog/
+# Copy built artifacts from builder stage
 COPY --chown=node:node --from=builder /build/packages/backend/dist ./packages/backend/dist
+COPY --chown=node:node --from=builder /build/packages/libs/tool-definitions/dist ./packages/libs/tool-definitions/dist
+COPY --chown=node:node --from=builder /build/packages/libs/generative-ui-catalog/dist ./packages/shared/generative-ui-catalog/dist
 
 # Set working directory to backend package
 WORKDIR /app/packages/backend
@@ -119,5 +96,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
 USER node
 
 # アプリケーションを開始
-# Lambda Web Adapter が Express サーバーを Lambda ハンドラーとしてラップ
 CMD ["node", "dist/index.js"]

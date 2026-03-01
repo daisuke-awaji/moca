@@ -259,8 +259,8 @@ export class Frontend extends Construct {
         },
       ],
       buildCommands: [
-        'npm ci --include-workspace-root -w packages/frontend -w packages/shared/generative-ui-catalog -w packages/libs/tool-definitions',
-        'cd packages/shared/generative-ui-catalog && npm run build',
+        'npm ci --include-workspace-root -w packages/frontend -w packages/libs/generative-ui-catalog -w packages/libs/tool-definitions',
+        'cd packages/libs/generative-ui-catalog && npm run build',
         'cd packages/frontend && npm run build',
       ],
       buildEnvironment: {
