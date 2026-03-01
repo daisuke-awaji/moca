@@ -16,7 +16,7 @@ export interface MCPToolDefinition {
 /**
  * Tool definition supporting both Zod and JSON Schema
  */
-export interface ToolDefinition<T extends z.ZodObject<z.ZodRawShape> = z.ZodObject<z.ZodRawShape>> {
+export interface ToolDefinition<T extends z.ZodType = z.ZodObject<z.ZodRawShape>> {
   name: string;
   description: string;
   zodSchema: T;

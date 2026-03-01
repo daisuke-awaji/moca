@@ -7,11 +7,10 @@
  */
 
 import { tool } from '@strands-agents/sdk';
-import { z } from 'zod';
 import { logger } from '../../config/index.js';
 import { AgentCoreCodeInterpreterClient } from '../code-interpreter/client.js';
 import { getCurrentStoragePath } from '../../context/request-context.js';
-import { generateUiDefinition } from '@moca/tool-definitions';
+import { generateUiDefinition, type GenerateUiInput } from '@moca/tool-definitions';
 import { validateUISpec } from './catalog.js';
 import { isUISpec } from './types.js';
 import type { UISpecOutput } from './types.js';
@@ -73,84 +72,85 @@ function extractJsonFromOutput(output: string): unknown {
 }
 
 /**
+ * Execute spec mode: use the provided UI spec directly.
+ */
+function handleSpecMode(input: Extract<GenerateUiInput, { mode: 'spec' }>): unknown {
+  return input.spec;
+}
+
+/**
+ * Execute code mode: delegate to CodeInterpreter and parse the output.
+ */
+async function handleCodeMode(
+  input: Extract<GenerateUiInput, { mode: 'code' }>
+): Promise<{ specData: unknown } | { error: string }> {
+  const language = input.language || 'python';
+  const sessionName = input.sessionName || `generate-ui-${Date.now()}`;
+
+  logger.info(`🎨 generate_ui code mode: language=${language}, session=${sessionName}`);
+
+  const storagePath = getCurrentStoragePath();
+  const client = new AgentCoreCodeInterpreterClient({
+    autoCreate: true,
+    persistSessions: true,
+    storagePath: storagePath,
+    sessionName,
+  });
+
+  const result = await client.executeCode({
+    action: 'executeCode',
+    sessionName,
+    language: language as 'python' | 'javascript' | 'typescript',
+    code: input.code,
+  });
+
+  if (result.status === 'error') {
+    const errorText = result.content.map((c) => c.text || JSON.stringify(c.json)).join('\n');
+    logger.error(`🎨 generate_ui code execution failed: ${errorText}`);
+    return { error: `Code execution failed: ${errorText}` };
+  }
+
+  const outputText = result.content
+    .map((c) => c.text || (c.json ? JSON.stringify(c.json) : ''))
+    .join('\n');
+
+  logger.info(`🎨 generate_ui code output length: ${outputText.length}`);
+
+  const specData = extractJsonFromOutput(outputText);
+  if (!specData) {
+    logger.error(`🎨 generate_ui failed to parse spec from code output`);
+    return {
+      error:
+        'Failed to parse UI spec from code output. Make sure the code prints valid JSON to stdout.',
+    };
+  }
+
+  return { specData };
+}
+
+/**
  * generate_ui Tool
  */
 export const generateUiTool = tool({
   name: generateUiDefinition.name,
   description: generateUiDefinition.description,
   inputSchema: generateUiDefinition.zodSchema,
-  callback: async (input: z.infer<typeof generateUiDefinition.zodSchema>) => {
+  callback: async (rawInput) => {
+    const input = rawInput as GenerateUiInput;
     logger.info(`🎨 generate_ui execution started: mode=${input.mode}`);
 
     try {
       let specData: unknown;
 
       if (input.mode === 'spec') {
-        // Direct spec mode
-        if (!input.spec) {
-          return JSON.stringify({
-            error: 'spec is required when mode="spec"',
-          });
-        }
-        specData = input.spec;
-      } else if (input.mode === 'code') {
-        // Code mode - delegate to CodeInterpreter
-        if (!input.code) {
-          return JSON.stringify({
-            error: 'code is required when mode="code"',
-          });
-        }
-
-        const language = input.language || 'python';
-        const sessionName = input.sessionName || `generate-ui-${Date.now()}`;
-
-        logger.info(`🎨 generate_ui code mode: language=${language}, session=${sessionName}`);
-
-        const storagePath = getCurrentStoragePath();
-        const client = new AgentCoreCodeInterpreterClient({
-          autoCreate: true,
-          persistSessions: true,
-          storagePath: storagePath,
-          sessionName,
-        });
-
-        // Execute code (ensureSession handles session creation/reuse automatically)
-        const result = await client.executeCode({
-          action: 'executeCode',
-          sessionName,
-          language: language as 'python' | 'javascript' | 'typescript',
-          code: input.code,
-        });
-
-        if (result.status === 'error') {
-          const errorText = result.content.map((c) => c.text || JSON.stringify(c.json)).join('\n');
-          logger.error(`🎨 generate_ui code execution failed: ${errorText}`);
-          return JSON.stringify({
-            error: `Code execution failed: ${errorText}`,
-          });
-        }
-
-        // Extract output
-        const outputText = result.content
-          .map((c) => c.text || (c.json ? JSON.stringify(c.json) : ''))
-          .join('\n');
-
-        logger.info(`🎨 generate_ui code output length: ${outputText.length}`);
-
-        // Parse JSON spec from output
-        specData = extractJsonFromOutput(outputText);
-        if (!specData) {
-          logger.error(`🎨 generate_ui failed to parse spec from code output`);
-          return JSON.stringify({
-            error:
-              'Failed to parse UI spec from code output. Make sure the code prints valid JSON to stdout.',
-            output: outputText.substring(0, 500),
-          });
-        }
+        specData = handleSpecMode(input);
       } else {
-        return JSON.stringify({
-          error: `Unknown mode: ${input.mode}`,
-        });
+        // input.mode === 'code' — exhaustive via discriminated union
+        const result = await handleCodeMode(input);
+        if ('error' in result) {
+          return JSON.stringify({ error: result.error });
+        }
+        specData = result.specData;
       }
 
       // Validate spec
@@ -165,7 +165,6 @@ export const generateUiTool = tool({
         });
       }
 
-      // Return spec with marker
       const output: UISpecOutput = {
         __generative_ui_spec: true,
         spec: validation.spec,
