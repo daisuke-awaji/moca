@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   LineChart as RechartsLineChart,
   Line,
@@ -37,6 +38,7 @@ interface LineChartProps {
 const DEFAULT_COLORS = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
 
 const LineChartComponent = ({ props }: BaseComponentProps<LineChartProps>): React.ReactNode => {
+  const { t } = useTranslation();
   const { title, data, xKey, lines, yKey, color, height = 300 } = props;
 
   // Determine line definitions
@@ -51,7 +53,9 @@ const LineChartComponent = ({ props }: BaseComponentProps<LineChartProps>): Reac
     return (
       <div className="bg-surface-primary border border-border rounded-lg p-4">
         {title && <div className="text-sm font-medium text-fg-default mb-2">{title}</div>}
-        <div className="text-sm text-fg-muted text-center py-8">No chart data available</div>
+        <div className="text-sm text-fg-muted text-center py-8">
+          {t('generativeUi.noChartData')}
+        </div>
       </div>
     );
   }

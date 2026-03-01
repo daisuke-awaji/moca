@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   PieChart as RechartsPieChart,
   Pie,
@@ -62,13 +63,16 @@ const renderCustomLabel = (labelProps: any) => {
 };
 
 const PieChartComponent = ({ props }: BaseComponentProps<PieChartProps>): React.ReactNode => {
+  const { t } = useTranslation();
   const { title, data, height = 300, showLabels = true, innerRadius = 0 } = props;
 
   if (!data || data.length === 0) {
     return (
       <div className="bg-surface-primary border border-border rounded-lg p-4">
         {title && <div className="text-sm font-medium text-fg-default mb-2">{title}</div>}
-        <div className="text-sm text-fg-muted text-center py-8">No chart data available</div>
+        <div className="text-sm text-fg-muted text-center py-8">
+          {t('generativeUi.noChartData')}
+        </div>
       </div>
     );
   }

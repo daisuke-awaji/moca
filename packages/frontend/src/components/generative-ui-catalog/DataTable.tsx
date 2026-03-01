@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import type { BaseComponentProps } from '@json-render/react';
 
 interface DataTableProps {
@@ -8,6 +9,7 @@ interface DataTableProps {
 }
 
 const DataTable = ({ props }: BaseComponentProps<DataTableProps>): React.ReactNode => {
+  const { t } = useTranslation();
   const { columns, rows, caption } = props;
 
   return (
@@ -32,7 +34,7 @@ const DataTable = ({ props }: BaseComponentProps<DataTableProps>): React.ReactNo
           {rows.length === 0 ? (
             <tr>
               <td colSpan={columns.length} className="px-4 py-6 text-center text-sm text-fg-muted">
-                No data available
+                {t('generativeUi.noData')}
               </td>
             </tr>
           ) : (

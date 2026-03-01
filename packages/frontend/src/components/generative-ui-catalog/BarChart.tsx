@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   BarChart as RechartsBarChart,
   Bar,
@@ -37,6 +38,7 @@ interface BarChartProps {
 const DEFAULT_COLORS = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
 
 const BarChartComponent = ({ props }: BaseComponentProps<BarChartProps>): React.ReactNode => {
+  const { t } = useTranslation();
   const { title, data, xKey, bars, yKey, color, height = 300, stacked = false } = props;
 
   // Determine bar definitions: explicit bars array or single yKey shorthand
@@ -47,7 +49,9 @@ const BarChartComponent = ({ props }: BaseComponentProps<BarChartProps>): React.
     return (
       <div className="bg-surface-primary border border-border rounded-lg p-4">
         {title && <div className="text-sm font-medium text-fg-default mb-2">{title}</div>}
-        <div className="text-sm text-fg-muted text-center py-8">No chart data available</div>
+        <div className="text-sm text-fg-muted text-center py-8">
+          {t('generativeUi.noChartData')}
+        </div>
       </div>
     );
   }
