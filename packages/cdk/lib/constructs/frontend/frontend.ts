@@ -229,14 +229,40 @@ export class Frontend extends Construct {
     }
 
     // Frontend Build and Deployment using deploy-time-build
+    // Include project root for workspace resolution (shared packages like @moca/generative-ui-catalog)
     const frontendBuild = new NodejsBuild(this, 'FrontendBuild', {
       assets: [
         {
-          path: path.join(PROJECT_ROOT, 'packages/frontend'),
-          exclude: ['node_modules/**', '.git/**', 'dist/**', '.env'],
+          path: PROJECT_ROOT,
+          exclude: [
+            'node_modules/**',
+            '.git/**',
+            'dist/**',
+            '.env',
+            '.env.*',
+            'cdk.out/**',
+            'coverage/**',
+            // Exclude packages not needed for frontend build
+            'packages/agent/**',
+            'packages/backend/**',
+            'packages/cdk/**',
+            'packages/client/**',
+            'packages/lambda-tools/**',
+            'packages/trigger/**',
+            'packages/session-stream-handler/**',
+            'packages/libs/s3-workspace-sync/**',
+            'packages/shared/tool-definitions/**',
+            'docker/**',
+            'docs/**',
+            'scripts/**',
+          ],
         },
       ],
-      buildCommands: ['npm install', 'npm run build'],
+      buildCommands: [
+        'npm ci --include-workspace-root -w packages/frontend -w packages/shared/generative-ui-catalog -w packages/libs/tool-definitions',
+        'cd packages/shared/generative-ui-catalog && npm run build',
+        'cd packages/frontend && npm run build',
+      ],
       buildEnvironment: {
         VITE_COGNITO_USER_POOL_ID: props.userPoolId,
         VITE_COGNITO_CLIENT_ID: props.userPoolClientId,
@@ -245,7 +271,7 @@ export class Frontend extends Construct {
         VITE_BACKEND_URL: props.backendApiUrl || '',
         VITE_APPSYNC_EVENTS_ENDPOINT: props.appsyncEventsEndpoint || '',
       },
-      outputSourceDirectory: 'dist',
+      outputSourceDirectory: 'packages/frontend/dist',
       destinationBucket: this.s3Bucket,
       distribution: this.cloudFrontDistribution,
       nodejsVersion: 22,

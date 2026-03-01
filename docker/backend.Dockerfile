@@ -42,7 +42,8 @@ COPY packages/libs/tool-definitions/src/ ./packages/libs/tool-definitions/src/
 COPY packages/shared/generative-ui-catalog/src/ ./packages/shared/generative-ui-catalog/src/
 COPY packages/backend/src/ ./packages/backend/src/
 
-# Build lib packages first
+# Build shared and lib packages first (order matters: generative-ui-catalog → tool-definitions)
+RUN cd packages/shared/generative-ui-catalog && npm run build
 RUN cd packages/libs/tool-definitions && npm run build
 
 # Build backend package
@@ -89,7 +90,7 @@ RUN npm ci --omit=dev --ignore-scripts && npm cache clean --force
 # Copy built files from builder stage
 COPY --chown=node:node --from=builder /build/packages/libs/tool-definitions/dist ./packages/libs/tool-definitions/dist
 COPY --chown=node:node --from=builder /build/packages/libs/tool-definitions/package.json ./packages/libs/tool-definitions/
-COPY --chown=node:node --from=builder /build/packages/shared/generative-ui-catalog/src ./packages/shared/generative-ui-catalog/src
+COPY --chown=node:node --from=builder /build/packages/shared/generative-ui-catalog/dist ./packages/shared/generative-ui-catalog/dist
 COPY --chown=node:node --from=builder /build/packages/shared/generative-ui-catalog/package.json ./packages/shared/generative-ui-catalog/
 COPY --chown=node:node --from=builder /build/packages/backend/dist ./packages/backend/dist
 

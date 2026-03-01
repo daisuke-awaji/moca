@@ -33,7 +33,8 @@ COPY packages/shared/generative-ui-catalog/src/ ./packages/shared/generative-ui-
 COPY packages/agent/src/ ./packages/agent/src/
 COPY packages/agent/scripts/ ./packages/agent/scripts/
 
-# Build lib packages first
+# Build shared and lib packages first (order matters: generative-ui-catalog → tool-definitions)
+RUN cd packages/shared/generative-ui-catalog && npm run build
 RUN cd packages/libs/tool-definitions && npm run build
 RUN cd packages/libs/s3-workspace-sync && npm run build
 
@@ -101,7 +102,7 @@ COPY --chown=node:node --from=builder /build/packages/libs/tool-definitions/dist
 COPY --chown=node:node --from=builder /build/packages/libs/tool-definitions/package.json ./packages/libs/tool-definitions/
 COPY --chown=node:node --from=builder /build/packages/libs/s3-workspace-sync/dist ./packages/libs/s3-workspace-sync/dist
 COPY --chown=node:node --from=builder /build/packages/libs/s3-workspace-sync/package.json ./packages/libs/s3-workspace-sync/
-COPY --chown=node:node --from=builder /build/packages/shared/generative-ui-catalog/src ./packages/shared/generative-ui-catalog/src
+COPY --chown=node:node --from=builder /build/packages/shared/generative-ui-catalog/dist ./packages/shared/generative-ui-catalog/dist
 COPY --chown=node:node --from=builder /build/packages/shared/generative-ui-catalog/package.json ./packages/shared/generative-ui-catalog/
 COPY --chown=node:node --from=builder /build/packages/agent/dist ./packages/agent/dist
 COPY --chown=node:node --from=builder /build/packages/agent/scripts ./packages/agent/scripts

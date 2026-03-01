@@ -12,12 +12,12 @@
     "packages/shared/*"
   ],
   "scripts": {
-    "build": "npm run build --workspace=@moca/tool-definitions && npm run build --workspace=@moca/s3-workspace-sync && npm run build --workspaces --if-present",
-    "test": "npm run build --workspace=@moca/tool-definitions && npm run build --workspace=@moca/s3-workspace-sync && npm run test --workspaces --if-present",
+    "build": "npm run build --workspace=@moca/generative-ui-catalog && npm run build --workspace=@moca/tool-definitions && npm run build --workspace=@moca/s3-workspace-sync && npm run build --workspaces --if-present",
+    "test": "npm run build --workspace=@moca/generative-ui-catalog && npm run build --workspace=@moca/tool-definitions && npm run build --workspace=@moca/s3-workspace-sync && npm run test --workspaces --if-present",
     "test:integration": "npm run test:integration --workspace=@moca/backend",
     "setup-env": "tsx scripts/setup-env.ts",
-    "dev": "npm run build --workspace=@moca/tool-definitions && npm run build --workspace=@moca/s3-workspace-sync && concurrently -n \"frontend,backend,agent\" -c \"cyan,magenta,yellow\" \"npm:frontend:dev\" \"npm:backend:dev\" \"npm:agent:dev\"",
-    "devw": "npm run setup-env && npm run build --workspace=@moca/tool-definitions && npm run build --workspace=@moca/s3-workspace-sync && concurrently -n \"frontend,backend,agent\" -c \"cyan,magenta,yellow\" \"npm:frontend:dev\" \"npm:backend:dev\" \"npm:agent:dev\"",
+    "dev": "npm run build --workspace=@moca/generative-ui-catalog && npm run build --workspace=@moca/tool-definitions && npm run build --workspace=@moca/s3-workspace-sync && concurrently -n \"frontend,backend,agent\" -c \"cyan,magenta,yellow\" \"npm:frontend:dev\" \"npm:backend:dev\" \"npm:agent:dev\"",
+    "devw": "npm run setup-env && npm run build --workspace=@moca/generative-ui-catalog && npm run build --workspace=@moca/tool-definitions && npm run build --workspace=@moca/s3-workspace-sync && concurrently -n \"frontend,backend,agent\" -c \"cyan,magenta,yellow\" \"npm:frontend:dev\" \"npm:backend:dev\" \"npm:agent:dev\"",
     "dev:frontend": "npm run setup-env && npm run frontend:dev",
     "dev:backend": "npm run setup-env && npm run backend:dev",
     "dev:agent": "npm run setup-env && npm run agent:dev",
