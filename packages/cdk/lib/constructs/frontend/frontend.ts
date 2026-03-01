@@ -232,41 +232,30 @@ export class Frontend extends Construct {
     // Uses multiple assets (include-list pattern) so that only workspace packages
     // required for the frontend build are shipped to the CodeBuild environment.
     // When adding a new workspace dependency for frontend, add a corresponding asset entry below.
-    const EXTRACT_ROOT = 'workspace';
     const frontendBuild = new NodejsBuild(this, 'FrontendBuild', {
       assets: [
         {
-          // Root workspace config (package.json, tsconfig.*, etc.)
           path: PROJECT_ROOT,
-          extractPath: EXTRACT_ROOT,
           exclude: [
-            'packages/**',
             'node_modules/**',
             '.git/**',
             'dist/**',
+            '.env',
+            '.env.*',
             'cdk.out/**',
             'coverage/**',
+            'packages/agent/**',
+            'packages/backend/**',
+            'packages/cdk/**',
+            'packages/client/**',
+            'packages/lambda-tools/**',
+            'packages/trigger/**',
+            'packages/session-stream-handler/**',
+            'packages/libs/s3-workspace-sync/**',
             'docker/**',
             'docs/**',
             'scripts/**',
-            '.env',
-            '.env.*',
           ],
-        },
-        {
-          path: path.join(PROJECT_ROOT, 'packages/frontend'),
-          extractPath: `${EXTRACT_ROOT}/packages/frontend`,
-          exclude: ['node_modules/**', 'dist/**'],
-        },
-        {
-          path: path.join(PROJECT_ROOT, 'packages/libs/generative-ui-catalog'),
-          extractPath: `${EXTRACT_ROOT}/packages/libs/generative-ui-catalog`,
-          exclude: ['node_modules/**', 'dist/**'],
-        },
-        {
-          path: path.join(PROJECT_ROOT, 'packages/libs/tool-definitions'),
-          extractPath: `${EXTRACT_ROOT}/packages/libs/tool-definitions`,
-          exclude: ['node_modules/**', 'dist/**'],
         },
       ],
       buildCommands: [
