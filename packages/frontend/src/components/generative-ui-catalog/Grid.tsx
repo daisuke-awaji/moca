@@ -26,7 +26,7 @@ const COLS_CLASS_MAP: Record<number, string> = {
 
 const Grid = ({ props, children }: BaseComponentProps<GridProps>): React.ReactNode => {
   const cols = props.cols ?? 2;
-  const gap = (props.gap ?? 4) * 4;
+  const gap = Math.min(props.gap ?? 4, 8) * 2;
 
   const colClass = COLS_CLASS_MAP[cols];
 

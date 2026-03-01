@@ -1,12 +1,12 @@
 /**
- * moca UI catalog validation
+ * Generative UI catalog validation
  *
  * Validates that a UI spec only uses registered components
  * and sanitizes props for security.
  */
 
 import type { UISpec, UIElement } from './types.js';
-import { MOCA_COMPONENT_TYPES, BLOCKED_PROPS } from './types.js';
+import { UI_COMPONENT_TYPES, BLOCKED_PROPS } from './types.js';
 
 /**
  * Sanitize props by removing blocked event handlers
@@ -34,7 +34,7 @@ function sanitizeProps(props: Record<string, unknown>): Record<string, unknown> 
 function validateElement(key: string, element: UIElement): { valid: boolean; errors: string[] } {
   const errors: string[] = [];
 
-  if (!MOCA_COMPONENT_TYPES.includes(element.type as (typeof MOCA_COMPONENT_TYPES)[number])) {
+  if (!UI_COMPONENT_TYPES.includes(element.type as (typeof UI_COMPONENT_TYPES)[number])) {
     errors.push(`Unknown component type "${element.type}" in element "${key}"`);
   }
 

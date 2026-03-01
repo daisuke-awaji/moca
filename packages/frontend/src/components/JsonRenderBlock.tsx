@@ -1,7 +1,7 @@
 import React from 'react';
 import { Renderer, JSONUIProvider } from '@json-render/react';
 import type { Spec } from '@json-render/core';
-import { registry } from './moca-catalog';
+import { registry } from './generative-ui-catalog';
 
 interface JsonRenderBlockProps {
   content: string;
@@ -9,14 +9,14 @@ interface JsonRenderBlockProps {
 
 /**
  * Extract the raw UI spec JSON string from various content formats:
- * - Direct JSON string: '{"__moca_ui_spec":true,"spec":{...}}'
+ * - Direct JSON string: '{"__generative_ui_spec":true,"spec":{...}}'
  * - textBlock array (from session history API): '[{"type":"textBlock","text":"{...}"}]'
  */
 function extractSpecContent(content: string): string {
   try {
     const parsed = JSON.parse(content);
 
-    // If it's already an object with __moca_ui_spec or root+elements, return as-is
+    // If it's already an object with __generative_ui_spec or root+elements, return as-is
     if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
       return content;
     }
@@ -34,7 +34,7 @@ function extractSpecContent(content: string): string {
               if (
                 innerParsed &&
                 typeof innerParsed === 'object' &&
-                (innerParsed.__moca_ui_spec || (innerParsed.root && innerParsed.elements))
+                (innerParsed.__generative_ui_spec || (innerParsed.root && innerParsed.elements))
               ) {
                 return inner;
               }
@@ -56,7 +56,7 @@ export const JsonRenderBlock: React.FC<JsonRenderBlockProps> = ({ content }) => 
     try {
       const normalizedContent = extractSpecContent(content);
       const parsed = JSON.parse(normalizedContent);
-      if (parsed.__moca_ui_spec && parsed.spec) {
+      if (parsed.__generative_ui_spec && parsed.spec) {
         return parsed.spec as Spec;
       }
       if (parsed.root && parsed.elements) {
@@ -77,7 +77,7 @@ export const JsonRenderBlock: React.FC<JsonRenderBlockProps> = ({ content }) => 
   }
 
   return (
-    <div className="moca-ui-render p-3">
+    <div className="generative-ui-render p-3">
       <JSONUIProvider registry={registry}>
         <Renderer spec={spec} registry={registry} />
       </JSONUIProvider>

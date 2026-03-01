@@ -13,7 +13,7 @@ import { AgentCoreCodeInterpreterClient } from '../code-interpreter/client.js';
 import { getCurrentStoragePath } from '../../context/request-context.js';
 import { generateUiDefinition } from '@moca/tool-definitions';
 import { validateUISpec } from './catalog.js';
-import type { MocaUISpecOutput } from './types.js';
+import type { UISpecOutput } from './types.js';
 
 /**
  * Check if an object looks like a valid UI spec (has root + elements)
@@ -178,8 +178,8 @@ export const generateUiTool = tool({
       }
 
       // Return spec with marker
-      const output: MocaUISpecOutput = {
-        __moca_ui_spec: true,
+      const output: UISpecOutput = {
+        __generative_ui_spec: true,
         spec: validation.spec,
       };
 
