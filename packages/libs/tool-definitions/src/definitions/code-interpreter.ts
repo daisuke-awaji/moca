@@ -1,6 +1,5 @@
 import { z } from 'zod';
-import { zodToJsonSchema } from '../utils/schema-converter.js';
-import type { ToolDefinition } from '../types.js';
+import { defineToolDefinition } from '../types.js';
 
 const fileContentSchema = z.object({
   path: z.string(),
@@ -108,7 +107,7 @@ const codeInterpreterSchema = z.object({
     ),
 });
 
-export const codeInterpreterDefinition: ToolDefinition<typeof codeInterpreterSchema> = {
+export const codeInterpreterDefinition = defineToolDefinition({
   name: 'code_interpreter',
   description: `Code Interpreter tool for executing code in isolated sandbox environments.
 
@@ -430,5 +429,4 @@ TIPS FOR BEST RESULTS:
 6. Handle errors gracefully - check status field in responses
 7. Use shell commands for system operations (pip install, etc.)`,
   zodSchema: codeInterpreterSchema,
-  jsonSchema: zodToJsonSchema(codeInterpreterSchema),
-};
+});

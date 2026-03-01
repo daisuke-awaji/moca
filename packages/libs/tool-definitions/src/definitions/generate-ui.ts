@@ -1,6 +1,5 @@
 import { z } from 'zod';
-import { zodToJsonSchema } from '../utils/schema-converter.js';
-import type { ToolDefinition } from '../types.js';
+import { defineToolDefinition } from '../types.js';
 import { generateComponentPrompt } from '@moca/generative-ui-catalog';
 
 /**
@@ -104,9 +103,8 @@ const toolDescription =
   '\n\n' +
   'In "code" mode, the code runs in a sandboxed CodeInterpreter. Print ONLY the JSON spec to stdout.';
 
-export const generateUiDefinition: ToolDefinition<typeof generateUiSchema> = {
+export const generateUiDefinition = defineToolDefinition({
   name: 'generate_ui',
   description: toolDescription,
   zodSchema: generateUiSchema,
-  jsonSchema: zodToJsonSchema(generateUiSchema),
-};
+});

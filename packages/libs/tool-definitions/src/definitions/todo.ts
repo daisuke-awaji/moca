@@ -1,6 +1,5 @@
 import { z } from 'zod';
-import { zodToJsonSchema } from '../utils/schema-converter.js';
-import type { ToolDefinition } from '../types.js';
+import { defineToolDefinition } from '../types.js';
 
 const todoItemUpdateSchema = z.object({
   id: z.string().describe('The ID of the task to update (e.g., "task-1")'),
@@ -32,7 +31,7 @@ export const todoSchema = z.object({
     .describe('Array of task updates to process in batch (required for update action).'),
 });
 
-export const todoDefinition: ToolDefinition<typeof todoSchema> = {
+export const todoDefinition = defineToolDefinition({
   name: 'todo',
   description: `Manage a todo list for tracking task progress during sessions.
 
@@ -88,5 +87,4 @@ IMPORTANT: Refrain from using this tool for single elementary tasks. Direct exec
 }
 \`\`\``,
   zodSchema: todoSchema,
-  jsonSchema: zodToJsonSchema(todoSchema),
-};
+});

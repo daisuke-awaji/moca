@@ -1,6 +1,5 @@
 import { z } from 'zod';
-import { zodToJsonSchema } from '../utils/schema-converter.js';
-import type { ToolDefinition } from '../types.js';
+import { defineToolDefinition } from '../types.js';
 
 export const thinkSchema = z.object({
   thought: z
@@ -10,7 +9,7 @@ export const thinkSchema = z.object({
     ),
 });
 
-export const thinkDefinition: ToolDefinition<typeof thinkSchema> = {
+export const thinkDefinition = defineToolDefinition({
   name: 'think',
   description:
     'Use this tool to think through a problem step-by-step before taking action. ' +
@@ -18,5 +17,4 @@ export const thinkDefinition: ToolDefinition<typeof thinkSchema> = {
     'verify your reasoning, or decide between multiple approaches. ' +
     'This tool does not execute anything — it simply provides space for structured reasoning.',
   zodSchema: thinkSchema,
-  jsonSchema: zodToJsonSchema(thinkSchema),
-};
+});

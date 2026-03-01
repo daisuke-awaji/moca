@@ -1,6 +1,5 @@
 import { z } from 'zod';
-import { zodToJsonSchema } from '../utils/schema-converter.js';
-import type { ToolDefinition } from '../types.js';
+import { defineToolDefinition } from '../types.js';
 
 export const s3ListFilesSchema = z.object({
   path: z.string().default('/').describe('Directory path to list (default: root "/")'),
@@ -30,10 +29,9 @@ export const s3ListFilesSchema = z.object({
     ),
 });
 
-export const s3ListFilesDefinition: ToolDefinition<typeof s3ListFilesSchema> = {
+export const s3ListFilesDefinition = defineToolDefinition({
   name: 's3_list_files',
   description:
     "Retrieve list of files and directories in user's S3 storage. Can explore contents under specified path.",
   zodSchema: s3ListFilesSchema,
-  jsonSchema: zodToJsonSchema(s3ListFilesSchema),
-};
+});
