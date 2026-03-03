@@ -36,6 +36,11 @@ packages/frontend/
 packages/client/
 packages/lambda-tools/
 
+# Exclude unmerged feature files (may be restored by workspace sync)
+packages/libs/tool-definitions/src/definitions/generate-ui.ts
+packages/libs/generative-ui-catalog/
+packages/agent/src/tools/generate-ui/
+
 # Documentation
 docs/
 *.md
