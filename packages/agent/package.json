@@ -13,7 +13,7 @@
     "test": "NODE_OPTIONS='--experimental-vm-modules --no-warnings' jest --passWithNoTests --forceExit",
     "test:watch": "NODE_OPTIONS='--experimental-vm-modules --no-warnings' jest --watch",
     "test:coverage": "NODE_OPTIONS='--experimental-vm-modules --no-warnings' jest --coverage",
-    "test:integration": "NODE_OPTIONS='--experimental-vm-modules --no-warnings' jest --testMatch='**/*.integration.test.ts' --testPathIgnorePatterns='/node_modules/'",
+    "test:integration": "NODE_OPTIONS='--experimental-vm-modules --no-warnings' jest --config jest.integration.config.js",
     "test:local": "tsx src/test.ts",
     "clean": "rimraf dist",
     "docker:build": "docker build -t agentcore-agent .",

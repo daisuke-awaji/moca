@@ -3,7 +3,14 @@
  * AI Agent that runs on AgentCore Runtime and uses AgentCore Gateway tools
  */
 
-import { Agent, HookProvider, Message, McpClient, CachePointBlock } from '@strands-agents/sdk';
+import {
+  Agent,
+  HookProvider,
+  Message,
+  McpClient,
+  CachePointBlock,
+  SlidingWindowConversationManager,
+} from '@strands-agents/sdk';
 import { logger, config } from './config/index.js';
 import { localTools, convertMCPToolsToStrands } from './tools/index.js';
 import { buildSystemPrompt } from './prompts/index.js';
@@ -249,7 +256,18 @@ export async function createAgent(
 
     logger.info({ systemPrompt });
 
-    // 6. Create Agent (use messages with cache point)
+    // 6. Create conversation manager for context window management
+    const conversationManager = new SlidingWindowConversationManager({
+      windowSize: config.CONVERSATION_WINDOW_SIZE,
+      shouldTruncateResults: true,
+    });
+
+    logger.info('📏 Conversation manager configured:', {
+      windowSize: config.CONVERSATION_WINDOW_SIZE,
+      shouldTruncateResults: true,
+    });
+
+    // 7. Create Agent (use messages with cache point)
 
     const agent = new Agent({
       model,
@@ -258,6 +276,7 @@ export async function createAgent(
       tools: allTools as any,
       messages: messagesWithCache, // ★ Use messages with cache point
       hooks,
+      conversationManager, // ★ Manage conversation history to prevent context overflow
     });
 
     // Set storagePath in agent state for sub-agent inheritance
