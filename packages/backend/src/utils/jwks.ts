@@ -147,14 +147,3 @@ export function extractJWTFromHeader(authHeader: string): string | null {
   // Extract JWT token part
   return authHeader.substring(bearerPrefix.length).trim();
 }
-
-/**
- * Check JWKS configuration status
- */
-export function getJWKSStatus() {
-  return {
-    configured: !!config.cognito.userPoolId,
-    userPoolId: config.cognito.userPoolId,
-    clientId: config.cognito.clientId,
-  };
-}

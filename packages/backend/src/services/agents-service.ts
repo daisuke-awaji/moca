@@ -138,7 +138,7 @@ export class AgentsService {
       return response.Items.map((item) => fromDynamoAgent(unmarshall(item) as DynamoAgent));
     } catch (error) {
       console.error('Error listing agents:', error);
-      throw new Error('Failed to list agents');
+      throw new Error('Failed to list agents', { cause: error });
     }
   }
 
@@ -165,7 +165,7 @@ export class AgentsService {
       return fromDynamoAgent(unmarshall(response.Item) as DynamoAgent);
     } catch (error) {
       console.error('Error getting agent:', error);
-      throw new Error('Failed to get agent');
+      throw new Error('Failed to get agent', { cause: error });
     }
   }
 
@@ -209,7 +209,7 @@ export class AgentsService {
       return agent;
     } catch (error) {
       console.error('Error creating agent:', error);
-      throw new Error('Failed to create agent');
+      throw new Error('Failed to create agent', { cause: error });
     }
   }
 
@@ -327,7 +327,7 @@ export class AgentsService {
       await this.dynamoClient.send(command);
     } catch (error) {
       console.error('Error deleting agent:', error);
-      throw new Error('Failed to delete agent');
+      throw new Error('Failed to delete agent', { cause: error });
     }
   }
 
@@ -351,7 +351,7 @@ export class AgentsService {
       return createdAgents;
     } catch (error) {
       console.error('Error initializing default agents:', error);
-      throw new Error('Failed to initialize default agents');
+      throw new Error('Failed to initialize default agents', { cause: error });
     }
   }
 
@@ -420,7 +420,7 @@ export class AgentsService {
           exclusiveStartKey = JSON.parse(decoded);
         } catch (error) {
           console.error('Invalid cursor format:', error);
-          throw new Error('Invalid pagination cursor');
+          throw new Error('Invalid pagination cursor', { cause: error });
         }
       }
 
@@ -489,7 +489,7 @@ export class AgentsService {
       return agent;
     } catch (error) {
       console.error('Error getting shared agent:', error);
-      throw new Error('Failed to get shared agent');
+      throw new Error('Failed to get shared agent', { cause: error });
     }
   }
 
