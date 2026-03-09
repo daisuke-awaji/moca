@@ -196,37 +196,17 @@ export function agentCorePayloadToMessage(payload: AgentCorePayload): Message {
 
   // When blob payload
   if ('blob' in payload && payload.blob) {
-    // console.log('Blob payload received:', {
-    //   type: typeof payload.blob,
-    //   constructor: payload.blob?.constructor?.name,
-    //   isUint8Array: payload.blob instanceof Uint8Array,
-    //   isBuffer: Buffer.isBuffer && Buffer.isBuffer(payload.blob),
-    //   keys: typeof payload.blob === 'object' ? Object.keys(payload.blob) : [],
-    //   sample:
-    //     typeof payload.blob === 'object' && !(payload.blob instanceof Uint8Array)
-    //       ? JSON.stringify(payload.blob).slice(0, 200)
-    //       : 'binary_data',
-    // });
-
     try {
       let blobData: BlobData | null = null;
 
-      // 1. When Uint8Array (new format)
+      // 1. When Uint8Array or Buffer (Buffer extends Uint8Array in Node.js)
       if (payload.blob instanceof Uint8Array) {
-        // console.log('Processing as Uint8Array');
         const decoder = new TextDecoder();
         const blobString = decoder.decode(payload.blob);
         blobData = JSON.parse(blobString);
       }
-      // 2. When Buffer
-      else if (typeof Buffer !== 'undefined' && Buffer.isBuffer && Buffer.isBuffer(payload.blob)) {
-        // console.log('Processing as Buffer');
-        const blobString = (payload.blob as Buffer).toString('utf8');
-        blobData = JSON.parse(blobString);
-      }
-      // 3. When direct object (old format - backward compatibility)
+      // 2. When direct object (old format - backward compatibility)
       else if (typeof payload.blob === 'object' && payload.blob !== null) {
-        // console.log('Processing as direct object (backward compatibility)');
         const blobObj = payload.blob as Record<string, unknown>;
 
         // Check for old format
@@ -234,9 +214,8 @@ export function agentCorePayloadToMessage(payload: AgentCorePayload): Message {
           blobData = blobObj as unknown as BlobData;
         }
       }
-      // 4. When string (possibly base64 encoded)
+      // 3. When string (possibly base64 encoded)
       else if (typeof payload.blob === 'string') {
-        // console.log('Processing as string');
         try {
           // Attempt base64 decoding
           const decodedString = Buffer.from(payload.blob, 'base64').toString('utf8');
@@ -340,10 +319,9 @@ function createContentBlockFromToolData(toolData: ToolData | LegacyBlobData): Co
     } as unknown as ContentBlock;
   }
 
-  // Fallback (normally unreachable)
-  return new TextBlock(
-    `[Unknown tool data: ${JSON.stringify(toolData)}]`
-  ) as unknown as ContentBlock;
+  // Exhaustive check: compile-time error if new toolType is added without handling
+  const _exhaustive: never = toolData.toolType as never;
+  throw new Error(`Unknown toolType: ${_exhaustive}`);
 }
 
 /**

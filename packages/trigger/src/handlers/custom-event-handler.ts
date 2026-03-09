@@ -142,7 +142,7 @@ async function invokeTrigger(
 
     // Record failure if executionId was created
     try {
-      if (executionId!) {
+      if (executionId) {
         await executionRecorder.failExecution(trigger.id, executionId, errorMessage);
       }
     } catch (recordError) {
