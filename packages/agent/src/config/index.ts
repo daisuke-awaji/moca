@@ -38,6 +38,9 @@ const envSchema = z.object({
     .default('false')
     .transform((val) => val === 'true'),
 
+  // Conversation Management Configuration
+  CONVERSATION_WINDOW_SIZE: z.coerce.number().default(40),
+
   // Prompt Caching Configuration
   ENABLE_PROMPT_CACHING: z
     .string()
