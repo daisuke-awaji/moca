@@ -159,6 +159,23 @@ describe('messageToAgentCorePayload', () => {
       const decoded = Buffer.from(data.content[0].base64, 'base64');
       expect(Array.from(decoded)).toEqual([137, 80, 78, 71]);
     });
+
+    it('defaults to png format when imageBlock has no format specified', () => {
+      const bytes = new Uint8Array([137, 80, 78, 71]);
+      // Create imageBlock without explicit format (constructor may set undefined)
+      const imgBlock = new ImageBlock({ source: { bytes } } as {
+        format: 'png';
+        source: { bytes: Uint8Array };
+      });
+      const msg = new Message({ role: 'user', content: [imgBlock] });
+
+      const payload = messageToAgentCorePayload(msg) as BlobPayload;
+      const data = decodeBlob(payload.blob) as {
+        content: { type: string; format: string; base64: string }[];
+      };
+      // serializeImageBlock defaults to 'png' when format is missing
+      expect(data.content[0].format).toBe('png');
+    });
   });
 });
 
@@ -232,6 +249,21 @@ describe('agentCorePayloadToMessage', () => {
       const msg = agentCorePayloadToMessage(payload);
       expect(msg.role).toBe('assistant');
       expect((msg.content[0] as TextBlock).text).toBe('from buffer');
+    });
+
+    it('restores non-ASCII content from Buffer blob (utf8 verification)', () => {
+      const blobData = {
+        messageType: 'content',
+        role: 'user',
+        content: [{ type: 'textBlock', text: '\u65e5\u672c\u8a9e\u30c6\u30b9\u30c8\ud83d\ude80' }],
+      };
+      const payload = {
+        blob: Buffer.from(JSON.stringify(blobData), 'utf8') as unknown as Uint8Array,
+      };
+      const msg = agentCorePayloadToMessage(payload);
+      expect((msg.content[0] as TextBlock).text).toBe(
+        '\u65e5\u672c\u8a9e\u30c6\u30b9\u30c8\ud83d\ude80'
+      );
     });
   });
 

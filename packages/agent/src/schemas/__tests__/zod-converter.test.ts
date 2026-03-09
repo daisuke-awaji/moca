@@ -24,6 +24,17 @@ describe('sanitizePropertyKey', () => {
     expect(result).toBe('a'.repeat(64));
   });
 
+  it('should NOT truncate key that is exactly 64 characters', () => {
+    const key64 = 'b'.repeat(64);
+    expect(sanitizePropertyKey(key64)).toBe(key64);
+  });
+
+  it('should NOT truncate key between 33-63 characters (below threshold)', () => {
+    const key50 = 'validKey_' + 'c'.repeat(41); // 50 chars total
+    expect(sanitizePropertyKey(key50)).toBe(key50);
+    expect(sanitizePropertyKey(key50).length).toBe(50);
+  });
+
   it('should return _param for empty string', () => {
     expect(sanitizePropertyKey('')).toBe('_param');
   });
