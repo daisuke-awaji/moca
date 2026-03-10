@@ -1,256 +1,148 @@
 /**
  * Agent invocation endpoint handler
+ *
+ * Thin orchestrator that uses RequestContext as the single source of
+ * request-scoped state. Delegates streaming to `stream-handler.ts`.
+ *
+ * Unhandled errors are caught by the global error handler in app.ts
+ * via the asyncHandler wrapper.
  */
 
-import { Request, Response } from 'express';
+import type { Request, Response } from 'express';
+import type { HookProvider } from '@strands-agents/sdk';
+import type { CreateAgentOptions } from '../agent/types.js';
+import type { InvocationRequest } from './types.js';
 import { createAgent } from '../agent.js';
-import { getContextMetadata, getCurrentContext } from '../context/request-context.js';
+import { getCurrentContext } from '../context/request-context.js';
 import { ObservabilityContext } from '../context/observability-context.js';
 import { setupSession, getSessionStorage } from '../session/session-helper.js';
 import { initializeWorkspaceSync } from '../services/workspace-sync-helper.js';
 import { logger } from '../config/index.js';
-import {
-  createErrorMessage,
-  sanitizeErrorMessage,
-  serializeStreamEvent,
-  buildInputContent,
-} from '../utils/index.js';
 import { validateImageData } from '../validation/index.js';
 import { resolveEffectiveUserId } from './auth-resolver.js';
-import type { InvocationRequest } from './types.js';
-import type { SessionType } from '../session/types.js';
+import { streamAgentResponse } from './stream-handler.js';
 
 /**
- * Agent invocation endpoint (with streaming support)
- * Create Agent for each session and persist history
+ * Validate the request body and resolve the effective user ID.
+ * Sends an error response and returns null if validation fails.
  */
-export async function handleInvocation(req: Request, res: Response): Promise<void> {
-  try {
-    // Get each parameter from request body
-    const {
-      prompt,
-      modelId,
-      enabledTools,
-      systemPrompt,
-      storagePath,
-      agentId,
-      memoryEnabled,
-      memoryTopK,
-      mcpConfig,
-      images,
-      targetUserId,
-    } = req.body as InvocationRequest;
+function validateRequest(body: InvocationRequest, res: Response): string | null {
+  // Validate prompt
+  if (!body.prompt?.trim()) {
+    res.status(400).json({ error: 'Empty prompt provided' });
+    return null;
+  }
 
-    if (!prompt?.trim()) {
-      res.status(400).json({ error: 'Empty prompt provided' });
-      return;
-    }
-
-    // Server-side image validation
-    if (images && images.length > 0) {
-      const validation = validateImageData(images);
-      if (!validation.valid) {
-        logger.warn('Image validation failed:', { error: validation.error });
-        res.status(400).json({ error: validation.error });
-        return;
-      }
-      logger.info(`Image validation passed: ${images.length} image(s)`);
-    }
-
-    // Get context information (retrieve once)
-    const context = getCurrentContext();
-    const requestId = context?.requestId || 'unknown';
-
-    // Resolve effective user ID based on authentication type
-    const userIdResult = resolveEffectiveUserId(context, targetUserId);
-    if (userIdResult.error) {
-      logger.warn('User ID resolution failed:', {
-        requestId,
-        error: userIdResult.error.message,
-        isMachineUser: context?.isMachineUser,
-        targetUserId,
-      });
-      res.status(userIdResult.error.status).json({ error: userIdResult.error.message });
-      return;
-    }
-    const actorId = userIdResult.userId;
-
-    // Set userId and storagePath in context
-    if (context) {
-      context.userId = actorId;
-      context.storagePath = storagePath || '/';
-    }
-
-    // Get session ID from header (optional)
-    const sessionId = req.headers['x-amzn-bedrock-agentcore-runtime-session-id'] as
-      | string
-      | undefined;
-
-    // Get session type from header (optional, default: 'user')
-    const sessionTypeHeader = req.headers['x-amzn-bedrock-agentcore-runtime-session-type'] as
-      | string
-      | undefined;
-    const sessionType: SessionType | undefined = sessionTypeHeader as SessionType | undefined;
-
-    logger.info('Request received:', {
-      requestId,
-      prompt,
-      actorId,
-      sessionId: sessionId || 'none (sessionless mode)',
-      sessionType: sessionType || 'user',
-      isMachineUser: context?.isMachineUser,
-      clientId: context?.clientId,
-    });
-
-    // Initialize workspace sync (if storagePath is specified)
-    const workspaceSyncResult = initializeWorkspaceSync(actorId, storagePath, context);
-
-    // Setup session (if sessionId exists)
-    const sessionResult = setupSession({
-      actorId,
-      sessionId,
-      sessionType,
-      agentId,
-      storagePath,
-    });
-    const sessionStorage = getSessionStorage();
-
-    // Agent creation options
-    const agentOptions = {
-      modelId,
-      enabledTools,
-      systemPrompt,
-      ...(sessionResult && {
-        sessionStorage,
-        sessionConfig: sessionResult.config,
-      }),
-      // Long-term memory parameters (use JWT userId as actorId)
-      memoryEnabled,
-      memoryContext: memoryEnabled ? prompt : undefined,
-      actorId: memoryEnabled ? actorId : undefined,
-      memoryTopK,
-      // User-defined MCP server configuration
-      mcpConfig,
-    };
-
-    // Create observability context for CloudWatch GenAI Observability
-    const otelCtx = new ObservabilityContext({
-      actorId,
-      sessionId,
-      sessionType,
-      agentId,
-      modelId,
-      isMachineUser: context?.isMachineUser,
-      memoryEnabled,
-    });
-
-    // Execute agent processing within a traced span that includes all observability attributes
-    await otelCtx.traceAsync('agent.invocation', async () => {
-      // Create Agent (register all hooks)
-      const hooks = [sessionResult?.hook, workspaceSyncResult?.hook].filter(
-        (hook) => hook !== null && hook !== undefined
-      );
-      const { agent, metadata } = await createAgent(hooks, agentOptions);
-
-      // Log Agent creation completion
-      logger.info('Agent creation completed:', {
-        requestId,
-        loadedMessages: metadata.loadedMessagesCount,
-        longTermMemories: metadata.longTermMemoriesCount,
-        tools: metadata.toolsCount,
-      });
-
-      // Set headers for streaming response
-      res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-      res.setHeader('Cache-Control', 'no-cache');
-      res.setHeader('Connection', 'keep-alive');
-      res.setHeader('X-Accel-Buffering', 'no'); // Disable nginx buffering
-
-      try {
-        logger.info('Agent streaming started:', { requestId });
-
-        // Build input content (text + images for multimodal)
-        const agentInput = buildInputContent(prompt, images);
-
-        // Send streaming events as NDJSON
-        // Message persistence and AppSync Events publishing are handled centrally
-        // by SessionPersistenceHook.onMessageAdded (for both stream and invoke modes)
-        for await (const event of agent.stream(agentInput)) {
-          // Serialize event avoiding circular references
-          const safeEvent = serializeStreamEvent(event);
-          res.write(`${JSON.stringify(safeEvent)}\n`);
-        }
-
-        logger.info('Agent streaming completed:', { requestId });
-
-        // Get metadata with duration for completion event
-        const contextMeta = getContextMetadata();
-
-        // Send completion metadata
-        const completionEvent = {
-          type: 'serverCompletionEvent',
-          metadata: {
-            requestId,
-            duration: contextMeta.duration,
-            sessionId: sessionId,
-            actorId: actorId,
-            conversationLength: agent.messages.length,
-            agentMetadata: metadata,
-          },
-        };
-        res.write(`${JSON.stringify(completionEvent)}\n`);
-
-        res.end();
-      } catch (streamError) {
-        logger.error('Agent streaming error:', {
-          requestId,
-          error: streamError,
-        });
-
-        // Save error message to session history (if session is configured)
-        if (sessionResult) {
-          try {
-            const errorMessage = createErrorMessage(streamError, requestId);
-            await sessionStorage.appendMessage(sessionResult.config, errorMessage);
-            logger.info('Error message saved to session history:', {
-              requestId,
-              sessionId: sessionResult.config.sessionId,
-            });
-          } catch (saveError) {
-            logger.error('Failed to save error message to session:', saveError);
-            // Continue even if save fails - still send error event to client
-          }
-        }
-
-        // Send error event
-        const errorEvent = {
-          type: 'serverErrorEvent',
-          error: {
-            message: sanitizeErrorMessage(streamError),
-            requestId,
-            // Include flag to indicate this error was saved to history
-            savedToHistory: !!sessionResult,
-          },
-        };
-        res.write(`${JSON.stringify(errorEvent)}\n`);
-        res.end();
-      }
-    });
-  } catch (error) {
-    const contextMeta = getContextMetadata();
-    logger.error('Error processing request:', {
-      requestId: contextMeta.requestId,
-      error,
-    });
-
-    // JSON response for initial error
-    if (!res.headersSent) {
-      res.status(500).json({
-        error: 'Internal server error',
-        message: error instanceof Error ? error.message : 'Unknown error',
-        requestId: contextMeta.requestId,
-      });
-      return;
+  // Validate images
+  if (body.images && body.images.length > 0) {
+    const validation = validateImageData(body.images);
+    if (!validation.valid) {
+      logger.warn('Image validation failed:', { error: validation.error });
+      res.status(400).json({ error: validation.error });
+      return null;
     }
   }
+
+  // Resolve effective user ID
+  const context = getCurrentContext();
+  const userIdResult = resolveEffectiveUserId(context, body.targetUserId);
+  if (userIdResult.error) {
+    logger.warn('User ID resolution failed:', {
+      requestId: context?.requestId,
+      error: userIdResult.error.message,
+    });
+    res.status(userIdResult.error.status).json({ error: userIdResult.error.message });
+    return null;
+  }
+
+  return userIdResult.userId;
+}
+
+/**
+ * Agent invocation endpoint (with streaming support).
+ * Creates an Agent per session and persists history.
+ */
+export async function handleInvocation(req: Request, res: Response): Promise<void> {
+  const body = req.body as InvocationRequest;
+  const context = getCurrentContext()!;
+
+  // 1. Validate and resolve actor
+  const actorId = validateRequest(body, res);
+  if (!actorId) return;
+
+  // Enrich context with resolved values
+  context.userId = actorId;
+  context.storagePath = body.storagePath || '/';
+
+  const { sessionId, sessionType, requestId } = context;
+
+  logger.info('Request received:', {
+    requestId,
+    prompt: body.prompt,
+    actorId,
+    sessionId: sessionId || 'none (sessionless mode)',
+  });
+
+  // 2. Initialize workspace sync (if storagePath is specified)
+  const workspaceSyncResult = initializeWorkspaceSync(actorId, body.storagePath, context);
+
+  // 3. Setup session (if sessionId exists)
+  const sessionResult = setupSession({
+    actorId,
+    sessionId,
+    sessionType,
+    agentId: body.agentId,
+    storagePath: body.storagePath,
+  });
+  const sessionStorage = getSessionStorage();
+
+  // 4. Build agent options
+  const hooks = [sessionResult?.hook, workspaceSyncResult?.hook].filter(
+    (hook) => hook != null
+  ) as HookProvider[];
+
+  const agentOptions: CreateAgentOptions = {
+    hooks,
+    modelId: body.modelId,
+    enabledTools: body.enabledTools,
+    systemPrompt: body.systemPrompt,
+    memoryEnabled: body.memoryEnabled,
+    memoryContext: body.memoryEnabled ? body.prompt : undefined,
+    actorId: body.memoryEnabled ? actorId : undefined,
+    memoryTopK: body.memoryTopK,
+    mcpConfig: body.mcpConfig,
+  };
+
+  if (sessionResult) {
+    agentOptions.sessionStorage = sessionStorage;
+    agentOptions.sessionConfig = sessionResult.config;
+  }
+
+  // 5. Execute within observability span
+  const otelCtx = new ObservabilityContext({
+    actorId,
+    sessionId,
+    sessionType,
+    agentId: body.agentId,
+    modelId: body.modelId,
+    isMachineUser: context.isMachineUser,
+    memoryEnabled: body.memoryEnabled,
+  });
+
+  await otelCtx.traceAsync('agent.invocation', async () => {
+    const { agent, metadata } = await createAgent(agentOptions);
+
+    logger.info('Agent creation completed:', {
+      requestId,
+      loadedMessages: metadata.loadedMessagesCount,
+      longTermMemories: metadata.longTermMemoriesCount,
+      tools: metadata.toolsCount,
+    });
+
+    await streamAgentResponse(agent, body.prompt, body.images, res, {
+      metadata,
+      sessionStorage: sessionResult ? sessionStorage : undefined,
+      sessionConfig: sessionResult?.config,
+    });
+  });
 }

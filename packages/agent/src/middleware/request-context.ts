@@ -6,6 +6,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { createRequestContext, runWithContext } from '../context/request-context.js';
 import { logger } from '../config/index.js';
+import type { SessionType } from '../session/types.js';
 
 /**
  * Token information extracted from JWT
@@ -104,6 +105,16 @@ export function requestContextMiddleware(req: Request, res: Response, next: Next
   requestContext.isMachineUser = tokenInfo.isMachineUser;
   requestContext.clientId = tokenInfo.clientId;
   requestContext.scopes = tokenInfo.scopes;
+
+  // Extract session headers
+  const sessionId = req.headers['x-amzn-bedrock-agentcore-runtime-session-id'] as
+    | string
+    | undefined;
+  const sessionType = req.headers['x-amzn-bedrock-agentcore-runtime-session-type'] as
+    | SessionType
+    | undefined;
+  requestContext.sessionId = sessionId;
+  requestContext.sessionType = sessionType;
 
   // Log request context
   logger.info('📝 Request context middleware activated:', {
