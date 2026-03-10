@@ -79,7 +79,7 @@ async function invokeTrigger(
   agentInvoker: AgentInvoker,
   executionRecorder: ExecutionRecorder
 ): Promise<{ success: boolean; error?: string }> {
-  let executionId: string;
+  let executionId: string | undefined;
 
   try {
     console.log(`🚀 Invoking trigger: ${trigger.name} (${trigger.id})`);
@@ -142,7 +142,7 @@ async function invokeTrigger(
 
     // Record failure if executionId was created
     try {
-      if (executionId!) {
+      if (executionId) {
         await executionRecorder.failExecution(trigger.id, executionId, errorMessage);
       }
     } catch (recordError) {

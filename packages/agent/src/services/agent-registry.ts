@@ -208,12 +208,3 @@ export async function listAgents(
     return [];
   }
 }
-
-/**
- * Clear agent cache
- */
-export function clearCache(): void {
-  agentCache.clear();
-  cacheTimestamps.clear();
-  logger.info('🧹 Agent cache cleared');
-}

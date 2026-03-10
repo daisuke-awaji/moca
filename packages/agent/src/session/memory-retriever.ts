@@ -63,6 +63,8 @@ async function getSemanticMemoryStrategyId(memoryId: string, region: string): Pr
       return cachedStrategyId as string;
     }
 
+    // TODO: This logic is duplicated in packages/backend/src/services/agentcore-memory.ts
+    // Consider extracting to a shared utility in packages/libs/
     // Search for strategy whose name or strategyId starts with 'semantic_memory_strategy'
     const semanticStrategy = response.memory.strategies.find(
       (strategy: { name?: string; strategyId?: string }) =>

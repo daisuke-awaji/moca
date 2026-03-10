@@ -143,10 +143,3 @@ export async function publishMessageEvent(
     logger.warn('Failed to publish message event to AppSync Events:', errorDetails);
   }
 }
-
-/**
- * Check if AppSync Events publishing is configured
- */
-export function isPublishingConfigured(): boolean {
-  return !!process.env.APPSYNC_HTTP_ENDPOINT;
-}
