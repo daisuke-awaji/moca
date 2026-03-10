@@ -8,7 +8,7 @@ import * as iam from 'aws-cdk-lib/aws-iam';
 import * as agentcore from '@aws-cdk/aws-bedrock-agentcore-alpha';
 import { RuntimeAuthorizerConfiguration } from '@aws-cdk/aws-bedrock-agentcore-alpha';
 import { Platform } from 'aws-cdk-lib/aws-ecr-assets';
-import { ContainerImageBuild } from 'deploy-time-build';
+import { ContainerImageBuild } from '@cdklabs/deploy-time-build';
 import { Construct } from 'constructs';
 import { CognitoAuth } from '../auth';
 import { AgentCoreGateway } from './agentcore-gateway';
@@ -88,6 +88,19 @@ export interface AgentCoreRuntimeProps {
   readonly githubTokenSecretName?: string;
 
   /**
+   * GitLab Token Secret Name (Secrets Manager) (optional)
+   * When set, runtime retrieves GitLab token from Secrets Manager for glab CLI authentication
+   */
+  readonly gitlabTokenSecretName?: string;
+
+  /**
+   * GitLab Host (optional)
+   * Hostname of the GitLab instance (e.g., 'gitlab.com' or 'gitlab.example.com')
+   * @default 'gitlab.com'
+   */
+  readonly gitlabHost?: string;
+
+  /**
    * User Storage bucket name (optional)
    * Required for using S3 storage tools
    */
@@ -118,6 +131,13 @@ export interface AgentCoreRuntimeProps {
    * Used for real-time message delivery
    */
   readonly appsyncHttpEndpoint?: string;
+
+  /**
+   * Enable AWS ReadOnly + CloudFormation deploy permissions (optional)
+   * When true, attaches ReadOnlyAccess managed policy and CloudFormation deployment permissions.
+   * @default false
+   */
+  readonly enableAwsOpsPermissions?: boolean;
 }
 
 /**
@@ -199,7 +219,7 @@ export class AgentCoreRuntime extends Construct {
     // Set environment variables
     const environmentVariables: Record<string, string> = {
       AWS_REGION: props.region || 'us-east-1',
-      BEDROCK_MODEL_ID: 'global.anthropic.claude-sonnet-4-5-20250929-v1:0',
+      BEDROCK_MODEL_ID: 'global.anthropic.claude-sonnet-4-6',
       BEDROCK_REGION: props.region || 'us-east-1',
       LOG_LEVEL: 'info',
     };
@@ -229,6 +249,16 @@ export class AgentCoreRuntime extends Construct {
       environmentVariables.GITHUB_TOKEN_SECRET_NAME = props.githubTokenSecretName;
     }
 
+    // Set GitLab Token Secret Name
+    if (props.gitlabTokenSecretName) {
+      environmentVariables.GITLAB_TOKEN_SECRET_NAME = props.gitlabTokenSecretName;
+    }
+
+    // Set GitLab Host
+    if (props.gitlabHost) {
+      environmentVariables.GITLAB_HOST = props.gitlabHost;
+    }
+
     // Set User Storage bucket name
     if (props.userStorageBucketName) {
       environmentVariables.USER_STORAGE_BUCKET_NAME = props.userStorageBucketName;
@@ -253,6 +283,12 @@ export class AgentCoreRuntime extends Construct {
     if (props.appsyncHttpEndpoint) {
       environmentVariables.APPSYNC_HTTP_ENDPOINT = props.appsyncHttpEndpoint;
     }
+
+    // AgentCore Observability (OpenTelemetry) configuration
+    // Note: OTEL environment variables (OTEL_RESOURCE_ATTRIBUTES, OTEL_EXPORTER_OTLP_LOGS_HEADERS, etc.)
+    // are automatically configured by AgentCore Runtime with the correct log group name and endpoints.
+    // Only AGENT_OBSERVABILITY_ENABLED needs to be set explicitly.
+    environmentVariables.AGENT_OBSERVABILITY_ENABLED = 'true';
 
     // Create AgentCore Runtime
     this.runtime = new agentcore.Runtime(this, 'Runtime', {
@@ -374,6 +410,32 @@ export class AgentCoreRuntime extends Construct {
       })
     );
 
+    // Browser operation permissions
+    this.runtime.addToRolePolicy(
+      new iam.PolicyStatement({
+        sid: 'BedrockAgentCoreBrowserAccess',
+        effect: iam.Effect.ALLOW,
+        actions: [
+          'bedrock-agentcore:CreateBrowser',
+          'bedrock-agentcore:StartBrowserSession',
+          'bedrock-agentcore:UpdateBrowserStream',
+          'bedrock-agentcore:StopBrowserSession',
+          'bedrock-agentcore:GetBrowserSession',
+          'bedrock-agentcore:SaveBrowserSessionProfile',
+          'bedrock-agentcore:DeleteBrowser',
+          'bedrock-agentcore:ListBrowsers',
+          'bedrock-agentcore:GetBrowser',
+          'bedrock-agentcore:ListBrowserSessions',
+          'bedrock-agentcore:ConnectBrowserAutomationStream',
+          'bedrock-agentcore:ConnectBrowserLiveViewStream',
+        ],
+        resources: [
+          `arn:aws:bedrock-agentcore:${region}:${account}:browser/*`,
+          `arn:aws:bedrock-agentcore:${region}:aws:browser/*`, // AWS Managed Browser
+        ],
+      })
+    );
+
     // Secrets Manager access permissions (Tavily API Key)
     if (props.tavilyApiKeySecretName) {
       this.runtime.addToRolePolicy(
@@ -397,6 +459,20 @@ export class AgentCoreRuntime extends Construct {
           actions: ['secretsmanager:GetSecretValue'],
           resources: [
             `arn:aws:secretsmanager:${region}:${account}:secret:${props.githubTokenSecretName}*`,
+          ],
+        })
+      );
+    }
+
+    // Secrets Manager access permissions (GitLab Token)
+    if (props.gitlabTokenSecretName) {
+      this.runtime.addToRolePolicy(
+        new iam.PolicyStatement({
+          sid: 'SecretsManagerGitLabTokenAccess',
+          effect: iam.Effect.ALLOW,
+          actions: ['secretsmanager:GetSecretValue'],
+          resources: [
+            `arn:aws:secretsmanager:${region}:${account}:secret:${props.gitlabTokenSecretName}*`,
           ],
         })
       );
@@ -431,6 +507,68 @@ export class AgentCoreRuntime extends Construct {
           effect: iam.Effect.ALLOW,
           actions: ['appsync:EventPublish'],
           resources: [`arn:aws:appsync:${region}:${account}:apis/*/channelNamespace/*`],
+        })
+      );
+    }
+
+    // AWS ReadOnly + CloudFormation deploy permissions (opt-in via enableAwsOpsPermissions)
+    if (props.enableAwsOpsPermissions) {
+      // AWS ReadOnly access via managed policy
+      (this.runtime.role as iam.Role).addManagedPolicy(
+        iam.ManagedPolicy.fromAwsManagedPolicyName('ReadOnlyAccess')
+      );
+
+      // CloudFormation deployment permissions (write operations for stack management)
+      this.runtime.addToRolePolicy(
+        new iam.PolicyStatement({
+          sid: 'CloudFormationDeployAccess',
+          effect: iam.Effect.ALLOW,
+          actions: [
+            'cloudformation:CreateStack',
+            'cloudformation:UpdateStack',
+            'cloudformation:DeleteStack',
+            'cloudformation:CreateChangeSet',
+            'cloudformation:ExecuteChangeSet',
+            'cloudformation:DeleteChangeSet',
+            'cloudformation:ContinueUpdateRollback',
+            'cloudformation:RollbackStack',
+            'cloudformation:SignalResource',
+            'cloudformation:SetStackPolicy',
+            'cloudformation:TagResource',
+            'cloudformation:UntagResource',
+            'cloudformation:ValidateTemplate',
+          ],
+          resources: ['*'],
+        })
+      );
+
+      // IAM PassRole required for CloudFormation to assume execution roles
+      this.runtime.addToRolePolicy(
+        new iam.PolicyStatement({
+          sid: 'IamPassRoleForCloudFormation',
+          effect: iam.Effect.ALLOW,
+          actions: ['iam:PassRole'],
+          resources: ['*'],
+          conditions: {
+            StringEquals: {
+              'iam:PassedToService': 'cloudformation.amazonaws.com',
+            },
+          },
+        })
+      );
+
+      // S3 access for CDK/CloudFormation template staging buckets
+      this.runtime.addToRolePolicy(
+        new iam.PolicyStatement({
+          sid: 'S3CdkStagingAccess',
+          effect: iam.Effect.ALLOW,
+          actions: ['s3:CreateBucket', 's3:PutObject', 's3:GetObject', 's3:ListBucket'],
+          resources: [
+            'arn:aws:s3:::cdktoolkit-*',
+            'arn:aws:s3:::cdktoolkit-*/*',
+            'arn:aws:s3:::cdk-*',
+            'arn:aws:s3:::cdk-*/*',
+          ],
         })
       );
     }

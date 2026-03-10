@@ -1,0 +1,68 @@
+name: Deploy Production
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Set up QEMU for cross-platform Docker builds (x86_64 -> ARM64)
+      # Required because AgentCore Runtime only supports ARM64 architecture
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::988417841316:role/GitHubActionsRole
+          aws-region: ap-northeast-1
+          role-session-name: github-actions-deploy-dev-${{ github.run_id }}
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Lambda packages
+        run: npm run build:lambda
+
+      - name: Bootstrap CDK (if needed)
+        working-directory: packages/cdk
+        run: |
+          echo "Checking CDK bootstrap status..."
+          npx cdk bootstrap || echo "Bootstrap already completed or failed"
+
+      - name: Deploy to production
+        working-directory: packages/cdk
+        run: |
+          echo "Deploying to production environment..."
+          npx cdk deploy --require-approval never --all -c env=dev
+
+      - name: Post deployment summary
+        run: |
+          echo "## ✅ Dev Deployment Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "To retrieve endpoint details, run:" >> $GITHUB_STEP_SUMMARY
+          echo '```bash' >> $GITHUB_STEP_SUMMARY
+          echo "aws cloudformation describe-stacks --stack-name MocaAgentCoreAppDev \\" >> $GITHUB_STEP_SUMMARY
+          echo "  --query 'Stacks[0].Outputs' --output table" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY

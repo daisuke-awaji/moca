@@ -1,6 +1,6 @@
 /**
  * Download Progress Modal
- * フォルダダウンロードの進捗を表示するモーダル
+ * Modal for displaying folder download progress
  */
 
 import React from 'react';

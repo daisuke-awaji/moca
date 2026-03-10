@@ -9,7 +9,7 @@ import {
   StopCodeInterpreterSessionCommand,
   GetCodeInterpreterSessionCommand,
 } from '@aws-sdk/client-bedrock-agentcore';
-import { logger } from '../../config/index.js';
+import { logger, WORKSPACE_DIRECTORY } from '../../config/index.js';
 import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -684,12 +684,12 @@ print(result_file)
           // Write file to local filesystem
           fs.writeFileSync(localPath, fileData);
 
-          // Generate user-facing path (relative path with storagePath prefix)
-          const filename = path.basename(localPath);
-          const userPath =
-            this.storagePath && this.storagePath !== '/'
-              ? `${this.storagePath}/${filename}`
-              : `/${filename}`;
+          // Generate user-facing path by stripping WORKSPACE_DIRECTORY from local path.
+          // Since workspace dir now mirrors S3 path hierarchy (e.g., /tmp/ws/dev2/file.png),
+          // stripping /tmp/ws yields the correct display path (e.g., /dev2/file.png).
+          const userPath = localPath.startsWith(WORKSPACE_DIRECTORY)
+            ? localPath.slice(WORKSPACE_DIRECTORY.length) || `/${path.basename(localPath)}`
+            : `/${path.basename(localPath)}`;
 
           downloadedFiles.push({
             sourcePath: sourcePath,
@@ -793,6 +793,25 @@ print(result_file)
             return {
               status: isError ? 'error' : 'success',
               content: [{ text: content }],
+            };
+          } else if (Array.isArray(content)) {
+            // CodeInterpreter returns content as array of {type, text} objects.
+            // Extract text values to avoid wrapping the spec in the response envelope.
+            const texts = content
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              .filter((item: any) => item.type === 'text' && typeof item.text === 'string')
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              .map((item: any) => item.text as string);
+            if (texts.length > 0) {
+              return {
+                status: isError ? 'error' : 'success',
+                content: [{ text: texts.join('\n') }],
+              };
+            }
+            // Fallback: stringify the array if no text items found
+            return {
+              status: isError ? 'error' : 'success',
+              content: [{ text: JSON.stringify(content) }],
             };
           } else {
             return {

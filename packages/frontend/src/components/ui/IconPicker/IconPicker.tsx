@@ -25,20 +25,20 @@ export const IconPicker: React.FC<IconPickerProps> = ({
   const searchInputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // 全アイコン名を取得
+  // Get all icon names
   const allIconNames = Object.keys(icons).filter(
     (name) => name !== 'createLucideIcon' && name !== 'icons'
   );
 
-  // 検索でフィルタリング
+  // Filter by search
   const filteredIcons = searchQuery
     ? allIconNames.filter((name) => name.toLowerCase().includes(searchQuery.toLowerCase()))
     : allIconNames;
 
-  // 選択されたアイコンコンポーネント
+  // Selected icon component
   const SelectedIcon = (icons[value as keyof typeof icons] as LucideIcon) || icons.Bot;
 
-  // 仮想スクロールの設定（8カラムのグリッド）
+  // Virtual scroll settings (8-column grid)
   const columnCount = 8;
   const rowCount = Math.ceil(filteredIcons.length / columnCount);
 
@@ -50,7 +50,7 @@ export const IconPicker: React.FC<IconPickerProps> = ({
     overscan: 5,
   });
 
-  // 外側クリックで閉じる
+  // Close on outside click
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
@@ -61,7 +61,7 @@ export const IconPicker: React.FC<IconPickerProps> = ({
 
     if (isOpen) {
       document.addEventListener('mousedown', handleClickOutside);
-      // 検索入力にフォーカス
+      // Focus search input
       setTimeout(() => searchInputRef.current?.focus(), 0);
     }
 
@@ -70,7 +70,7 @@ export const IconPicker: React.FC<IconPickerProps> = ({
     };
   }, [isOpen]);
 
-  // ESCキーで閉じる
+  // Close on ESC key
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && isOpen) {
@@ -93,7 +93,7 @@ export const IconPicker: React.FC<IconPickerProps> = ({
 
   return (
     <div ref={containerRef} className={cn('relative', className)}>
-      {/* アイコン表示ボタン */}
+      {/* Icon display button */}
       <button
         type="button"
         onClick={() => !disabled && setIsOpen(!isOpen)}
@@ -109,10 +109,10 @@ export const IconPicker: React.FC<IconPickerProps> = ({
         <SelectedIcon className="w-6 h-6 text-fg-secondary" />
       </button>
 
-      {/* ポップオーバー */}
+      {/* Popover */}
       {isOpen && (
         <div className="absolute top-14 left-0 z-50 w-[520px] bg-surface-primary rounded-xl shadow-2xl border border-border overflow-hidden">
-          {/* 検索バー */}
+          {/* Search bar */}
           <div className="p-3 border-b border-border bg-surface-secondary">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-fg-disabled" />
@@ -138,7 +138,7 @@ export const IconPicker: React.FC<IconPickerProps> = ({
             </p>
           </div>
 
-          {/* アイコングリッド（仮想スクロール） */}
+          {/* Icon grid (virtual scroll) */}
           <div ref={scrollRef} className="p-3 max-h-[400px] overflow-y-auto">
             {filteredIcons.length > 0 ? (
               <div

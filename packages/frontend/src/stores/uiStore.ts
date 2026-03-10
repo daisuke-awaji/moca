@@ -1,6 +1,6 @@
 /**
- * UI状態管理ストア
- * サイドバーの開閉状態などのUI要素を管理する
+ * UI State Management Store
+ * Manages UI elements such as sidebar open/close state
  */
 
 import { create } from 'zustand';
@@ -9,57 +9,57 @@ import type React from 'react';
 
 interface UIState {
   /**
-   * サイドバーが開いているかどうか
+   * Whether the sidebar is open
    */
   isSidebarOpen: boolean;
 
   /**
-   * モバイル表示かどうか（768px未満）
+   * Whether in mobile view (less than 768px)
    */
   isMobileView: boolean;
 
   /**
-   * ナローデスクトップ表示かどうか（768px以上1024px未満）
+   * Whether in narrow desktop view (768px to 1024px)
    */
   isNarrowDesktop: boolean;
 
   /**
-   * モバイルヘッダーに表示するアクション（ボタンなど）
+   * Actions (buttons, etc.) to display in the mobile header
    */
   mobileHeaderAction: React.ReactNode | null;
 
   /**
-   * サイドバーの開閉を切り替える
+   * Toggle sidebar open/close
    */
   toggleSidebar: () => void;
 
   /**
-   * サイドバーの開閉状態を設定する
-   * @param isOpen 開閉状態
+   * Set sidebar open/close state
+   * @param isOpen Open/close state
    */
   setSidebarOpen: (isOpen: boolean) => void;
 
   /**
-   * モバイル表示状態を設定する
-   * @param isMobile モバイル表示状態
+   * Set mobile view state
+   * @param isMobile Mobile view state
    */
   setMobileView: (isMobile: boolean) => void;
 
   /**
-   * ナローデスクトップ表示状態を設定する
-   * @param isNarrow ナローデスクトップ表示状態
+   * Set narrow desktop view state
+   * @param isNarrow Narrow desktop view state
    */
   setNarrowDesktop: (isNarrow: boolean) => void;
 
   /**
-   * モバイルヘッダーアクションを設定する
-   * @param action レンダリングするReactノード
+   * Set mobile header action
+   * @param action React node to render
    */
   setMobileHeaderAction: (action: React.ReactNode | null) => void;
 }
 
 /**
- * UI状態管理ストア
+ * UI state management store
  */
 export const useUIStore = create<UIState>()(
   devtools(

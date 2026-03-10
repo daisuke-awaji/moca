@@ -138,26 +138,6 @@ export function jwtAuthMiddleware(
 }
 
 /**
- * Optional authentication middleware
- * Verify only if JWT exists, pass through if it doesn't
- */
-export function optionalJwtAuthMiddleware(
-  req: AuthenticatedRequest,
-  res: Response,
-  next: NextFunction
-) {
-  const authHeader = req.get('Authorization');
-
-  if (!authHeader) {
-    // Pass through if authentication header doesn't exist
-    return next();
-  }
-
-  // Execute normal authentication if authentication header exists
-  return jwtAuthMiddleware(req, res, next);
-}
-
-/**
  * Determine if the JWT token is from a machine user (Client Credentials Flow)
  *
  * Client Credentials Flow characteristics:

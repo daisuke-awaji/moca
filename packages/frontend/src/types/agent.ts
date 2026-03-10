@@ -1,5 +1,5 @@
 /**
- * Agent 関連の型定義
+ * Agent-related type definitions
  */
 
 /**
@@ -14,7 +14,7 @@ export interface MCPServer {
 }
 
 /**
- * MCP 設定
+ * MCP Configuration
  */
 export interface MCPConfig {
   mcpServers: Record<string, MCPServer>;
@@ -38,14 +38,14 @@ export interface Agent {
   createdAt: Date;
   updatedAt: Date;
 
-  // 共有関連
+  // Sharing-related
   isShared: boolean; // Shared flag (public to organization)
   createdBy: string; // Creator name (Cognito username)
   userId?: string; // Original user ID (used when cloning shared agent)
 }
 
 /**
- * Create agent時の入力データ
+ * Input data for creating an agent
  */
 export interface CreateAgentInput {
   name: string;
@@ -58,14 +58,14 @@ export interface CreateAgentInput {
 }
 
 /**
- * Update agent時の入力データ
+ * Input data for updating an agent
  */
 export interface UpdateAgentInput extends Partial<CreateAgentInput> {
   agentId: string;
 }
 
 /**
- * AgentStore の状態
+ * AgentStore state
  */
 export interface AgentState {
   agents: Agent[];
@@ -75,7 +75,7 @@ export interface AgentState {
 }
 
 /**
- * AgentStore のアクション
+ * AgentStore actions
  */
 export interface AgentActions {
   // Agent CRUD (async)
@@ -90,7 +90,7 @@ export interface AgentActions {
   // Select agent
   selectAgent: (agent: Agent | null) => void;
 
-  // 初期化・リセット (async)
+  // Initialization/reset (async)
   initializeStore: () => Promise<void>;
   refreshAgents: () => Promise<void>;
   clearStore: () => void;
@@ -98,6 +98,6 @@ export interface AgentActions {
 }
 
 /**
- * AgentStore の完全な型
+ * Complete type for AgentStore
  */
 export type AgentStore = AgentState & AgentActions;

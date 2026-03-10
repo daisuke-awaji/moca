@@ -1,10 +1,10 @@
 /**
- * AgentCore CodeInterpreter クライアントの統合テスト
+ * Integration tests for the AgentCore CodeInterpreter client
  *
- * これらのテストは実際の AWS CodeInterpreter サービスを呼び出します。
- * 実行には有効な AWS 認証情報が必要です。
+ * These tests call the actual AWS CodeInterpreter service.
+ * Valid AWS credentials are required to run them.
  *
- * 実行方法:
+ * How to run:
  * npm run test:integration -- client.integration.test.ts
  */
 
@@ -24,31 +24,31 @@ import * as os from 'os';
 import * as path from 'path';
 import * as fs from 'fs';
 
-// テスト用のクライアント
+// Client for testing
 let client: AgentCoreCodeInterpreterClient;
 let testSessionName: string;
 let downloadDir: string;
 
-// テスト前にクライアントを初期化
+// Initialize client before tests
 beforeAll(async () => {
-  // 一意のセッション名を生成
+  // Generate a unique session name
   testSessionName = `test-session-${Date.now()}`;
 
-  // ダウンロード用のテンポラリディレクトリ
+  // Temporary directory for downloads
   downloadDir = path.join(os.tmpdir(), `codeinterpreter-test-${Date.now()}`);
   fs.mkdirSync(downloadDir, { recursive: true });
 
-  // クライアントを初期化（autoCreate=false でテストを明示的に）
+  // Initialize client (explicitly with autoCreate=false for testing)
   client = new AgentCoreCodeInterpreterClient({
     region: process.env.AWS_REGION || 'us-east-1',
     autoCreate: false,
-    persistSessions: false, // テスト後にクリーンアップ
+    persistSessions: false, // Clean up after tests
   });
 
   console.log(`Test session name: ${testSessionName}`);
   console.log(`Download directory: ${downloadDir}`);
 
-  // セッションを初期化（すべてのテストで使用）
+  // Initialize session (used by all tests)
   const initAction: InitSessionAction = {
     action: 'initSession',
     sessionName: testSessionName,
@@ -63,13 +63,13 @@ beforeAll(async () => {
   console.log(`Session initialized: ${testSessionName}`);
 }, 60000);
 
-// テスト後にクリーンアップ
+// Clean up after tests
 afterAll(async () => {
   try {
-    // セッションをクリーンアップ
+    // Clean up session
     await client.cleanup();
 
-    // ダウンロードディレクトリを削除
+    // Remove download directory
     if (fs.existsSync(downloadDir)) {
       fs.rmSync(downloadDir, { recursive: true, force: true });
     }
@@ -80,7 +80,7 @@ afterAll(async () => {
 
 describe('AgentCoreCodeInterpreterClient - Session Management', () => {
   it('should have initialized session in beforeAll', () => {
-    // セッションはbeforeAllで初期化済み
+    // Session is already initialized in beforeAll
     const result = client.listLocalSessions();
 
     expect(result.status).toBe('success');
@@ -123,7 +123,7 @@ describe('AgentCoreCodeInterpreterClient - Session Management', () => {
     expect(Array.isArray(jsonContent.sessions)).toBe(true);
     expect(jsonContent.totalSessions).toBeGreaterThan(0);
 
-    // 作成したセッションが含まれているか確認
+    // Verify the created session is included
     const testSession = jsonContent.sessions.find((s) => s.sessionName === testSessionName);
     expect(testSession).toBeDefined();
   });
@@ -176,11 +176,11 @@ print(f"Square root of {x} is {y}")
 
     const result = await client.executeCode(action);
 
-    // エラーでも結果は返される（AWS側の仕様による）
+    // Results are returned even on error (per AWS behavior)
     expect(result.status).toBeDefined();
     expect(result.content).toHaveLength(1);
 
-    // エラーメッセージが含まれているか確認
+    // Verify error message is included
     const content = result.content[0].text || JSON.stringify(result.content[0]);
     expect(content.toLowerCase()).toMatch(/error|exception|undefined/i);
   }, 60000);
@@ -330,7 +330,7 @@ describe('AgentCoreCodeInterpreterClient - File Operations', () => {
     const localFileName = 'downloaded-test.txt';
     const expectedLocalPath = path.join(downloadDir, localFileName);
 
-    // まず、ダウンロード用のファイルを作成
+    // First, create a file for downloading
     const writeAction: WriteFilesAction = {
       action: 'writeFiles',
       sessionName: testSessionName,
@@ -344,7 +344,7 @@ describe('AgentCoreCodeInterpreterClient - File Operations', () => {
 
     await client.writeFiles(writeAction);
 
-    // ダウンロード実行
+    // Execute download
     const downloadAction: DownloadFilesAction = {
       action: 'downloadFiles',
       sessionName: testSessionName,
@@ -370,7 +370,7 @@ describe('AgentCoreCodeInterpreterClient - File Operations', () => {
     expect(jsonContent.totalFiles).toBe(1);
     expect(jsonContent.destinationDir).toBe(downloadDir);
 
-    // ファイルが実際にダウンロードされたか確認
+    // Verify files were actually downloaded
     expect(fs.existsSync(expectedLocalPath)).toBe(true);
 
     const downloadedContent = fs.readFileSync(expectedLocalPath, 'utf-8');
@@ -378,7 +378,7 @@ describe('AgentCoreCodeInterpreterClient - File Operations', () => {
   }, 90000);
 
   it('should download multiple files', async () => {
-    // 複数ファイルを作成
+    // Create multiple files
     const files = ['multi1.txt', 'multi2.txt', 'multi3.txt'];
     const writeAction: WriteFilesAction = {
       action: 'writeFiles',
@@ -391,7 +391,7 @@ describe('AgentCoreCodeInterpreterClient - File Operations', () => {
 
     await client.writeFiles(writeAction);
 
-    // ダウンロード
+    // Download
     const downloadAction: DownloadFilesAction = {
       action: 'downloadFiles',
       sessionName: testSessionName,
@@ -410,7 +410,7 @@ describe('AgentCoreCodeInterpreterClient - File Operations', () => {
 
     expect(jsonContent.totalFiles).toBe(3);
 
-    // すべてのファイルがダウンロードされたか確認
+    // Verify all files were downloaded
     files.forEach((file) => {
       const localPath = path.join(downloadDir, file);
       expect(fs.existsSync(localPath)).toBe(true);
@@ -418,7 +418,7 @@ describe('AgentCoreCodeInterpreterClient - File Operations', () => {
   }, 90000);
 
   it('should remove files from sandbox', async () => {
-    // 削除用のファイルを作成
+    // Create a file for deletion
     const fileToRemove = 'file-to-remove.txt';
     const writeAction: WriteFilesAction = {
       action: 'writeFiles',
@@ -433,7 +433,7 @@ describe('AgentCoreCodeInterpreterClient - File Operations', () => {
 
     await client.writeFiles(writeAction);
 
-    // ファイルを削除
+    // Delete the file
     const removeAction: RemoveFilesAction = {
       action: 'removeFiles',
       sessionName: testSessionName,
@@ -444,7 +444,7 @@ describe('AgentCoreCodeInterpreterClient - File Operations', () => {
 
     expect(result.status).toBe('success');
 
-    // ファイルが削除されたか確認（ファイル一覧を取得）
+    // Verify the file was deleted (get file listing)
     const listAction: ListFilesAction = {
       action: 'listFiles',
       sessionName: testSessionName,
@@ -454,14 +454,14 @@ describe('AgentCoreCodeInterpreterClient - File Operations', () => {
     const listResult = await client.listFiles(listAction);
     const content = listResult.content[0].text || JSON.stringify(listResult.content[0]);
 
-    // 削除されたファイルが一覧に含まれていないことを確認
+    // Verify the deleted file is not in the listing
     expect(content).not.toContain(fileToRemove);
   }, 60000);
 });
 
 describe('AgentCoreCodeInterpreterClient - Context Management', () => {
   it('should maintain context across code executions', async () => {
-    // 変数を定義
+    // Define a variable
     const defineAction: ExecuteCodeAction = {
       action: 'executeCode',
       sessionName: testSessionName,
@@ -471,7 +471,7 @@ describe('AgentCoreCodeInterpreterClient - Context Management', () => {
 
     await client.executeCode(defineAction);
 
-    // 同じ変数を使用
+    // Use the same variable
     const useAction: ExecuteCodeAction = {
       action: 'executeCode',
       sessionName: testSessionName,
@@ -486,7 +486,7 @@ describe('AgentCoreCodeInterpreterClient - Context Management', () => {
   }, 60000);
 
   it('should clear context when requested', async () => {
-    // 新しい変数を定義してコンテキストをクリア
+    // Define a new variable and clear the context
     const clearAction: ExecuteCodeAction = {
       action: 'executeCode',
       sessionName: testSessionName,
@@ -497,7 +497,7 @@ describe('AgentCoreCodeInterpreterClient - Context Management', () => {
 
     await client.executeCode(clearAction);
 
-    // clearContext=true で実行した後、以前の変数test_variableにアクセス
+    // After executing with clearContext=true, access the previous variable test_variable
     const accessOldAction: ExecuteCodeAction = {
       action: 'executeCode',
       sessionName: testSessionName,
@@ -514,7 +514,7 @@ except NameError:
     const oldResult = await client.executeCode(accessOldAction);
     const oldContent = oldResult.content[0].text || JSON.stringify(oldResult.content[0]);
 
-    // clearContext後に新しく定義した変数にアクセス
+    // Access the newly defined variable after clearContext
     const accessNewAction: ExecuteCodeAction = {
       action: 'executeCode',
       sessionName: testSessionName,
@@ -531,16 +531,16 @@ except NameError:
     const newResult = await client.executeCode(accessNewAction);
     const newContent = newResult.content[0].text || JSON.stringify(newResult.content[0]);
 
-    // clearContextの動作を確認:
-    // - 以前の変数がクリアされているか、または
-    // - 新しい変数が存在しているか
+    // Verify clearContext behavior:
+    // - Whether previous variables are cleared, or
+    // - Whether new variables exist
     const oldVarCleared = oldContent.includes('OLD_VAR_NOT_DEFINED');
     const newVarExists = newContent.includes('NEW_VAR_EXISTS');
 
-    // どちらかの条件が満たされればOK
+    // Either condition being satisfied is acceptable
     expect(oldVarCleared || newVarExists).toBe(true);
 
-    // デバッグ情報
+    // Debug information
     if (!oldVarCleared && !newVarExists) {
       console.log('clearContext test debug:');
       console.log('Old variable check:', oldContent);
@@ -559,7 +559,7 @@ describe('AgentCoreCodeInterpreterClient - Error Handling', () => {
 
     const result = await client.readFiles(action);
 
-    // エラーまたはエラーメッセージを含む結果が返される
+    // Results containing errors or error messages are returned
     expect(result.status).toBeDefined();
     const content = result.content[0].text || JSON.stringify(result.content[0]);
     expect(content.toLowerCase()).toMatch(/error|not found|no such file/i);
@@ -570,7 +570,7 @@ describe('AgentCoreCodeInterpreterClient - Error Handling', () => {
       action: 'downloadFiles',
       sessionName: testSessionName,
       sourcePaths: ['test-file.txt'],
-      destinationDir: 'relative/path', // 相対パスは無効
+      destinationDir: 'relative/path', // Relative paths are invalid
     };
 
     const result = await client.downloadFiles(action);
@@ -582,7 +582,7 @@ describe('AgentCoreCodeInterpreterClient - Error Handling', () => {
 
 describe('AgentCoreCodeInterpreterClient - Cleanup', () => {
   it('should cleanup sessions properly', async () => {
-    // クリーンアップテスト用の新しいクライアントを作成
+    // Create a new client for cleanup testing
     const cleanupClient = new AgentCoreCodeInterpreterClient({
       region: process.env.AWS_REGION || 'us-east-1',
       sessionName: `cleanup-test-${Date.now()}`,
@@ -590,7 +590,7 @@ describe('AgentCoreCodeInterpreterClient - Cleanup', () => {
       persistSessions: false,
     });
 
-    // セッションを作成（autoCreateがtrueなので自動作成される）
+    // Create a session (automatically created since autoCreate is true)
     const action: ExecuteCodeAction = {
       action: 'executeCode',
       language: 'python',
@@ -600,7 +600,7 @@ describe('AgentCoreCodeInterpreterClient - Cleanup', () => {
     const result = await cleanupClient.executeCode(action);
     expect(result.status).toBe('success');
 
-    // クリーンアップを実行
+    // Execute cleanup
     await expect(cleanupClient.cleanup()).resolves.not.toThrow();
   }, 60000);
 });

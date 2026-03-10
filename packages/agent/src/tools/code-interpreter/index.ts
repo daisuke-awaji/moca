@@ -1,5 +1,5 @@
 /**
- * CodeInterpreter ツール エクスポート
+ * CodeInterpreter tool exports
  */
 
 export { codeInterpreterTool } from './tool.js';

@@ -347,9 +347,13 @@ export class AgentCoreMemoryService {
         return this.cachedStrategyId;
       }
 
-      // Search for strategy with name starting with 'semantic_memory_strategy'
-      const semanticStrategy = response.memory.strategies.find((strategy) =>
-        strategy.name?.startsWith('semantic_memory_strategy')
+      // TODO: This logic is duplicated in packages/agent/src/session/memory-retriever.ts
+      // Consider extracting to a shared utility in packages/libs/
+      // Search for strategy with name or strategyId starting with 'semantic_memory_strategy'
+      const semanticStrategy = response.memory.strategies.find(
+        (strategy: { name?: string; strategyId?: string }) =>
+          strategy.name?.startsWith('semantic_memory_strategy') ||
+          strategy.strategyId?.startsWith('semantic_memory_strategy')
       );
 
       if (semanticStrategy?.strategyId) {
@@ -367,7 +371,7 @@ export class AgentCoreMemoryService {
       console.error('[AgentCoreMemoryService] GetMemory API error:', error);
       // Use fallback value on error
       this.cachedStrategyId = 'semantic_memory_strategy';
-      return this.cachedStrategyId;
+      return this.cachedStrategyId as string;
     }
   }
 
@@ -506,7 +510,7 @@ export class AgentCoreMemoryService {
     try {
       console.log(`[AgentCoreMemoryService] Retrieving session events: sessionId=${sessionId}`);
 
-      // ページネーション対応：すべてのイベントを取得
+      // Pagination support: retrieve all events
       const allEvents = [];
       const paginator = paginateListEvents(
         { client: this.client },

@@ -3,27 +3,12 @@
  */
 
 import { tool } from '@strands-agents/sdk';
-import { fileEditorDefinition } from '@fullstack-agentcore/tool-definitions';
-import { existsSync, readFileSync, writeFileSync } from 'fs';
-import { logger, WORKSPACE_DIRECTORY } from '../config/index.js';
-import { getCurrentContext, getCurrentStoragePath } from '../context/request-context.js';
-
-/**
- * Convert file path to display path for chat UI
- * e.g., /tmp/ws/data/file.txt -> /storagePath/data/file.txt
- */
-function toDisplayPath(filePath: string): string {
-  const storagePath = getCurrentStoragePath();
-  const relativePath = filePath.startsWith(WORKSPACE_DIRECTORY)
-    ? filePath.slice(WORKSPACE_DIRECTORY.length)
-    : filePath;
-
-  // Combine storagePath with relativePath, handling slashes
-  const normalizedStoragePath = storagePath.endsWith('/') ? storagePath.slice(0, -1) : storagePath;
-  const normalizedRelativePath = relativePath.startsWith('/') ? relativePath : `/${relativePath}`;
-
-  return `${normalizedStoragePath}${normalizedRelativePath}`;
-}
+import { fileEditorDefinition } from '@moca/tool-definitions';
+import { access, mkdir, readFile, writeFile } from 'fs/promises';
+import { dirname } from 'path';
+import { logger } from '../config/index.js';
+import { getCurrentContext } from '../context/request-context.js';
+import { toDisplayPath } from '../utils/display-path.js';
 
 /**
  * Check if oldString appears exactly once in the file content
@@ -55,7 +40,9 @@ export const fileEditorTool = tool({
       }
 
       // Check if file exists
-      const fileExists = existsSync(filePath);
+      const fileExists = await access(filePath)
+        .then(() => true)
+        .catch(() => false);
 
       if (!fileExists) {
         // File doesn't exist
@@ -64,8 +51,10 @@ export const fileEditorTool = tool({
           logger.warn(`⚠️ ${msg} - Path: ${filePath}`);
           return msg;
         }
+        // Create parent directories if they don't exist
+        await mkdir(dirname(filePath), { recursive: true });
         // Create new file with newString content
-        writeFileSync(filePath, newString, 'utf8');
+        await writeFile(filePath, newString, 'utf8');
         logger.info(`✅ Successfully created the file: ${filePath}`);
         const displayPath = toDisplayPath(filePath);
         return `File created successfully
@@ -84,7 +73,7 @@ To reference this file in chat, use: ${displayPath}`;
       }
 
       // Read file contents
-      const fileContents = readFileSync(filePath, 'utf8');
+      const fileContents = await readFile(filePath, 'utf8');
 
       // Check if oldString exists and appears only once
       const isValid = isSingleOccurrence(fileContents, oldString);
@@ -103,7 +92,7 @@ To reference this file in chat, use: ${displayPath}`;
 
       // Replace oldString with newString
       const updatedContents = fileContents.replace(oldString, newString);
-      writeFileSync(filePath, updatedContents, 'utf8');
+      await writeFile(filePath, updatedContents, 'utf8');
 
       logger.info(`✅ Successfully edited the file: ${filePath}`);
       const displayPath = toDisplayPath(filePath);

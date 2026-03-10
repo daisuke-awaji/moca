@@ -1,6 +1,6 @@
 /**
- * メインレイアウトコンポーネント
- * サイドバーと共通レイアウトを提供
+ * Main Layout Component
+ * Provides sidebar and common layout
  */
 
 import { useEffect, useState } from 'react';
@@ -93,9 +93,9 @@ export function MainLayout() {
   const showSkeleton = isChatPage && isAgentLoading;
 
   // Responsive design: 3 breakpoints
-  // - < 768px: モバイル（完全非表示、ハンバーガーメニューのみ）
-  // - 768px - 1024px: ナローデスクトップ（自動折りたたみ）
-  // - > 1024px: ワイドデスクトップ（ユーザー設定に従う）
+  // - < 768px: Mobile (completely hidden, hamburger menu only)
+  // - 768px - 1024px: Narrow desktop (auto-collapse)
+  // - > 1024px: Wide desktop (follows user settings)
   useEffect(() => {
     const mobileQuery = window.matchMedia('(max-width: 767px)');
     const narrowDesktopQuery = window.matchMedia('(min-width: 768px) and (max-width: 1023px)');
@@ -130,7 +130,7 @@ export function MainLayout() {
     };
   }, [setSidebarOpen, setMobileView, setNarrowDesktop]);
 
-  // モバイルでのスワイプジェスチャー対応
+  // Swipe gesture support on mobile
   useSwipeGesture({
     onSwipeRight: () => {
       if (isMobileView && !isSidebarOpen) {
@@ -145,7 +145,7 @@ export function MainLayout() {
     threshold: 50,
     edgeThreshold: 30,
     enabled: isMobileView,
-    requireEdgeStart: !isSidebarOpen, // サイドバーが開いている時は画面端判定を無効化
+    requireEdgeStart: !isSidebarOpen, // Disable edge detection when sidebar is open
   });
 
   // Handle overlay click (mobile only)
@@ -157,7 +157,7 @@ export function MainLayout() {
 
   return (
     <div className="flex h-full w-full relative">
-      {/* モバイル時のハンバーガーメニュー */}
+      {/* Hamburger menu for mobile */}
       {isMobileView && !isSidebarOpen && (
         <header className="fixed top-0 left-0 right-0 z-30 bg-surface-primary border-b border-border px-3 py-2 flex items-center gap-2">
           <button
@@ -207,12 +207,12 @@ export function MainLayout() {
         </header>
       )}
 
-      {/* モバイル時のオーバーレイ背景 */}
+      {/* Overlay background for mobile */}
       {isMobileView && isSidebarOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-40" onClick={handleOverlayClick} />
       )}
 
-      {/* サイドバー */}
+      {/* Sidebar */}
       {isMobileView ? (
         // Mobile: Overlay sidebar
         <div
@@ -235,14 +235,14 @@ export function MainLayout() {
         </div>
       )}
 
-      {/* メインコンテンツエリア */}
+      {/* Main content area */}
       <div
         className={`flex-1 flex flex-col min-w-0 bg-surface-primary ${isMobileView && !isSidebarOpen ? 'pt-12' : ''}`}
       >
         <Outlet />
       </div>
 
-      {/* Select agentモーダル */}
+      {/* Select agent modal */}
       <AgentSelectorModal
         isOpen={isAgentModalOpen}
         onClose={() => setIsAgentModalOpen(false)}

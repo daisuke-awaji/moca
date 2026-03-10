@@ -157,19 +157,19 @@ const MermaidDiagramComponent: React.FC<MermaidDiagramProps> = ({ chart, classNa
         minHeight: isValidSyntax === null ? '20px' : undefined,
       }}
     >
-      {/* ローディング中 */}
+      {/* Loading */}
       {isRendering && (
         <div className="text-action-primary text-sm italic py-2">
           {t('common.renderingDiagram')}
         </div>
       )}
 
-      {/* 構文エラーの場合 */}
+      {/* Syntax error */}
       {isValidSyntax === false && chart.trim() && !isRendering && (
         <div className="text-fg-disabled text-sm italic py-2">{t('common.diagramLoading')}</div>
       )}
 
-      {/* SVGコンテンツを表示（React管理下で） */}
+      {/* Display SVG content (under React management) */}
       {svgContent && !isRendering && (
         <div className="mermaid-svg-container" dangerouslySetInnerHTML={{ __html: svgContent }} />
       )}

@@ -2,19 +2,19 @@ import { z } from 'zod';
 import { JSONSchema, JSONSchemaProperty } from './types.js';
 
 /**
- * プロパティキー名をサニタイズ（Bedrock の制約に適合させる）
- * パターン: ^[a-zA-Z0-9_.-]{1,64}$
+ * Sanitize property key names (to comply with Bedrock constraints)
+ * Pattern: ^[a-zA-Z0-9_.-]{1,64}$
  */
 export function sanitizePropertyKey(key: string): string {
-  // 許可されていない文字をアンダースコアに置換
+  // Replace disallowed characters with underscores
   let sanitized = key.replace(/[^a-zA-Z0-9_.-]/g, '_');
 
-  // 64文字に切り詰め
+  // Truncate to 64 characters
   if (sanitized.length > 64) {
     sanitized = sanitized.substring(0, 64);
   }
 
-  // 空文字の場合はデフォルト名
+  // Use default name if empty
   if (sanitized.length === 0) {
     sanitized = '_param';
   }
@@ -23,7 +23,7 @@ export function sanitizePropertyKey(key: string): string {
 }
 
 /**
- * JSON Schema を Zod Schema に変換し、キーマッピングも返す
+ * Convert JSON Schema to Zod Schema and return key mapping
  */
 export function convertToZodSchema(jsonSchema: JSONSchema): {
   schema: z.ZodObject<Record<string, z.ZodTypeAny>>;
@@ -41,9 +41,9 @@ export function convertToZodSchema(jsonSchema: JSONSchema): {
   for (const [key, prop] of Object.entries(properties)) {
     const propSchema = prop as JSONSchemaProperty;
 
-    // プロパティキー名をサニタイズ
+    // Sanitize property key name
     const sanitizedKey = sanitizePropertyKey(key);
-    keyMapping[sanitizedKey] = key; // マッピングを記録
+    keyMapping[sanitizedKey] = key; // Record mapping
 
     let zodType: z.ZodTypeAny;
 

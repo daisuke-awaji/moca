@@ -1,5 +1,5 @@
 /**
- * AgentCore Memory を使用したセッションストレージの実装
+ * Session storage implementation using AgentCore Memory
  */
 import {
   BedrockAgentCoreClient,
@@ -20,7 +20,7 @@ import {
 import { logger } from '../config/index.js';
 
 /**
- * AgentCore Memory を使用したセッションストレージ
+ * Session storage using AgentCore Memory
  */
 export class AgentCoreMemoryStorage implements SessionStorage {
   private client: BedrockAgentCoreClient;
@@ -32,9 +32,9 @@ export class AgentCoreMemoryStorage implements SessionStorage {
   }
 
   /**
-   * 指定されたセッションの会話履歴を読み込む
-   * @param config セッション設定
-   * @returns 会話履歴の Message 配列
+   * Load conversation history for the specified session
+   * @param config Session configuration
+   * @returns Array of Message objects containing conversation history
    */
   async loadMessages(config: SessionConfig): Promise<Message[]> {
     try {
@@ -43,7 +43,7 @@ export class AgentCoreMemoryStorage implements SessionStorage {
         actorId: config.actorId,
       });
 
-      // ページネーション対応：すべてのイベントを取得
+      // Pagination support: retrieve all events
       const allEvents = [];
       const paginator = paginateListEvents(
         { client: this.client },
@@ -74,19 +74,19 @@ export class AgentCoreMemoryStorage implements SessionStorage {
         totalEvents: allEvents.length,
       });
 
-      // Events を時系列順にソート
+      // Sort events in chronological order
       const sortedEvents = allEvents.sort((a, b) => {
         const timestampA = a.eventTimestamp ? new Date(a.eventTimestamp).getTime() : 0;
         const timestampB = b.eventTimestamp ? new Date(b.eventTimestamp).getTime() : 0;
         return timestampA - timestampB;
       });
 
-      // Events から Message に変換
+      // Convert events to Messages
       const messages: Message[] = [];
 
       for (const event of sortedEvents) {
         if (event.payload && event.payload.length > 0) {
-          // 1つのイベント内の複数のpayloadを統合して1つのメッセージにする
+          // Consolidate multiple payloads within a single event into one message
           const consolidatedMessage = this.consolidateEventPayloads(event.payload);
           if (consolidatedMessage) {
             messages.push(consolidatedMessage);
@@ -109,9 +109,9 @@ export class AgentCoreMemoryStorage implements SessionStorage {
   }
 
   /**
-   * 指定されたセッションに会話履歴を保存する
-   * @param config セッション設定
-   * @param messages 保存する Message 配列
+   * Save conversation history to the specified session
+   * @param config Session configuration
+   * @param messages Array of Message objects to save
    */
   async saveMessages(config: SessionConfig, messages: Message[]): Promise<void> {
     try {
@@ -120,11 +120,11 @@ export class AgentCoreMemoryStorage implements SessionStorage {
         totalMessages: messages.length,
       });
 
-      // 既存のメッセージ数を取得
+      // Get the number of existing messages
       const existingMessages = await this.loadMessages(config);
       const existingCount = existingMessages.length;
 
-      // 新規メッセージのみを抽出
+      // Extract only new messages
       const newMessages = messages.slice(existingCount);
 
       if (newMessages.length === 0) {
@@ -139,7 +139,7 @@ export class AgentCoreMemoryStorage implements SessionStorage {
         newMessageCount: newMessages.length,
       });
 
-      // 各メッセージを個別のイベントとして保存
+      // Save each message as an individual event
       for (const message of newMessages) {
         await this.createMessageEvent(config, message);
       }
@@ -153,8 +153,8 @@ export class AgentCoreMemoryStorage implements SessionStorage {
   }
 
   /**
-   * 指定されたセッションの履歴をクリアする
-   * @param config セッション設定
+   * Clear the history for the specified session
+   * @param config Session configuration
    */
   async clearSession(config: SessionConfig): Promise<void> {
     try {
@@ -162,7 +162,7 @@ export class AgentCoreMemoryStorage implements SessionStorage {
         sessionId: config.sessionId,
       });
 
-      // ページネーション対応：すべてのイベントを取得
+      // Pagination support: retrieve all events
       const allEvents = [];
       const paginator = paginateListEvents(
         { client: this.client },
@@ -170,7 +170,7 @@ export class AgentCoreMemoryStorage implements SessionStorage {
           memoryId: this.memoryId,
           actorId: config.actorId,
           sessionId: config.sessionId,
-          includePayloads: false, // イベントIDのみ取得
+          includePayloads: false, // Retrieve event IDs only
           maxResults: 100,
         }
       );
@@ -193,7 +193,7 @@ export class AgentCoreMemoryStorage implements SessionStorage {
         eventCount: allEvents.length,
       });
 
-      // 各イベントを個別に削除
+      // Delete each event individually
       for (const event of allEvents) {
         const eventId = extractEventId(event);
         if (eventId) {
@@ -210,9 +210,9 @@ export class AgentCoreMemoryStorage implements SessionStorage {
   }
 
   /**
-   * 単一メッセージをイベントとして作成
-   * @param config セッション設定
-   * @param message 保存するメッセージ
+   * Create a single message as an event
+   * @param config Session configuration
+   * @param message Message to save
    * @private
    */
   private async createMessageEvent(config: SessionConfig, message: Message): Promise<void> {
@@ -223,7 +223,7 @@ export class AgentCoreMemoryStorage implements SessionStorage {
       actorId: config.actorId,
       sessionId: config.sessionId,
       eventTimestamp: getCurrentTimestamp(),
-      payload: [payload as PayloadType], // AWS SDK の PayloadType との型互換性のため
+      payload: [payload as PayloadType], // For type compatibility with AWS SDK's PayloadType
     });
 
     const response = await this.client.send(command);
@@ -234,10 +234,10 @@ export class AgentCoreMemoryStorage implements SessionStorage {
   }
 
   /**
-   * 指定されたセッションに単一のメッセージを追加保存する
-   * ストリーミング中のリアルタイム保存用
-   * @param config セッション設定
-   * @param message 追加するメッセージ
+   * Append a single message to the specified session
+   * For real-time saving during streaming
+   * @param config Session configuration
+   * @param message Message to append
    */
   async appendMessage(config: SessionConfig, message: Message): Promise<void> {
     try {
@@ -257,15 +257,15 @@ export class AgentCoreMemoryStorage implements SessionStorage {
   }
 
   /**
-   * イベント内の複数のpayloadを統合して1つのメッセージにする
-   * @param payloads イベント内のpayload配列
-   * @returns 統合されたMessage、または統合できない場合はnull
+   * Consolidate multiple payloads within an event into a single message
+   * @param payloads Array of payloads within the event
+   * @returns Consolidated Message, or null if consolidation fails
    * @private
    */
   private consolidateEventPayloads(payloads: PayloadType[]): Message | null {
     if (payloads.length === 0) return null;
 
-    // 各payloadをメッセージに変換
+    // Convert each payload to a message
     const messages: Message[] = [];
     for (const payloadItem of payloads) {
       if ('conversational' in payloadItem || 'blob' in payloadItem) {
@@ -278,19 +278,19 @@ export class AgentCoreMemoryStorage implements SessionStorage {
     if (messages.length === 0) return null;
     if (messages.length === 1) return messages[0];
 
-    // 複数のメッセージを統合
-    // 同じロールのメッセージのcontentを結合する
+    // Consolidate multiple messages
+    // Merge content from messages with the same role
     const firstMessage = messages[0];
     const role = firstMessage.role;
 
-    // 全てのメッセージが同じロールであることを確認
+    // Verify all messages have the same role
     const allSameRole = messages.every((msg) => msg.role === role);
     if (!allSameRole) {
       logger.warn('[AgentCoreMemoryStorage] Event contains mixed roles, using first message only');
       return firstMessage;
     }
 
-    // 全てのcontentを結合
+    // Merge all content
     const consolidatedContent = messages.flatMap((msg) => msg.content);
 
     logger.info('[AgentCoreMemoryStorage] Consolidated event payloads:', {
@@ -306,9 +306,9 @@ export class AgentCoreMemoryStorage implements SessionStorage {
   }
 
   /**
-   * 指定されたイベントを削除
-   * @param config セッション設定
-   * @param eventId 削除するイベントID
+   * Delete the specified event
+   * @param config Session configuration
+   * @param eventId ID of the event to delete
    * @private
    */
   private async deleteEvent(config: SessionConfig, eventId: string): Promise<void> {

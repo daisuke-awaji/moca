@@ -20,14 +20,14 @@ export const ToolSelector: React.FC<ToolSelectorProps> = ({
   const { tools, isLoading, error, loadAllTools } = useToolStore();
   const [searchQuery, setSearchQuery] = useState('');
 
-  // ツール一覧を取得（全ページ読み込み）
+  // Get tool list (load all pages)
   useEffect(() => {
     if (tools.length === 0 && !isLoading && !error) {
       loadAllTools();
     }
   }, [tools.length, isLoading, error, loadAllTools]);
 
-  // 検索フィルタリング（useMemoを使用してパフォーマンス向上）
+  // Search filtering (using useMemo for performance improvement)
   const filteredTools = React.useMemo(() => {
     if (!searchQuery.trim()) {
       return tools;
@@ -41,7 +41,7 @@ export const ToolSelector: React.FC<ToolSelectorProps> = ({
     );
   }, [tools, searchQuery]);
 
-  // ツール選択の切り替え
+  // Toggle tool selection
   const toggleTool = (toolName: string) => {
     if (disabled) return;
 
@@ -57,7 +57,7 @@ export const ToolSelector: React.FC<ToolSelectorProps> = ({
     onSelectionChange(newSelection);
   };
 
-  // 全選択/全解除
+  // Select all/deselect all
   const toggleAllTools = () => {
     if (disabled) return;
 
@@ -65,11 +65,11 @@ export const ToolSelector: React.FC<ToolSelectorProps> = ({
     const allSelected = allToolNames.every((name) => selectedTools.includes(name));
 
     if (allSelected) {
-      // 表示中のツールをすべて解除
+      // Deselect all displayed tools
       const newSelection = selectedTools.filter((name) => !allToolNames.includes(name));
       onSelectionChange(newSelection);
     } else {
-      // 表示中のツールをすべて選択
+      // Select all displayed tools
       const newSelection = [...new Set([...selectedTools, ...allToolNames])];
       onSelectionChange(newSelection);
     }
@@ -79,7 +79,7 @@ export const ToolSelector: React.FC<ToolSelectorProps> = ({
 
   return (
     <div className="space-y-4">
-      {/* ヘッダー */}
+      {/* Header */}
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-medium text-fg-default">{t('tool.selector.availableTools')}</h3>
         <span className="text-xs text-fg-muted">
@@ -90,7 +90,7 @@ export const ToolSelector: React.FC<ToolSelectorProps> = ({
         </span>
       </div>
 
-      {/* 検索ボックス */}
+      {/* Search box */}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-fg-disabled w-4 h-4" />
         <input
@@ -111,7 +111,7 @@ export const ToolSelector: React.FC<ToolSelectorProps> = ({
         )}
       </div>
 
-      {/* 全選択/解除ボタン */}
+      {/* Select all/deselect all button */}
       {filteredTools.length > 0 && (
         <button
           onClick={toggleAllTools}
@@ -124,10 +124,10 @@ export const ToolSelector: React.FC<ToolSelectorProps> = ({
         </button>
       )}
 
-      {/* ローディング状態 */}
+      {/* Loading state */}
       {isLoading && <LoadingIndicator message={t('tool.loadingTools')} spacing="lg" />}
 
-      {/* エラー状態 */}
+      {/* Error state */}
       {error && (
         <div className="flex items-center space-x-2 p-3 bg-feedback-error-bg border border-feedback-error-border rounded-lg">
           <AlertCircle className="w-4 h-4 text-feedback-error flex-shrink-0" />
@@ -135,7 +135,7 @@ export const ToolSelector: React.FC<ToolSelectorProps> = ({
         </div>
       )}
 
-      {/* ツール一覧 */}
+      {/* Tool list */}
       {!isLoading && !error && (
         <div className="space-y-2 max-h-[30vh] overflow-y-auto border border-border rounded-lg">
           {filteredTools.length === 0 ? (
@@ -153,7 +153,7 @@ export const ToolSelector: React.FC<ToolSelectorProps> = ({
                     disabled ? 'cursor-not-allowed opacity-50' : ''
                   }`}
                 >
-                  {/* ツールアイコン（選択状態で枠色変更） */}
+                  {/* Tool icon (border color changes based on selection state) */}
                   <div
                     className={`flex-shrink-0 w-6 h-6 rounded-lg flex items-center justify-center transition-all duration-200 ${
                       isSelected
@@ -164,7 +164,7 @@ export const ToolSelector: React.FC<ToolSelectorProps> = ({
                     {getToolIcon(tool.name, 'w-3 h-3')}
                   </div>
 
-                  {/* ツール情報 */}
+                  {/* Tool information */}
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium text-fg-default">{tool.name}</div>
                     {tool.description && (
@@ -178,7 +178,7 @@ export const ToolSelector: React.FC<ToolSelectorProps> = ({
         </div>
       )}
 
-      {/* 選択済みツールの概要 */}
+      {/* Summary of selected tools */}
       {selectedTools.length > 0 && (
         <div className="mt-4 p-3 bg-feedback-info-bg border border-feedback-info-border rounded-lg">
           <h4 className="text-sm font-medium text-feedback-info mb-2">

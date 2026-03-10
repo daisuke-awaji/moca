@@ -16,7 +16,7 @@ const envSchema = z.object({
   AGENTCORE_GATEWAY_ENDPOINT: z.string().url(),
 
   // Bedrock Configuration
-  BEDROCK_MODEL_ID: z.string().default('global.anthropic.claude-sonnet-4-5-20250929-v1:0'),
+  BEDROCK_MODEL_ID: z.string().default('global.anthropic.claude-sonnet-4-6'),
   BEDROCK_REGION: z.string().default('us-east-1'),
 
   // Nova Canvas Configuration
@@ -28,6 +28,8 @@ const envSchema = z.object({
   // Secrets Manager Configuration
   TAVILY_API_KEY_SECRET_NAME: z.string().optional(),
   GITHUB_TOKEN_SECRET_NAME: z.string().optional(),
+  GITLAB_TOKEN_SECRET_NAME: z.string().optional(),
+  GITLAB_HOST: z.string().default('gitlab.com'),
 
   // Debug Configuration
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
@@ -35,6 +37,19 @@ const envSchema = z.object({
     .string()
     .default('false')
     .transform((val) => val === 'true'),
+
+  // Conversation Management Configuration
+  // Must be an even number ≥ 2 to guarantee valid user/assistant message alternation
+  // after SlidingWindowConversationManager truncation.
+  CONVERSATION_WINDOW_SIZE: z.coerce
+    .number()
+    .int({ message: 'CONVERSATION_WINDOW_SIZE must be an integer' })
+    .min(2, { message: 'CONVERSATION_WINDOW_SIZE must be at least 2' })
+    .refine((val) => val % 2 === 0, {
+      message:
+        'CONVERSATION_WINDOW_SIZE must be an even number to maintain user/assistant message ordering',
+    })
+    .default(40),
 
   // Prompt Caching Configuration
   ENABLE_PROMPT_CACHING: z

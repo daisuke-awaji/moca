@@ -3,32 +3,32 @@
  */
 
 /**
- * Nova Reel アクション型
+ * Nova Reel action type
  */
 export type NovaReelAction = 'start' | 'status' | 'list';
 
 /**
- * 動画の長さ（秒）
+ * Video duration (in seconds)
  */
 export type VideoDuration = 6 | 120;
 
 /**
- * 動画の解像度
+ * Video resolution
  */
 export type VideoDimension = '1280x720' | '720x1280' | '1280x1280';
 
 /**
- * ジョブステータス
+ * Job status
  */
 export type JobStatus = 'InProgress' | 'Completed' | 'Failed';
 
 /**
- * ソート順
+ * Sort order
  */
 export type SortOrder = 'Ascending' | 'Descending';
 
 /**
- * 動画生成開始の入力パラメータ
+ * Input parameters for starting video generation
  */
 export interface StartVideoInput {
   action: 'start';
@@ -47,7 +47,7 @@ export interface StartVideoInput {
 }
 
 /**
- * ジョブステータス確認の入力パラメータ
+ * Input parameters for checking job status
  */
 export interface StatusInput {
   action: 'status';
@@ -58,7 +58,7 @@ export interface StatusInput {
 }
 
 /**
- * ジョブ一覧取得の入力パラメータ
+ * Input parameters for listing jobs
  */
 export interface ListJobsInput {
   action: 'list';
@@ -68,12 +68,12 @@ export interface ListJobsInput {
 }
 
 /**
- * Nova Reel ツールの入力型（Union）
+ * Input type for Nova Reel tool (Union)
  */
 export type NovaReelInput = StartVideoInput | StatusInput | ListJobsInput;
 
 /**
- * 動画生成開始の出力
+ * Output for starting video generation
  */
 export interface StartVideoOutput {
   success: boolean;
@@ -87,7 +87,7 @@ export interface StartVideoOutput {
 }
 
 /**
- * ジョブステータス確認の出力
+ * Output for checking job status
  */
 export interface StatusOutput {
   success: boolean;
@@ -103,7 +103,7 @@ export interface StatusOutput {
 }
 
 /**
- * ジョブ情報
+ * Job information
  */
 export interface JobInfo {
   invocationArn: string;
@@ -114,7 +114,7 @@ export interface JobInfo {
 }
 
 /**
- * ジョブ一覧取得の出力
+ * Output for listing jobs
  */
 export interface ListJobsOutput {
   success: boolean;
@@ -125,12 +125,12 @@ export interface ListJobsOutput {
 }
 
 /**
- * Nova Reel ツールの出力型（Union）
+ * Output type for Nova Reel tool (Union)
  */
 export type NovaReelOutput = StartVideoOutput | StatusOutput | ListJobsOutput;
 
 /**
- * Nova Reel API リクエスト（Text to Video）
+ * Nova Reel API request (Text to Video)
  */
 export interface NovaReelTextToVideoRequest {
   taskType: 'TEXT_VIDEO';
@@ -146,7 +146,7 @@ export interface NovaReelTextToVideoRequest {
 }
 
 /**
- * Nova Reel API リクエスト（Image to Video）
+ * Nova Reel API request (Image to Video)
  */
 export interface NovaReelImageToVideoRequest {
   taskType: 'TEXT_VIDEO';
@@ -168,19 +168,19 @@ export interface NovaReelImageToVideoRequest {
 }
 
 /**
- * Nova Reel API リクエスト型
+ * Nova Reel API request type
  */
 export type NovaReelRequest = NovaReelTextToVideoRequest | NovaReelImageToVideoRequest;
 
 /**
- * Async Invoke 応答
+ * Async Invoke response
  */
 export interface AsyncInvokeResponse {
   invocationArn: string;
 }
 
 /**
- * Get Async Invoke 応答
+ * Get Async Invoke response
  */
 export interface GetAsyncInvokeResponse {
   invocationArn: string;
@@ -196,7 +196,7 @@ export interface GetAsyncInvokeResponse {
 }
 
 /**
- * List Async Invokes 応答
+ * List Async Invokes response
  */
 export interface ListAsyncInvokesResponse {
   asyncInvokeSummaries?: Array<{

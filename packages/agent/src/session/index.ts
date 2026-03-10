@@ -1,5 +1,5 @@
 /**
- * セッション管理機能のエクスポート
+ * Exports for session management functionality
  */
 
 import type { SessionStorage } from './types.js';
@@ -13,9 +13,9 @@ export { SessionPersistenceHook } from './session-persistence-hook.js';
 export { retrieveLongTermMemory } from './memory-retriever.js';
 
 /**
- * 環境変数に基づいてSessionStorageを作成する
- * AGENTCORE_MEMORY_IDが設定されていれば常にAgentCore Memoryを使用
- * @returns 適切なSessionStorageインスタンス
+ * Create SessionStorage based on environment variables
+ * Always uses AgentCore Memory if AGENTCORE_MEMORY_ID is set
+ * @returns Appropriate SessionStorage instance
  */
 export function createSessionStorage(): SessionStorage {
   const memoryId = process.env.AGENTCORE_MEMORY_ID;

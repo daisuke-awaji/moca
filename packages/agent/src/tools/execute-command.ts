@@ -3,7 +3,7 @@
  */
 
 import { tool } from '@strands-agents/sdk';
-import { executeCommandDefinition } from '@fullstack-agentcore/tool-definitions';
+import { executeCommandDefinition } from '@moca/tool-definitions';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { logger, WORKSPACE_DIRECTORY } from '../config/index.js';
@@ -88,19 +88,22 @@ export const executeCommandTool = tool({
   description: executeCommandDefinition.description,
   inputSchema: executeCommandDefinition.zodSchema,
   callback: async (input) => {
-    const { command, workingDirectory, timeout } = input;
+    const { command, workingDirectory, timeout, maxOutputLength } = input;
 
     logger.info(`🔧 Command execution started: ${command}`);
 
+    // Resolve active working directory (outside try/catch for error handler access)
+    const context = getCurrentContext();
+    const activeDir = context?.workspaceSync?.getActiveWorkingDirectory() || WORKSPACE_DIRECTORY;
+
     try {
       // Wait for workspace sync to complete
-      const context = getCurrentContext();
       if (context?.workspaceSync) {
         await context.workspaceSync.waitForInitialSync();
       }
 
-      // Set default working directory
-      const effectiveWorkingDirectory = workingDirectory || WORKSPACE_DIRECTORY;
+      // Set default working directory (use active workspace subdirectory if available)
+      const effectiveWorkingDirectory = workingDirectory || activeDir;
 
       // 1. Security check: Detect dangerous commands
       if (isDangerousCommand(command)) {
@@ -129,8 +132,8 @@ export const executeCommandTool = tool({
       const duration = Date.now() - startTime;
 
       // 4. Format result
-      const stdout = truncateOutput(result.stdout || '');
-      const stderr = truncateOutput(result.stderr || '');
+      const stdout = truncateOutput(result.stdout || '', maxOutputLength);
+      const stderr = truncateOutput(result.stderr || '', maxOutputLength);
 
       const output = `Execution Result:
 Command: ${command}
@@ -148,7 +151,7 @@ ${stderr ? `Standard Error:\n${stderr}` : ''}`.trim();
     } catch (error: unknown) {
       // Error handling
       const execError = error as ExecError;
-      const effectiveWorkingDirectory = workingDirectory || WORKSPACE_DIRECTORY;
+      const effectiveWorkingDirectory = workingDirectory || activeDir;
 
       let errorOutput = `Execution Error:
 Command: ${command}
@@ -164,11 +167,11 @@ Working Directory: ${effectiveWorkingDirectory}
       }
 
       if (execError.stdout) {
-        errorOutput += `\nStandard Output:\n${truncateOutput(execError.stdout)}`;
+        errorOutput += `\nStandard Output:\n${truncateOutput(execError.stdout, maxOutputLength)}`;
       }
 
       if (execError.stderr) {
-        errorOutput += `\nStandard Error:\n${truncateOutput(execError.stderr)}`;
+        errorOutput += `\nStandard Error:\n${truncateOutput(execError.stderr, maxOutputLength)}`;
       }
 
       // Special handling for timeout errors

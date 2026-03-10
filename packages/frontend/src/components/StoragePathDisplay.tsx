@@ -1,6 +1,6 @@
 /**
  * Storage Path Display
- * ユーザーストレージパスを表示し、クリックでモーダルを開く
+ * Displays user storage path and opens modal on click
  */
 
 import { Folder } from 'lucide-react';

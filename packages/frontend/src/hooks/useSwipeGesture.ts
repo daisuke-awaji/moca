@@ -1,49 +1,49 @@
 /**
- * スワイプジェスチャーを検知するカスタムフック
- * モバイルでのサイドバー開閉などに使用
+ * Custom hook for detecting swipe gestures
+ * Used for opening/closing the sidebar on mobile
  */
 
 import { useEffect, useCallback, useRef } from 'react';
 
 interface SwipeGestureOptions {
   /**
-   * 右方向へのスワイプ時のコールバック
+   * Callback for rightward swipe
    */
   onSwipeRight?: () => void;
 
   /**
-   * 左方向へのスワイプ時のコールバック
+   * Callback for leftward swipe
    */
   onSwipeLeft?: () => void;
 
   /**
-   * スワイプと判定する最小距離（px）
+   * Minimum distance to register as a swipe (px)
    * @default 50
    */
   threshold?: number;
 
   /**
-   * 画面端からの有効範囲（px）
-   * 画面左端からこの範囲内でタッチ開始した場合のみ右スワイプを検知
+   * Active range from the screen edge (px)
+   * Right swipe is only detected when touch starts within this range from the left edge
    * @default 30
    */
   edgeThreshold?: number;
 
   /**
-   * 速度判定の閾値（px/ms）
-   * この速度以上の場合はフリックとして扱う
+   * Velocity threshold for detection (px/ms)
+   * Treated as a flick if speed exceeds this value
    * @default 0.3
    */
   velocityThreshold?: number;
 
   /**
-   * ジェスチャーの有効/無効
+   * Enable/disable gesture
    * @default true
    */
   enabled?: boolean;
 
   /**
-   * 画面端からのスワイプのみを有効にするか
+   * Whether to only enable swipe from screen edge
    * @default true
    */
   requireEdgeStart?: boolean;
@@ -90,7 +90,7 @@ export function useSwipeGesture(options: SwipeGestureOptions) {
       const startX = touch.clientX;
       const startY = touch.clientY;
 
-      // 画面端からのスワイプを要求する場合、左端チェック
+      // If requiring swipe from screen edge, check left edge
       if (requireEdgeStart && onSwipeRight && startX > edgeThreshold) {
         return;
       }
@@ -121,18 +121,18 @@ export function useSwipeGesture(options: SwipeGestureOptions) {
       touchState.current.currentX = currentX;
       touchState.current.currentY = currentY;
 
-      // 方向をまだ判定していない場合
+      // Direction has not been determined yet
       if (!touchState.current.direction) {
         const deltaX = Math.abs(currentX - touchState.current.startX);
         const deltaY = Math.abs(currentY - touchState.current.startY);
 
-        // 最初の移動で方向を判定（5px以上移動したら判定）
+        // Determine direction on first movement (determine after 5px or more)
         if (deltaX > 5 || deltaY > 5) {
           if (deltaX > deltaY) {
-            // 水平方向
+            // Horizontal
             touchState.current.direction = 'horizontal';
           } else {
-            // 垂直方向（スクロール）
+            // Vertical (scroll)
             touchState.current.direction = 'vertical';
             touchState.current.isTracking = false;
             return;
@@ -140,7 +140,7 @@ export function useSwipeGesture(options: SwipeGestureOptions) {
         }
       }
 
-      // 水平スワイプの場合、デフォルトのスクロールを防ぐ
+      // For horizontal swipe, prevent default scrolling
       if (touchState.current.direction === 'horizontal') {
         e.preventDefault();
       }
@@ -153,7 +153,7 @@ export function useSwipeGesture(options: SwipeGestureOptions) {
 
     const { startX, startY, currentX, currentY, startTime, direction } = touchState.current;
 
-    // 垂直方向の場合は何もしない
+    // Do nothing for vertical direction
     if (direction !== 'horizontal') {
       touchState.current.isTracking = false;
       return;
@@ -164,17 +164,17 @@ export function useSwipeGesture(options: SwipeGestureOptions) {
     const deltaTime = Date.now() - startTime;
     const velocity = Math.abs(deltaX) / deltaTime;
 
-    // 垂直方向の移動が大きすぎる場合は無視
+    // Ignore if vertical movement is too large
     if (deltaY > 50) {
       touchState.current.isTracking = false;
       return;
     }
 
-    // 右スワイプ判定
+    // Right swipe detection
     if (deltaX > threshold || (deltaX > 0 && velocity > velocityThreshold)) {
       onSwipeRight?.();
     }
-    // 左スワイプ判定
+    // Left swipe detection
     else if (deltaX < -threshold || (deltaX < 0 && velocity > velocityThreshold)) {
       onSwipeLeft?.();
     }
@@ -185,7 +185,7 @@ export function useSwipeGesture(options: SwipeGestureOptions) {
   useEffect(() => {
     if (!enabled) return;
 
-    // passive: false を指定して preventDefault を有効にする
+    // Specify passive: false to enable preventDefault
     const options: AddEventListenerOptions = { passive: false };
 
     document.addEventListener('touchstart', handleTouchStart, options);

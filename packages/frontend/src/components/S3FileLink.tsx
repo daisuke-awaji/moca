@@ -21,27 +21,20 @@ export const S3FileLink: React.FC<S3FileLinkProps> = ({ path, children }) => {
     setIsLoading(true);
     setError(null);
 
-    // Open window immediately (within user action context) to avoid popup blockers
-    const newWindow = window.open('', '_blank');
-
     try {
       const downloadUrl = await generateDownloadUrl(path);
 
-      if (newWindow) {
-        // Navigate the already-opened window to the download URL
-        newWindow.location.href = downloadUrl;
-      } else {
-        // Fallback: If popup was blocked, try direct navigation
-        window.location.href = downloadUrl;
-      }
+      // Use <a> tag click pattern instead of window.open to avoid iOS Safari popup blockers
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      document.body.appendChild(link);
+      link.click();
+      setTimeout(() => document.body.removeChild(link), 100);
     } catch (err) {
       console.error('Failed to generate download URL:', err);
       setError(err instanceof Error ? err.message : 'Failed to download file');
-
-      // Close the empty window on error
-      if (newWindow) {
-        newWindow.close();
-      }
     } finally {
       setIsLoading(false);
     }

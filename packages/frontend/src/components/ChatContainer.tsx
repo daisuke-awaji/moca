@@ -49,7 +49,7 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({ sessionId, onCreat
 
   return (
     <div className="chat-container">
-      {/* ヘッダー - デスクトップ時のみ表示 */}
+      {/* Header - only shown on desktop */}
       {!isMobileView && (
         <header className="flex items-center justify-between p-4 bg-surface-primary">
           <div className="flex items-center">
@@ -78,17 +78,17 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({ sessionId, onCreat
         </header>
       )}
 
-      {/* メッセージリスト - pb-32で入力フォーム領域を確保 */}
+      {/* Message list - reserve input form area with pb-32 */}
       <MessageList onScenarioClick={handleScenarioClick} />
 
-      {/* メッセージ入力 */}
+      {/* Message input */}
       <MessageInput
         sessionId={sessionId}
         onCreateSession={onCreateSession}
         getScenarioPrompt={getScenarioPrompt}
       />
 
-      {/* Select agentモーダル */}
+      {/* Select agent modal */}
       <AgentSelectorModal
         isOpen={isAgentModalOpen}
         onClose={() => setIsAgentModalOpen(false)}
