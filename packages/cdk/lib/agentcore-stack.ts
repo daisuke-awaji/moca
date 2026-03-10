@@ -439,7 +439,7 @@ export class AgentCoreStack extends cdk.Stack {
     new cdk.CfnOutput(this, 'WebAppFrontendUrl', {
       value: this.frontend.websiteUrl,
       description: 'Frontend Website URL',
-      exportName: `${id}-FrontendUrl`,
+      exportName: `${id}-WebAppFrontendUrl`,
     });
 
     new cdk.CfnOutput(this, 'AuthenticationSummary', {

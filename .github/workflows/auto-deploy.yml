@@ -80,11 +80,7 @@ jobs:
             \`\`\`bash
             # Frontend URL
             aws cloudformation describe-stacks --stack-name MocaAgentCoreAppPr${prNumber} \\
-              --query 'Stacks[0].Outputs[?OutputKey==\`FrontendUrl\`].OutputValue' --output text
-
-            # All outputs
-            aws cloudformation describe-stacks --stack-name MocaAgentCoreAppPr${prNumber} \\
-              --query 'Stacks[0].Outputs' --output table
+              --query 'Stacks[0].Outputs[?OutputKey==\`WebAppFrontendUrl\`].OutputValue' --output text
             \`\`\`
             `;
 
