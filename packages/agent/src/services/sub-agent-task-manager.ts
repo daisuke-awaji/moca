@@ -13,6 +13,7 @@ import { AgentCoreMemoryStorage } from '../session/agentcore-memory-storage.js';
 import { SessionPersistenceHook } from '../session/session-persistence-hook.js';
 import { customAlphabet } from 'nanoid';
 import type { HookProvider } from '@strands-agents/sdk';
+import type { CreateAgentOptions } from '../agent/types.js';
 
 /**
  * Session ID Generator for Sub-Agents
@@ -257,14 +258,16 @@ class SubAgentTaskManager {
       }
 
       // Create sub-agent with session persistence
-      const { agent } = await createAgent(hooks, {
+      const agentOptions: CreateAgentOptions = {
+        hooks,
         systemPrompt: agentDef.systemPrompt,
         // Filter out call_agent to prevent infinite recursion
         enabledTools: agentDef.enabledTools.filter((t: string) => t !== 'call_agent'),
         modelId: task.modelId || agentDef.modelId,
         sessionStorage,
         sessionConfig,
-      });
+      };
+      const { agent } = await createAgent(agentOptions);
 
       // Set depth and storagePath in agent state
       agent.state.set('subAgentDepth', task.currentDepth + 1);

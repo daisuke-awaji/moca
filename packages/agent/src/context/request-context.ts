@@ -6,6 +6,7 @@
 import { AsyncLocalStorage } from 'async_hooks';
 import { randomUUID } from 'crypto';
 import type { WorkspaceSync } from '../services/workspace-sync.js';
+import type { SessionType } from '../session/types.js';
 
 /**
  * Type definition for request context
@@ -29,6 +30,10 @@ export interface RequestContext {
   clientId?: string;
   /** OAuth scopes */
   scopes?: string[];
+  /** Session ID (from x-amzn-bedrock-agentcore-runtime-session-id header) */
+  sessionId?: string;
+  /** Session type (from x-amzn-bedrock-agentcore-runtime-session-type header) */
+  sessionType?: SessionType;
 }
 
 /**

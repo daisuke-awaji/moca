@@ -7,6 +7,8 @@ import cors from 'cors';
 import { corsOptions } from './middleware/cors.js';
 import { requestContextMiddleware } from './middleware/request-context.js';
 import { handleInvocation, handlePing, handleRoot, handleNotFound } from './handlers/index.js';
+import { asyncHandler } from './middleware/async-handler.js';
+import { getContextMetadata } from './context/request-context.js';
 import { logger } from './config/index.js';
 
 /**
@@ -32,18 +34,29 @@ export function createApp(): Express {
   // Route handlers
   app.get('/ping', handlePing);
   app.get('/', handleRoot);
-  app.post('/invocations', handleInvocation);
+  app.post('/invocations', asyncHandler(handleInvocation));
 
   // 404 handler
   app.use('*', handleNotFound);
 
-  // Error handler
+  // Global error handler — catches errors from asyncHandler and any middleware
   app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
-    logger.error('💥 Unhandled error:', { error: err, path: req.path, method: req.method });
-    res.status(500).json({
-      error: 'Internal Server Error',
-      message: err.message,
+    const contextMeta = getContextMetadata();
+    logger.error('💥 Unhandled error:', {
+      error: err,
+      requestId: contextMeta.requestId,
+      path: req.path,
+      method: req.method,
     });
+
+    // If streaming already started, headers are sent and we can't send JSON error
+    if (!res.headersSent) {
+      res.status(500).json({
+        error: 'Internal server error',
+        message: err.message,
+        requestId: contextMeta.requestId,
+      });
+    }
   });
 
   return app;
