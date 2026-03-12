@@ -3,6 +3,7 @@ import * as agentcore from '@aws-cdk/aws-bedrock-agentcore-alpha';
 import * as bedrockagentcore from 'aws-cdk-lib/aws-bedrockagentcore';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
+import * as nodejs from 'aws-cdk-lib/aws-lambda-nodejs';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import { Aws, Duration, RemovalPolicy } from 'aws-cdk-lib';
 import * as path from 'path';
@@ -95,7 +96,7 @@ export class AgentCoreGateway extends Construct {
   /**
    * Interceptor Lambda function (if enabled)
    */
-  public readonly interceptorLambda?: lambda.Function;
+  public readonly interceptorLambda?: nodejs.NodejsFunction;
 
   constructor(scope: Construct, id: string, props: AgentCoreGatewayProps) {
     super(scope, id);
@@ -216,18 +217,21 @@ export class AgentCoreGateway extends Construct {
         removalPolicy: RemovalPolicy.DESTROY,
       });
 
-      this.interceptorLambda = new lambda.Function(this, 'InterceptorFunction', {
+      this.interceptorLambda = new nodejs.NodejsFunction(this, 'InterceptorFunction', {
         functionName: `${props.gatewayName}-gateway-interceptor`,
-        runtime: lambda.Runtime.PYTHON_3_11,
-        handler: 'index.lambda_handler',
-        code: lambda.Code.fromAsset(
-          path.join(__dirname, '..', '..', '..', 'lambda', 'gateway-interceptor')
-        ),
+        runtime: lambda.Runtime.NODEJS_22_X,
+        entry: path.join(__dirname, '..', '..', '..', 'lambda', 'gateway-interceptor', 'index.ts'),
+        handler: 'handler',
         timeout: Duration.seconds(10),
         memorySize: 128,
         logGroup: interceptorLogGroup,
         environment: {
           LOG_LEVEL: 'INFO',
+        },
+        bundling: {
+          minify: true,
+          sourceMap: true,
+          target: 'es2022',
         },
       });
 

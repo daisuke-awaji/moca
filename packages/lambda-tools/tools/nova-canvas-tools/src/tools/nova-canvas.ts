@@ -26,6 +26,7 @@ const s3Client = new S3Client({});
  * Interceptor-injected context
  */
 interface UserContext {
+  /** User ID (sub claim from JWT — UUID) */
   userId: string;
   storagePath: string;
 }
