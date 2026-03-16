@@ -6,9 +6,7 @@ export { createStrandsToolFromMCP, convertMCPToolsToStrands } from './mcp-conver
 export { codeInterpreterTool } from './code-interpreter/index.js';
 export { s3ListFilesTool } from './s3-list-files.js';
 export { fileEditorTool } from './file-editor.js';
-export { novaCanvasTool } from './nova-canvas/index.js';
 export { imageToTextTool } from './image-to-text/index.js';
-export { novaReelTool } from './nova-reel/index.js';
 export { callAgentTool } from './call-agent.js';
 export { manageAgentTool } from './manage-agent.js';
 export { memorySearchTool } from './memory-search.js';
@@ -25,9 +23,7 @@ import { tavilyCrawlTool } from './tavily-crawl.js';
 import { codeInterpreterTool } from './code-interpreter/index.js';
 import { s3ListFilesTool } from './s3-list-files.js';
 import { fileEditorTool } from './file-editor.js';
-import { novaCanvasTool } from './nova-canvas/index.js';
 import { imageToTextTool } from './image-to-text/index.js';
-import { novaReelTool } from './nova-reel/index.js';
 import { callAgentTool } from './call-agent.js';
 import { manageAgentTool } from './manage-agent.js';
 import { memorySearchTool } from './memory-search.js';
@@ -39,6 +35,9 @@ import { generateUiTool } from './generate-ui/index.js';
 /**
  * List of local tools built into the Agent
  * Add new tools here
+ *
+ * Note: nova_canvas and nova_reel have been migrated to Lambda tools (Gateway Targets).
+ * They are now invoked via AgentCore Gateway and no longer need to be in this list.
  */
 export const localTools = [
   executeCommandTool,
@@ -48,9 +47,7 @@ export const localTools = [
   codeInterpreterTool,
   s3ListFilesTool,
   fileEditorTool,
-  novaCanvasTool,
   imageToTextTool,
-  novaReelTool,
   callAgentTool,
   manageAgentTool,
   memorySearchTool,
