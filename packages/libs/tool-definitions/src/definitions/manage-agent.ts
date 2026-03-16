@@ -70,10 +70,10 @@ export const manageAgentDefinition: ToolDefinition<typeof manageAgentSchema> = {
 - tavily_crawl: Crawl websites
 - s3_list_files: List S3 files
 - code_interpreter: Execute Python code
-- nova_canvas: Generate images
+- nova-canvas-tools___nova_canvas: Generate images
 - image_to_text: Analyze images
 - call_agent: Invoke other agents
-- nova_reel: Generate videos
+- nova-reel-tools___nova_reel: Generate videos
 - manage_agent: Manage agents
 
 **Returns:**

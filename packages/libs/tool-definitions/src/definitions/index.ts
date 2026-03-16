@@ -7,7 +7,6 @@ export * from './s3-list-files.js';
 export * from './code-interpreter.js';
 export * from './image-to-text.js';
 export * from './call-agent.js';
-export * from './nova-reel.js';
 export * from './manage-agent.js';
 export * from './memory-search.js';
 export * from './browser.js';
@@ -24,7 +23,6 @@ import { s3ListFilesDefinition } from './s3-list-files.js';
 import { codeInterpreterDefinition } from './code-interpreter.js';
 import { imageToTextDefinition } from './image-to-text.js';
 import { callAgentDefinition } from './call-agent.js';
-import { novaReelDefinition } from './nova-reel.js';
 import { manageAgentDefinition } from './manage-agent.js';
 import { memorySearchDefinition } from './memory-search.js';
 import { browserDefinition } from './browser.js';
@@ -45,7 +43,6 @@ export const allToolDefinitions = [
   codeInterpreterDefinition,
   imageToTextDefinition,
   callAgentDefinition,
-  novaReelDefinition,
   manageAgentDefinition,
   memorySearchDefinition,
   browserDefinition,
