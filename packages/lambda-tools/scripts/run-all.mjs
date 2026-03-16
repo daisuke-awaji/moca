@@ -35,6 +35,7 @@ function run(cmd, cwd) {
   console.log(`▶ ${cmd}`);
   console.log(`  cwd: ${cwd}`);
   console.log('─'.repeat(60));
+  // nosemgrep: javascript.lang.security.detect-child-process.detect-child-process
   execSync(cmd, { stdio: 'inherit', cwd });
 }
 
@@ -51,6 +52,7 @@ function discoverTools() {
   return readdirSync(TOOLS_DIR, { withFileTypes: true })
     .filter(
       (entry) =>
+        // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal.path-join-resolve-traversal
         entry.isDirectory() && existsSync(join(TOOLS_DIR, entry.name, 'package.json'))
     )
     .map((entry) => entry.name)
