@@ -6,6 +6,7 @@
 import { AsyncLocalStorage } from 'async_hooks';
 import { randomUUID } from 'crypto';
 import type { WorkspaceSync } from '../services/workspace-sync.js';
+import type { ScopedCredentials } from '../services/scoped-credentials.js';
 import type { SessionType } from '../session/types.js';
 
 /**
@@ -34,6 +35,8 @@ export interface RequestContext {
   sessionId?: string;
   /** Session type (from x-amzn-bedrock-agentcore-runtime-session-type header) */
   sessionType?: SessionType;
+  /** Scoped AWS credentials restricted to the user's S3 prefix */
+  scopedCredentials?: ScopedCredentials;
 }
 
 /**

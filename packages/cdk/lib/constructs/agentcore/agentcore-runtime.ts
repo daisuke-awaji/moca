@@ -485,6 +485,22 @@ export class AgentCoreRuntime extends Construct {
           ],
         })
       );
+
+      // STS AssumeRole permission for per-user scoped credentials
+      // The Runtime assumes its own role with an inline session policy
+      // that restricts S3 access to users/{userId}/* only.
+      // This prevents execute_command from accessing other users' data.
+      this.runtime.addToRolePolicy(
+        new iam.PolicyStatement({
+          sid: 'StsAssumeRoleForScopedCredentials',
+          effect: iam.Effect.ALLOW,
+          actions: ['sts:AssumeRole'],
+          resources: [this.runtime.role.roleArn],
+        })
+      );
+
+      // Set the Role ARN as environment variable for scoped credentials service
+      environmentVariables.SCOPED_CREDENTIALS_ROLE_ARN = this.runtime.role.roleArn;
     }
 
     // AppSync Events permissions (for real-time message delivery)

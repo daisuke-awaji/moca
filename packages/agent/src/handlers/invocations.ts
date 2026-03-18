@@ -17,6 +17,7 @@ import { getCurrentContext } from '../context/request-context.js';
 import { ObservabilityContext } from '../context/observability-context.js';
 import { setupSession, getSessionStorage } from '../session/session-helper.js';
 import { initializeWorkspaceSync } from '../services/workspace-sync-helper.js';
+import { initializeScopedCredentials } from '../services/scoped-credentials-helper.js';
 import { logger } from '../config/index.js';
 import { validateImageData } from '../validation/index.js';
 import { resolveEffectiveUserId } from './auth-resolver.js';
@@ -85,6 +86,9 @@ export async function handleInvocation(req: Request, res: Response): Promise<voi
 
   // 2. Initialize workspace sync (if storagePath is specified)
   const workspaceSyncResult = initializeWorkspaceSync(actorId, body.storagePath, context);
+
+  // 2.5. Initialize scoped credentials (restricts S3 access to user's own directory)
+  await initializeScopedCredentials(actorId, context);
 
   // 3. Setup session (if sessionId exists)
   const sessionResult = setupSession({

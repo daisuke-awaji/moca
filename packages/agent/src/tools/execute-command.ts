@@ -8,6 +8,7 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import { logger, WORKSPACE_DIRECTORY } from '../config/index.js';
 import { getCurrentContext } from '../context/request-context.js';
+import { ScopedCredentialsService } from '../services/scoped-credentials.js';
 
 const execAsync = promisify(exec);
 
@@ -119,12 +120,23 @@ export const executeCommandTool = tool({
         return errorMsg;
       }
 
-      // 3. Execute command
+      // 3. Execute command (with scoped credentials if available)
+      const scopedEnvVars = context?.scopedCredentials
+        ? ScopedCredentialsService.toEnvVars(context.scopedCredentials)
+        : {};
+
       const execOptions = {
         timeout,
         maxBuffer: 1024 * 1024 * 10, // 10MB
         cwd: effectiveWorkingDirectory,
         encoding: 'utf8' as const,
+        env: {
+          ...process.env,
+          // Override AWS credentials with user-scoped credentials
+          // This ensures aws CLI / SDK calls from shell are restricted
+          // to the user's own S3 prefix (users/{userId}/*)
+          ...scopedEnvVars,
+        },
       };
 
       const startTime = Date.now();
