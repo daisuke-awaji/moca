@@ -17,20 +17,24 @@ import { logger } from '../config/index.js';
 
 /**
  * Resolved scoped credentials ready for consumption.
+ * NOTE: These are type definitions for AWS STS credential fields, not actual secret values
+ * pragma: allowlist secret
  */
 export interface ScopedCredentials {
   accessKeyId: string;
-  secretAccessKey: string;
+  secretAccessKey: string; // pragma: allowlist secret
   sessionToken: string;
   expiration: Date;
 }
 
 /**
  * Environment variable map suitable for child_process.exec env option.
+ * NOTE: These are AWS credential environment variable names, not actual secret values
+ * pragma: allowlist secret
  */
 export interface ScopedCredentialsEnvVars {
   AWS_ACCESS_KEY_ID: string;
-  AWS_SECRET_ACCESS_KEY: string;
+  AWS_SECRET_ACCESS_KEY: string; // pragma: allowlist secret
   AWS_SESSION_TOKEN: string;
 }
 
@@ -149,7 +153,7 @@ export class ScopedCredentialsService {
   static toEnvVars(credentials: ScopedCredentials): ScopedCredentialsEnvVars {
     return {
       AWS_ACCESS_KEY_ID: credentials.accessKeyId,
-      AWS_SECRET_ACCESS_KEY: credentials.secretAccessKey,
+      AWS_SECRET_ACCESS_KEY: credentials.secretAccessKey, // pragma: allowlist secret
       AWS_SESSION_TOKEN: credentials.sessionToken,
     };
   }
@@ -187,7 +191,7 @@ export class ScopedCredentialsService {
 
     if (
       !response.Credentials?.AccessKeyId ||
-      !response.Credentials?.SecretAccessKey ||
+      !response.Credentials?.SecretAccessKey || // pragma: allowlist secret
       !response.Credentials?.SessionToken
     ) {
       throw new Error('STS AssumeRole returned no credentials');
@@ -195,7 +199,7 @@ export class ScopedCredentialsService {
 
     const credentials: ScopedCredentials = {
       accessKeyId: response.Credentials.AccessKeyId,
-      secretAccessKey: response.Credentials.SecretAccessKey,
+      secretAccessKey: response.Credentials.SecretAccessKey, // pragma: allowlist secret
       sessionToken: response.Credentials.SessionToken,
       expiration: response.Credentials.Expiration ?? new Date(Date.now() + this.durationSeconds * 1000),
     };

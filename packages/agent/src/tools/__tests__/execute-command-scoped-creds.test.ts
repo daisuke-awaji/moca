@@ -11,7 +11,7 @@
  * 2. The env override pattern ({...process.env, ...scopedVars}) works
  */
 
-import { jest, describe, it, expect } from '@jest/globals';
+import { describe, it, expect } from '@jest/globals';
 import type { ScopedCredentials } from '../../services/scoped-credentials.js';
 
 // Import only the service (no transitive @moca/tool-definitions dependency)
