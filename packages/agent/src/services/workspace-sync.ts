@@ -27,13 +27,14 @@ export type { SyncResult };
 export class WorkspaceSync {
   private inner: S3WorkspaceSync;
   private readonly activeWorkingDirectory: string;
+  private readonly prefix: string;
 
   private initPromise: Promise<void>;
 
   constructor(userId: string, storagePath: string) {
     const bucketName = process.env.USER_STORAGE_BUCKET_NAME || '';
     const normalizedPath = storagePath.replace(/^\/+|\/+$/g, '');
-    const prefix = normalizedPath ? `users/${userId}/${normalizedPath}/` : `users/${userId}/`;
+    this.prefix = normalizedPath ? `users/${userId}/${normalizedPath}/` : `users/${userId}/`;
 
     const workspaceDir = normalizedPath
       ? path.join(WORKSPACE_DIRECTORY, normalizedPath)
@@ -45,7 +46,7 @@ export class WorkspaceSync {
     // use a user-scoped S3 client to restrict access to the user's prefix.
     this.inner = new S3WorkspaceSync({
       bucket: bucketName,
-      prefix,
+      prefix: this.prefix,
       workspaceDir,
       region: process.env.AWS_REGION,
       logger,
@@ -62,16 +63,10 @@ export class WorkspaceSync {
     if (!process.env.USER_SCOPED_S3_ROLE_ARN) return;
     try {
       const scopedClient = await createUserScopedS3Client(userId);
-      // S3WorkspaceSync accepts s3Client in options; re-create with scoped client
-      const bucketName = process.env.USER_STORAGE_BUCKET_NAME || '';
-      const normalizedPath = this.activeWorkingDirectory
-        .replace(WORKSPACE_DIRECTORY, '')
-        .replace(/^\/+/, '');
-      const prefix = normalizedPath ? `users/${userId}/${normalizedPath}/` : `users/${userId}/`;
 
       this.inner = new S3WorkspaceSync({
-        bucket: bucketName,
-        prefix,
+        bucket: process.env.USER_STORAGE_BUCKET_NAME || '',
+        prefix: this.prefix,
         workspaceDir: this.activeWorkingDirectory,
         region: process.env.AWS_REGION,
         s3Client: scopedClient,
