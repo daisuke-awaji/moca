@@ -8,6 +8,7 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import { logger, WORKSPACE_DIRECTORY } from '../config/index.js';
 import { getCurrentContext } from '../context/request-context.js';
+import { getUserScopedEnvVars } from '../utils/scoped-s3-credentials.js';
 
 const execAsync = promisify(exec);
 
@@ -119,19 +120,39 @@ export const executeCommandTool = tool({
         return errorMsg;
       }
 
-      // 3. Execute command
+      // 3. Build scoped environment variables for the child process
+      // When USER_SCOPED_S3_ROLE_ARN is configured, assume a role with a session
+      // policy that restricts S3 access to `users/{userId}/*` only.
+      let scopedEnv: Record<string, string> | undefined;
+      if (process.env.USER_SCOPED_S3_ROLE_ARN && context?.userId) {
+        try {
+          scopedEnv = await getUserScopedEnvVars(context.userId);
+          logger.debug(`[EXEC] Using user-scoped S3 credentials for user=${context.userId}`);
+        } catch (error) {
+          const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+          logger.warn(`[EXEC] Failed to obtain scoped credentials, falling back: ${errorMsg}`);
+        }
+      }
+
+      // 4. Execute command
       const execOptions = {
         timeout,
         maxBuffer: 1024 * 1024 * 10, // 10MB
         cwd: effectiveWorkingDirectory,
         encoding: 'utf8' as const,
+        // Override AWS credentials in the child process environment so that
+        // `aws s3` and other SDK-based commands can only access the user's prefix
+        env: {
+          ...process.env,
+          ...scopedEnv,
+        },
       };
 
       const startTime = Date.now();
       const result = await execAsync(command, execOptions);
       const duration = Date.now() - startTime;
 
-      // 4. Format result
+      // 5. Format result
       const stdout = truncateOutput(result.stdout || '', maxOutputLength);
       const stderr = truncateOutput(result.stderr || '', maxOutputLength);
 
