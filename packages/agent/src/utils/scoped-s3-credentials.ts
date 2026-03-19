@@ -45,6 +45,14 @@ const DEFAULT_DURATION_SECONDS = 900;
  *
  * The session policy is evaluated as an AND with the role's identity-based policy,
  * so the effective permissions are the intersection of both.
+ *
+ * Note: `userId` is embedded directly into the ARN Resource field. IAM evaluates
+ * `*` and `?` in Resource ARNs as wildcards, so a userId containing these characters
+ * could widen the scope of the session policy. This is NOT a risk in our system
+ * because `userId` is always the Cognito `sub` claim — a UUID (e.g.,
+ * "d7a41aa8-8031-70e8-4916-4c302e63588a") that is guaranteed by Cognito to contain
+ * only hex digits and hyphens. If the userId source ever changes to accept
+ * arbitrary user input, a validation/sanitisation step must be added here.
  */
 function buildSessionPolicy(bucketName: string, userId: string): string {
   return JSON.stringify({
