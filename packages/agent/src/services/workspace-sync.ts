@@ -61,22 +61,17 @@ export class WorkspaceSync {
    */
   private async initScopedClient(userId: string): Promise<void> {
     if (!process.env.USER_SCOPED_S3_ROLE_ARN) return;
-    try {
-      const scopedClient = await createUserScopedS3Client(userId);
+    const scopedClient = await createUserScopedS3Client(userId);
 
-      this.inner = new S3WorkspaceSync({
-        bucket: process.env.USER_STORAGE_BUCKET_NAME || '',
-        prefix: this.prefix,
-        workspaceDir: this.activeWorkingDirectory,
-        region: process.env.AWS_REGION,
-        s3Client: scopedClient,
-        logger,
-      });
-      logger.info(`[WORKSPACE_SYNC] Using user-scoped S3 client for user=${userId}`);
-    } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-      logger.warn(`[WORKSPACE_SYNC] Failed to create scoped S3 client, using default: ${errorMsg}`);
-    }
+    this.inner = new S3WorkspaceSync({
+      bucket: process.env.USER_STORAGE_BUCKET_NAME || '',
+      prefix: this.prefix,
+      workspaceDir: this.activeWorkingDirectory,
+      region: process.env.AWS_REGION,
+      s3Client: scopedClient,
+      logger,
+    });
+    logger.info(`[WORKSPACE_SYNC] Using user-scoped S3 client for user=${userId}`);
   }
 
   /**

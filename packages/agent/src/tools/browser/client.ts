@@ -834,12 +834,7 @@ export class AgentCoreBrowserClient {
       // Use user-scoped S3 client when configured
       let client = this.s3Client;
       if (process.env.USER_SCOPED_S3_ROLE_ARN && userId !== 'anonymous') {
-        try {
-          client = await createUserScopedS3Client(userId);
-        } catch (error) {
-          const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-          logger.warn(`[BROWSER] Failed to create scoped S3 client, using default: ${errorMsg}`);
-        }
+        client = await createUserScopedS3Client(userId);
       }
 
       // Generate filename

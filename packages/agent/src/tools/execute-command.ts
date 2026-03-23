@@ -125,13 +125,8 @@ export const executeCommandTool = tool({
       // policy that restricts S3 access to `users/{userId}/*` only.
       let scopedEnv: Record<string, string> | undefined;
       if (process.env.USER_SCOPED_S3_ROLE_ARN && context?.userId) {
-        try {
-          scopedEnv = await getUserScopedEnvVars(context.userId);
-          logger.debug(`[EXEC] Using user-scoped S3 credentials for user=${context.userId}`);
-        } catch (error) {
-          const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-          logger.warn(`[EXEC] Failed to obtain scoped credentials, falling back: ${errorMsg}`);
-        }
+        scopedEnv = await getUserScopedEnvVars(context.userId);
+        logger.debug(`[EXEC] Using user-scoped S3 credentials for user=${context.userId}`);
       }
 
       // 4. Execute command
@@ -141,11 +136,16 @@ export const executeCommandTool = tool({
         cwd: effectiveWorkingDirectory,
         encoding: 'utf8' as const,
         // Override AWS credentials in the child process environment so that
-        // `aws s3` and other SDK-based commands can only access the user's prefix
+        // `aws s3` and other SDK-based commands can only access the user's prefix.
+        // Credential-chain bypass vectors are explicitly removed (undefined deletes the key).
         env: {
           ...process.env,
+          AWS_PROFILE: undefined,
+          AWS_DEFAULT_PROFILE: undefined,
+          AWS_SHARED_CREDENTIALS_FILE: undefined,
+          AWS_CONFIG_FILE: undefined,
           ...scopedEnv,
-        },
+        } as NodeJS.ProcessEnv,
       };
 
       const startTime = Date.now();
