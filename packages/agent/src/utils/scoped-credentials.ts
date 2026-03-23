@@ -62,11 +62,12 @@ const DEFAULT_DURATION_SECONDS = 900;
 function buildSessionPolicy(
   bucketName: string | undefined,
   tableArn: string | undefined,
-  userId: string
+  userId: string,
+  enableOps: boolean
 ): string {
   const statements: Record<string, unknown>[] = [];
 
-  // S3 scoping (if configured)
+  // S3 scoping — user storage (if configured)
   if (bucketName) {
     statements.push(
       {
@@ -87,6 +88,21 @@ function buildSessionPolicy(
         },
       }
     );
+  }
+
+  // S3 scoping — CDK/CloudFormation staging buckets (Ops mode only)
+  if (enableOps) {
+    statements.push({
+      Sid: 'AllowS3CdkStaging',
+      Effect: 'Allow',
+      Action: ['s3:CreateBucket', 's3:PutObject', 's3:GetObject', 's3:ListBucket'],
+      Resource: [
+        'arn:aws:s3:::cdktoolkit-*',
+        'arn:aws:s3:::cdktoolkit-*/*',
+        'arn:aws:s3:::cdk-*',
+        'arn:aws:s3:::cdk-*/*',
+      ],
+    });
   }
 
   // DynamoDB scoping (if configured)
@@ -115,6 +131,21 @@ function buildSessionPolicy(
     });
   }
 
+  // Allow all non-S3/non-DynamoDB operations (Ops mode)
+  // The `NotAction` pattern permits operations like `aws ec2 describe-instances`,
+  // `aws cloudformation deploy`, etc. while keeping S3 and DynamoDB restricted
+  // to the user-scoped statements above. The effective permissions are the
+  // intersection of this session policy AND the role's identity-based policies,
+  // so only actions actually granted to the role will succeed.
+  if (enableOps) {
+    statements.push({
+      Sid: 'AllowNonStorageOps',
+      Effect: 'Allow',
+      NotAction: ['s3:*', 'dynamodb:*'],
+      Resource: '*',
+    });
+  }
+
   return JSON.stringify({ Version: '2012-10-17', Statement: statements });
 }
 
@@ -131,6 +162,7 @@ export async function assumeUserScopedRole(userId: string): Promise<Credentials>
   const roleArn = process.env.USER_SCOPED_ROLE_ARN;
   const bucketName = process.env.USER_STORAGE_BUCKET_NAME;
   const tableArn = process.env.SESSIONS_TABLE_ARN;
+  const enableOps = process.env.ENABLE_AWS_OPS_PERMISSIONS === 'true';
 
   if (!roleArn) {
     throw new Error('USER_SCOPED_ROLE_ARN environment variable is not set');
@@ -148,9 +180,12 @@ export async function assumeUserScopedRole(userId: string): Promise<Credentials>
     return cached.credentials;
   }
 
-  logger.info(`[SCOPED_CREDS] Assuming user-scoped role for user=${userId}`);
+  logger.info(
+    `[SCOPED_CREDS] Assuming user-scoped role for user=${userId}` +
+      (enableOps ? ' (Ops mode enabled)' : '')
+  );
 
-  const sessionPolicy = buildSessionPolicy(bucketName, tableArn, userId);
+  const sessionPolicy = buildSessionPolicy(bucketName, tableArn, userId, enableOps);
 
   const command = new AssumeRoleCommand({
     RoleArn: roleArn,

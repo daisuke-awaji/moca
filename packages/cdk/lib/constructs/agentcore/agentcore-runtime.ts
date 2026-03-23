@@ -528,6 +528,60 @@ export class AgentCoreRuntime extends Construct {
         );
       }
 
+      // AWS Ops permissions integrated into the user-scoped role (opt-in)
+      // When enabled, the role gets ReadOnly + CloudFormation + IAM PassRole permissions.
+      // The Session Policy uses `NotAction: [s3:*, dynamodb:*]` to allow these operations
+      // while still restricting S3/DynamoDB to the authenticated user only.
+      if (props.enableAwsOpsPermissions) {
+        // AWS ReadOnly access via managed policy
+        userScopedRole.addManagedPolicy(
+          iam.ManagedPolicy.fromAwsManagedPolicyName('ReadOnlyAccess')
+        );
+
+        // CloudFormation deployment permissions
+        userScopedRole.addToPolicy(
+          new iam.PolicyStatement({
+            sid: 'CloudFormationDeployAccess',
+            effect: iam.Effect.ALLOW,
+            actions: ['cloudformation:*'],
+            resources: ['*'],
+          })
+        );
+
+        // IAM PassRole required for CloudFormation to assume execution roles
+        userScopedRole.addToPolicy(
+          new iam.PolicyStatement({
+            sid: 'IamPassRoleForCloudFormation',
+            effect: iam.Effect.ALLOW,
+            actions: ['iam:PassRole'],
+            resources: ['*'],
+            conditions: {
+              StringEquals: {
+                'iam:PassedToService': 'cloudformation.amazonaws.com',
+              },
+            },
+          })
+        );
+
+        // S3 access for CDK/CloudFormation template staging buckets
+        // (Role-level policy; Session Policy also explicitly allows these prefixes)
+        userScopedRole.addToPolicy(
+          new iam.PolicyStatement({
+            sid: 'S3CdkStagingAccess',
+            effect: iam.Effect.ALLOW,
+            actions: ['s3:CreateBucket', 's3:PutObject', 's3:GetObject', 's3:ListBucket'],
+            resources: [
+              'arn:aws:s3:::cdktoolkit-*',
+              'arn:aws:s3:::cdktoolkit-*/*',
+              'arn:aws:s3:::cdk-*',
+              'arn:aws:s3:::cdk-*/*',
+            ],
+          })
+        );
+
+        environmentVariables.ENABLE_AWS_OPS_PERMISSIONS = 'true';
+      }
+
       // Allow Runtime to assume the user-scoped role
       this.runtime.addToRolePolicy(
         new iam.PolicyStatement({
@@ -559,67 +613,10 @@ export class AgentCoreRuntime extends Construct {
       );
     }
 
-    // AWS ReadOnly + CloudFormation deploy permissions (opt-in via enableAwsOpsPermissions)
-    if (props.enableAwsOpsPermissions) {
-      // AWS ReadOnly access via managed policy
-      (this.runtime.role as iam.Role).addManagedPolicy(
-        iam.ManagedPolicy.fromAwsManagedPolicyName('ReadOnlyAccess')
-      );
-
-      // CloudFormation deployment permissions (write operations for stack management)
-      this.runtime.addToRolePolicy(
-        new iam.PolicyStatement({
-          sid: 'CloudFormationDeployAccess',
-          effect: iam.Effect.ALLOW,
-          actions: [
-            'cloudformation:CreateStack',
-            'cloudformation:UpdateStack',
-            'cloudformation:DeleteStack',
-            'cloudformation:CreateChangeSet',
-            'cloudformation:ExecuteChangeSet',
-            'cloudformation:DeleteChangeSet',
-            'cloudformation:ContinueUpdateRollback',
-            'cloudformation:RollbackStack',
-            'cloudformation:SignalResource',
-            'cloudformation:SetStackPolicy',
-            'cloudformation:TagResource',
-            'cloudformation:UntagResource',
-            'cloudformation:ValidateTemplate',
-          ],
-          resources: ['*'],
-        })
-      );
-
-      // IAM PassRole required for CloudFormation to assume execution roles
-      this.runtime.addToRolePolicy(
-        new iam.PolicyStatement({
-          sid: 'IamPassRoleForCloudFormation',
-          effect: iam.Effect.ALLOW,
-          actions: ['iam:PassRole'],
-          resources: ['*'],
-          conditions: {
-            StringEquals: {
-              'iam:PassedToService': 'cloudformation.amazonaws.com',
-            },
-          },
-        })
-      );
-
-      // S3 access for CDK/CloudFormation template staging buckets
-      this.runtime.addToRolePolicy(
-        new iam.PolicyStatement({
-          sid: 'S3CdkStagingAccess',
-          effect: iam.Effect.ALLOW,
-          actions: ['s3:CreateBucket', 's3:PutObject', 's3:GetObject', 's3:ListBucket'],
-          resources: [
-            'arn:aws:s3:::cdktoolkit-*',
-            'arn:aws:s3:::cdktoolkit-*/*',
-            'arn:aws:s3:::cdk-*',
-            'arn:aws:s3:::cdk-*/*',
-          ],
-        })
-      );
-    }
+    // Note: AWS Ops permissions (ReadOnly, CloudFormation, IAM PassRole) are now integrated
+    // into the UserScopedRole above (when enableAwsOpsPermissions is true).
+    // This ensures that `execute_command` always uses scoped credentials while still
+    // having access to Ops permissions via the `NotAction` session policy pattern.
 
     // Set properties
     this.runtimeArn = this.runtime.agentRuntimeArn;
