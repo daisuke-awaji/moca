@@ -488,6 +488,11 @@ settings:
   themeAuto: Auto
   advanced: Advanced Settings
   enterBehaviorDescription: 'When typing a message, pressing '
+  pushNotification: Push Notifications
+  pushNotificationDescription: Receive notifications when agents complete their responses
+  pushNotificationDenied: Notifications are disabled in your browser settings. Please enable notifications in your browser settings.
+  pushNotificationSubscribed: Receiving notifications on this device
+  pushNotificationNotSupported: Your browser does not support push notifications
   enterBehaviorSuffix: ' will'
   sendOnEnter: Send message
   newlineOnEnter: New line

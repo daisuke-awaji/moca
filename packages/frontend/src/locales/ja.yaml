@@ -487,6 +487,11 @@ settings:
   themeAuto: 自動
   advanced: 詳細設定
   enterBehaviorDescription: メッセージを書いているとき、
+  pushNotification: プッシュ通知
+  pushNotificationDescription: エージェントの応答完了時に通知を受け取ります
+  pushNotificationDenied: ブラウザの設定で通知が無効になっています。ブラウザの設定から通知を許可してください。
+  pushNotificationSubscribed: このデバイスで通知を受信中
+  pushNotificationNotSupported: お使いのブラウザはプッシュ通知に対応していません
   enterBehaviorSuffix: を押すと
   sendOnEnter: メッセージを送信
   newlineOnEnter: 改行

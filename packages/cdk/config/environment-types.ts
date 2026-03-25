@@ -186,6 +186,21 @@ export interface EnvironmentConfig {
    * Predefined EventBridge rules that users can subscribe to for triggers
    */
   eventRules?: EventRuleConfig[];
+
+  /**
+   * VAPID keys secret name for Web Push notifications (Secrets Manager) (optional)
+   * When set, Push notifications will be enabled in the session-stream-handler.
+   * Generate keys with: npx tsx scripts/generate-vapid-keys.ts
+   * NOTE: This is a secret NAME/ID reference, not the actual secret value
+   * pragma: allowlist secret
+   */
+  vapidKeysSecretName?: string;
+
+  /**
+   * VAPID public key for Web Push (passed to frontend build) (optional)
+   * Get from Secrets Manager after running generate-vapid-keys.ts
+   */
+  vapidPublicKey?: string;
 }
 
 /**

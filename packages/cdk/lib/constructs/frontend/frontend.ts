@@ -68,6 +68,11 @@ export interface FrontendProps {
    * AppSync Events WebSocket endpoint for real-time updates (optional)
    */
   appsyncEventsEndpoint?: string;
+
+  /**
+   * VAPID public key for Web Push notifications (optional)
+   */
+  vapidPublicKey?: string;
 }
 
 export class Frontend extends Construct {
@@ -270,6 +275,7 @@ export class Frontend extends Construct {
         VITE_AGENT_ENDPOINT: props.runtimeEndpoint,
         VITE_BACKEND_URL: props.backendApiUrl || '',
         VITE_APPSYNC_EVENTS_ENDPOINT: props.appsyncEventsEndpoint || '',
+        VITE_VAPID_PUBLIC_KEY: props.vapidPublicKey || '',
       },
       outputSourceDirectory: 'packages/frontend/dist',
       destinationBucket: this.s3Bucket,

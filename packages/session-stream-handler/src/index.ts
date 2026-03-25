@@ -3,6 +3,7 @@
  *
  * Processes DynamoDB Streams events from the Sessions table
  * and publishes them to AppSync Events API for real-time updates.
+ * Also sends Web Push notifications when agents complete.
  */
 import type { DynamoDBStreamEvent, DynamoDBRecord } from 'aws-lambda';
 import { SignatureV4 } from '@smithy/signature-v4';
@@ -10,6 +11,8 @@ import { Sha256 } from '@aws-crypto/sha256-js';
 import { defaultProvider } from '@aws-sdk/credential-provider-node';
 import https from 'https';
 import { URL } from 'url';
+import { sendPushNotifications } from './push-sender.js';
+import { resolveAgentName } from './agent-resolver.js';
 
 /**
  * Session type
@@ -56,6 +59,39 @@ function parseRecord(record: DynamoDBRecord): SessionEvent | null {
     sessionType: (image.sessionType as { S: string })?.S as SessionType | undefined,
     updatedAt: (image.updatedAt as { S: string })?.S,
     createdAt: (image.createdAt as { S: string })?.S,
+  };
+}
+
+/**
+ * Check if a MODIFY event represents an agent completion
+ * by comparing lastCompletedAt in OldImage vs NewImage
+ */
+function isAgentCompletion(record: DynamoDBRecord): {
+  isCompletion: boolean;
+  agentEvent?: string;
+  error?: string;
+} {
+  if (record.eventName !== 'MODIFY') {
+    return { isCompletion: false };
+  }
+
+  const oldImage = record.dynamodb?.OldImage;
+  const newImage = record.dynamodb?.NewImage;
+  if (!oldImage || !newImage) {
+    return { isCompletion: false };
+  }
+
+  const oldCompleted = (oldImage.lastCompletedAt as { S: string })?.S;
+  const newCompleted = (newImage.lastCompletedAt as { S: string })?.S;
+
+  if (!newCompleted || newCompleted === oldCompleted) {
+    return { isCompletion: false };
+  }
+
+  return {
+    isCompletion: true,
+    agentEvent: (newImage.lastAgentEvent as { S: string })?.S,
+    error: (newImage.lastError as { S: string })?.S,
   };
 }
 
@@ -143,6 +179,44 @@ async function publishToAppSync(userId: string, event: SessionEvent): Promise<vo
 }
 
 /**
+ * Handle Push notification for agent completion
+ */
+async function handlePushNotification(
+  userId: string,
+  record: DynamoDBRecord
+): Promise<void> {
+  const completion = isAgentCompletion(record);
+  if (!completion.isCompletion) {
+    return;
+  }
+
+  const newImage = record.dynamodb?.NewImage;
+  if (!newImage) return;
+
+  const sessionId = (newImage.sessionId as { S: string })?.S || '';
+  const title = (newImage.title as { S: string })?.S || 'New message';
+  const agentId = (newImage.agentId as { S: string })?.S || '';
+
+  // Resolve agent name
+  const agentName = await resolveAgentName(userId, agentId);
+
+  const isError = completion.agentEvent === 'AGENT_ERROR';
+
+  await sendPushNotifications(userId, {
+    title: isError ? `⚠️ ${agentName}` : `☕ ${agentName}`,
+    body: isError
+      ? `Error: ${completion.error || title}`
+      : title,
+    data: {
+      url: `/chat/${sessionId}`,
+      sessionId,
+      agentId,
+      type: completion.agentEvent || 'AGENT_COMPLETE',
+    },
+  });
+}
+
+/**
  * Lambda handler for DynamoDB Streams
  */
 export const handler = async (
@@ -164,8 +238,14 @@ export const handler = async (
         continue;
       }
 
+      // Publish to AppSync (existing behavior)
       await publishToAppSync(userId, sessionEvent);
       publishedCount++;
+
+      // Send Push notification if agent completed (new behavior)
+      handlePushNotification(userId, record).catch((error) => {
+        console.error('Push notification failed (non-critical):', error);
+      });
     } catch (error) {
       console.error('Failed to process record:', error);
       // Don't throw - continue processing other records

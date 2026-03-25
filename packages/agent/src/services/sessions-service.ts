@@ -43,6 +43,18 @@ export interface CreateSessionOptions {
 }
 
 /**
+ * Update session completion status
+ * Sets lastCompletedAt and lastAgentEvent to trigger Push notifications
+ * via DynamoDB Streams → session-stream-handler
+ */
+export interface SessionCompletionOptions {
+  lastCompletedAt: string;
+  lastAgentEvent: 'AGENT_COMPLETE' | 'AGENT_ERROR';
+  agentId?: string;
+  error?: string;
+}
+
+/**
  * Sessions Service for DynamoDB operations
  */
 export class SessionsService {
@@ -296,6 +308,64 @@ export class SessionsService {
       }
       logger.error('[SessionsService] Error updating session agent/storage:', { error });
       throw error;
+    }
+  }
+
+  /**
+   * Update session completion status
+   * This triggers Push notifications via DynamoDB Streams → session-stream-handler
+   */
+  async updateSessionCompletion(
+    userId: string,
+    sessionId: string,
+    options: SessionCompletionOptions
+  ): Promise<void> {
+    if (!this.isConfigured()) {
+      logger.warn('[SessionsService] Not configured, skipping completion update');
+      return;
+    }
+
+    const now = new Date().toISOString();
+    const updateParts: string[] = [
+      'updatedAt = :updatedAt',
+      'lastCompletedAt = :lastCompletedAt',
+      'lastAgentEvent = :lastAgentEvent',
+    ];
+    const expressionValues: Record<string, string | undefined> = {
+      ':updatedAt': now,
+      ':lastCompletedAt': options.lastCompletedAt,
+      ':lastAgentEvent': options.lastAgentEvent,
+    };
+
+    if (options.agentId !== undefined) {
+      updateParts.push('agentId = :agentId');
+      expressionValues[':agentId'] = options.agentId;
+    }
+
+    if (options.error !== undefined) {
+      updateParts.push('lastError = :lastError');
+      expressionValues[':lastError'] = options.error;
+    }
+
+    try {
+      const client = await this.getClient(userId);
+      await client.send(
+        new UpdateItemCommand({
+          TableName: this.tableName,
+          Key: marshall({ userId, sessionId }),
+          UpdateExpression: `SET ${updateParts.join(', ')}`,
+          ExpressionAttributeValues: marshall(expressionValues, { removeUndefinedValues: true }),
+        })
+      );
+
+      logger.info('[SessionsService] Updated session completion:', {
+        userId,
+        sessionId,
+        lastAgentEvent: options.lastAgentEvent,
+      });
+    } catch (error) {
+      logger.error('[SessionsService] Error updating session completion:', { error });
+      // Don't throw - this is non-critical for the agent response
     }
   }
 

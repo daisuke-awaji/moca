@@ -1,7 +1,7 @@
 import * as cdk from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import { AgentCoreGateway, AgentCoreMemory, AgentCoreRuntime } from './constructs/agentcore';
-import { AgentsTable, SessionsTable, TriggersTable, UserStorage } from './constructs/storage';
+import { AgentsTable, SessionsTable, TriggersTable, PushSubscriptionsTable, UserStorage } from './constructs/storage';
 import { TriggerLambda, TriggerEventSources, SessionStreamHandler } from './constructs/triggers';
 import { BackendApi, AppSyncEvents } from './constructs/api';
 import { Frontend } from './constructs/frontend';
@@ -89,6 +89,19 @@ export interface AgentCoreStackProps extends cdk.StackProps {
    * @default 'gitlab.com'
    */
   readonly gitlabHost?: string;
+
+  /**
+   * VAPID keys secret name for Web Push notifications (Secrets Manager) (optional)
+   * When set, Push notifications will be enabled.
+   * Generate keys with: npx tsx scripts/generate-vapid-keys.ts
+   */
+  readonly vapidKeysSecretName?: string;
+
+  /**
+   * VAPID public key for Web Push (passed to frontend build)
+   * Get from Secrets Manager after running generate-vapid-keys.ts
+   */
+  readonly vapidPublicKey?: string;
 }
 
 /**
@@ -274,10 +287,21 @@ export class AgentCoreStack extends cdk.Stack {
       userPool: this.cognitoAuth.userPool,
     });
 
-    // 5.7. Create Session Stream Handler Lambda (DynamoDB Streams -> AppSync Events)
+    // 5.6.5. Create Push Subscriptions Table (for Web Push notifications)
+    const pushSubscriptionsTable = new PushSubscriptionsTable(this, 'PushSubscriptionsTable', {
+      tableNamePrefix: resourcePrefix,
+      removalPolicy: envConfig.s3RemovalPolicy,
+      pointInTimeRecovery: true,
+    });
+
+    // 5.7. Create Session Stream Handler Lambda (DynamoDB Streams -> AppSync Events + Push)
+    const vapidKeysSecretName = props?.vapidKeysSecretName || envConfig.vapidKeysSecretName;
     new SessionStreamHandler(this, 'SessionStreamHandler', {
       sessionsTable: this.sessionsTable.table,
       appsyncEvents: appsyncEvents,
+      pushSubscriptionsTable: pushSubscriptionsTable.table,
+      agentsTable: this.agentsTable.table,
+      vapidKeysSecretName,
     });
 
     // 5.8. Create Triggers Table
@@ -371,6 +395,13 @@ export class AgentCoreStack extends cdk.Stack {
 
     // Grant Triggers Table read/write access to Backend API
     triggersTable.grantReadWrite(this.backendApi.lambdaFunction);
+
+    // Grant Push Subscriptions Table read/write access to Backend API
+    pushSubscriptionsTable.grantReadWrite(this.backendApi.lambdaFunction);
+    this.backendApi.lambdaFunction.addEnvironment(
+      'PUSH_SUBSCRIPTIONS_TABLE_NAME',
+      pushSubscriptionsTable.tableName
+    );
 
     // Grant EventBridge Scheduler permissions to Backend API
     this.backendApi.lambdaFunction.addToRolePolicy(
@@ -480,6 +511,7 @@ export class AgentCoreStack extends cdk.Stack {
       backendApiUrl: this.backendApi.apiUrl,
       customDomain: envConfig.customDomain,
       appsyncEventsEndpoint: appsyncEvents.realtimeEndpoint, // AppSync Events WebSocket endpoint for real-time updates
+      vapidPublicKey: props?.vapidPublicKey || envConfig.vapidPublicKey, // VAPID public key for Web Push
     });
 
     // 10. Additional CloudFormation outputs (authentication related)

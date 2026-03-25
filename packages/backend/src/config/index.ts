@@ -44,6 +44,9 @@ const envSchema = z.object({
 
   // Sessions Table configuration
   SESSIONS_TABLE_NAME: z.string().optional(),
+
+  // Push Subscriptions Table configuration
+  PUSH_SUBSCRIPTIONS_TABLE_NAME: z.string().optional(),
 });
 
 /**

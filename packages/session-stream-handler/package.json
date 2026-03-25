@@ -23,13 +23,18 @@
   "license": "MIT",
   "dependencies": {
     "@aws-crypto/sha256-js": "^5.2.0",
+    "@aws-sdk/client-dynamodb": "^3.750.0",
+    "@aws-sdk/client-secrets-manager": "^3.750.0",
     "@aws-sdk/credential-provider-node": "^3.750.0",
-    "@smithy/signature-v4": "^4.0.0"
+    "@aws-sdk/util-dynamodb": "^3.750.0",
+    "@smithy/signature-v4": "^4.0.0",
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.145",
     "@types/jest": "^29.5.0",
     "@types/node": "^20.10.0",
+    "@types/web-push": "^3.6.4",
     "jest": "^30.2.0",
     "rimraf": "^5.0.5",
     "ts-jest": "^29.4.6",

@@ -9,6 +9,7 @@ import {
   Check,
   Palette,
   User,
+  Bell,
 } from 'lucide-react';
 import { useMemoryStore } from '../stores/memoryStore';
 import { useSettingsStore } from '../stores/settingsStore';
@@ -19,6 +20,7 @@ import { Button } from '../components/ui/Button';
 import { Toggle } from '../components/ui/Toggle';
 import { MemoryManagementModal } from '../components/MemoryManagementModal';
 import { getMe, type MeResponse } from '../api/auth';
+import { usePushNotification } from '../hooks/usePushNotification';
 
 /**
  * Settings Page
@@ -39,6 +41,14 @@ export function SettingsPage() {
   const [isLoadingAccount, setIsLoadingAccount] = useState(true);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const themeDropdownRef = useRef<HTMLDivElement>(null);
+  const {
+    isSupported: isPushSupported,
+    isSubscribed: isPushSubscribed,
+    permission: pushPermission,
+    isLoading: isPushLoading,
+    subscribe: pushSubscribe,
+    unsubscribe: pushUnsubscribe,
+  } = usePushNotification();
 
   // Language selection options
   const languageOptions = [
@@ -227,6 +237,57 @@ export function SettingsPage() {
             )}
           </div>
         </div>
+
+        {/* Push Notifications section */}
+        {isPushSupported && (
+          <div className="mb-8">
+            <div className="flex items-center gap-2 mb-4">
+              <Bell className="w-5 h-5 text-fg-secondary" />
+              <h2 className="text-lg font-semibold text-fg-default">
+                {t('settings.pushNotification')}
+              </h2>
+            </div>
+
+            <div className="flex items-center justify-between py-4">
+              <div className="flex-1">
+                <h3 className="text-sm font-medium text-fg-default mb-1">
+                  {t('settings.pushNotification')}
+                </h3>
+                <p className="text-sm text-fg-secondary">
+                  {t('settings.pushNotificationDescription')}
+                </p>
+                {pushPermission === 'denied' && (
+                  <p className="text-sm text-feedback-error mt-1">
+                    {t('settings.pushNotificationDenied')}
+                  </p>
+                )}
+                {isPushSubscribed && (
+                  <p className="text-sm text-feedback-success mt-1">
+                    ✅ {t('settings.pushNotificationSubscribed')}
+                  </p>
+                )}
+              </div>
+              <div className="ml-4">
+                <Toggle
+                  checked={isPushSubscribed}
+                  onChange={async (checked) => {
+                    try {
+                      if (checked) {
+                        await pushSubscribe();
+                      } else {
+                        await pushUnsubscribe();
+                      }
+                    } catch {
+                      // Error handled in hook
+                    }
+                  }}
+                  label={t('settings.pushNotification')}
+                  disabled={isPushLoading || pushPermission === 'denied'}
+                />
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Memory management section */}
         <div className="mb-8">

@@ -279,8 +279,8 @@ export class SessionPersistenceHook implements HookProvider {
 
   /**
    * Event handler after Agent execution completes
-   * Save conversation history to storage
-   * Fallback for when real-time saving is not performed
+   * Save conversation history to storage and mark session as completed
+   * for Push notification triggering via DynamoDB Streams
    */
   private async onAfterInvocation(event: AfterInvocationEvent): Promise<void> {
     try {
@@ -298,6 +298,23 @@ export class SessionPersistenceHook implements HookProvider {
       logger.debug(
         `💾 Session history auto-save completed (fallback): ${actorId}/${sessionId} (${messages.length} items)`
       );
+
+      // Mark session as completed for Push notification via DynamoDB Streams
+      const sessionsService = getSessionsService();
+      if (sessionsService.isConfigured()) {
+        sessionsService
+          .updateSessionCompletion(actorId, sessionId, {
+            lastCompletedAt: new Date().toISOString(),
+            lastAgentEvent: 'AGENT_COMPLETE',
+            agentId: this.agentId,
+          })
+          .catch((err) => {
+            logger.warn(
+              '[SessionPersistenceHook] Session completion update failed (non-critical):',
+              err
+            );
+          });
+      }
     } catch (error) {
       // Log at warning level to not stop Agent execution even if error occurs
       logger.warn(

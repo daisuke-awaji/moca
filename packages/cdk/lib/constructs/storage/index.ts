@@ -6,4 +6,5 @@
 export { AgentsTable, AgentsTableProps } from './agents-table';
 export { SessionsTable, SessionsTableProps } from './sessions-table';
 export { TriggersTable, TriggersTableProps } from './triggers-table';
+export { PushSubscriptionsTable, PushSubscriptionsTableProps } from './push-subscriptions-table';
 export { UserStorage, UserStorageProps } from './user-storage';
