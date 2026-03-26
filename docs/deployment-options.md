@@ -59,6 +59,7 @@ export const environments: Record<Environment, EnvironmentConfigInput> = {
 | `enableAwsOpsPermissions` | boolean | `false` | Enable AWS ReadOnly + CloudFormation deploy permissions |
 | `awsAccount` | string | - | AWS Account ID (uses CDK_DEFAULT_ACCOUNT if not specified) |
 | `resourcePrefix` | string | auto-generated | Resource name prefix (e.g., 'moca', 'mocadev') |
+| `bedrockModels` | BedrockModelConfig[] | global.* models | Available Bedrock models for frontend model selector |
 
 ## Environment Examples
 
@@ -182,6 +183,22 @@ dev: {
   ],
 },
 ```
+
+## Bedrock Model Selection
+
+You can configure which Bedrock models are available in the frontend model selector per environment. Each model ID should include the [cross-region inference profile](https://docs.aws.amazon.com/bedrock/latest/userguide/cross-region-inference.html) prefix (e.g., `global.`, `us.`, `eu.`, `apac.`, `jp.`).
+
+```typescript
+dev: {
+  bedrockModels: [
+    { id: 'us.anthropic.claude-sonnet-4-6', name: 'Claude Sonnet 4.6', provider: 'Anthropic' },
+    { id: 'us.anthropic.claude-haiku-4-5-20251001-v1:0', name: 'Claude Haiku 4.5', provider: 'Anthropic' },
+    { id: 'us.amazon.nova-2-lite-v1:0', name: 'Nova Lite 2', provider: 'Amazon' },
+  ],
+},
+```
+
+If `bedrockModels` is not specified, the frontend defaults to `global.*` prefixed models (Claude Opus 4.6, Claude Sonnet 4.6, Nova Lite 2). The first model in the list is used as the default selection.
 
 ## Deploying Different Environments
 

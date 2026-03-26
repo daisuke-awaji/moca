@@ -480,6 +480,7 @@ export class AgentCoreStack extends cdk.Stack {
       backendApiUrl: this.backendApi.apiUrl,
       customDomain: envConfig.customDomain,
       appsyncEventsEndpoint: appsyncEvents.realtimeEndpoint, // AppSync Events WebSocket endpoint for real-time updates
+      bedrockModels: envConfig.bedrockModels,
     });
 
     // 10. Additional CloudFormation outputs (authentication related)
