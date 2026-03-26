@@ -28,6 +28,7 @@ export function extractEnvFromMcpConfig(mcpConfig: MCPConfig): {
       envMap[serverName] = { ...server.env };
       hasEnv = true;
 
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { env: _, ...rest } = server;
       cleanedServers[serverName] = rest;
     } else {
