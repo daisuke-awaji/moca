@@ -35,6 +35,7 @@ export interface Agent {
   enabledTools: string[]; // Array of enabled tool names
   scenarios: Scenario[]; // Frequently used prompts
   mcpConfig?: MCPConfig; // MCP server configuration
+  hasSecureEnv?: boolean; // true when env values are stored in SSM Parameter Store
   createdAt: Date;
   updatedAt: Date;
 

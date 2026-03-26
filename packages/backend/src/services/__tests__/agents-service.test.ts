@@ -31,6 +31,14 @@ jest.mock('uuid', () => ({
   v4: jest.fn(() => 'test-uuid-1234'),
 }));
 
+jest.mock('../ssm-env-store', () => ({
+  SsmEnvStore: jest.fn().mockImplementation(() => ({
+    save: jest.fn<() => Promise<void>>().mockResolvedValue(undefined),
+    get: jest.fn<() => Promise<null>>().mockResolvedValue(null),
+    delete: jest.fn<() => Promise<void>>().mockResolvedValue(undefined),
+  })),
+}));
+
 import {
   DynamoDBClient,
   PutItemCommand,
@@ -40,6 +48,7 @@ import {
 import { AgentsService } from '../agents-service.js';
 
 const TABLE_NAME = 'test-agents-table';
+const SSM_PREFIX = '/agentcore/test';
 const USER_ID = 'user-123';
 const AGENT_ID = 'agent-456';
 
@@ -65,7 +74,7 @@ describe('AgentsService', () => {
     jest.clearAllMocks();
     mockSend = jest.fn();
     (DynamoDBClient as jest.Mock).mockImplementation(() => ({ send: mockSend }));
-    service = new AgentsService(TABLE_NAME, 'us-east-1');
+    service = new AgentsService(TABLE_NAME, SSM_PREFIX, 'us-east-1');
   });
 
   // ──────────────────────────────────────────────

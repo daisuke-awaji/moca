@@ -19,8 +19,6 @@ import { SsmEnvStore } from './ssm-env-store.js';
 import {
   extractEnvFromMcpConfig,
   restoreEnvToMcpConfig,
-  stripEnvFromMcpConfig,
-  hasSsmSentinel,
 } from './mcp-env-helpers.js';
 
 export interface MCPServer {
@@ -51,6 +49,7 @@ export interface Agent {
   enabledTools: string[];
   scenarios: Scenario[];
   mcpConfig?: MCPConfig;
+  hasSecureEnv?: boolean; // true when env values are stored in SSM Parameter Store
   createdAt: string;
   updatedAt: string;
 
@@ -173,8 +172,8 @@ export class AgentsService {
       // Convert data retrieved from DynamoDB to Agent type
       const agent = fromDynamoAgent(unmarshall(response.Item) as DynamoAgent);
 
-      // Resolve env values from SSM if sentinel is present
-      if (agent.mcpConfig && hasSsmSentinel(agent.mcpConfig)) {
+      // Resolve env values from SSM if hasSecureEnv flag is set
+      if (agent.hasSecureEnv && agent.mcpConfig) {
         const envMap = await this.ssmEnvStore.get(userId, agentId);
         if (envMap) {
           agent.mcpConfig = restoreEnvToMcpConfig(agent.mcpConfig, envMap);
@@ -192,7 +191,7 @@ export class AgentsService {
    * Get a specific Agent without resolving SSM env values (raw DynamoDB data).
    * Used internally when env resolution is not needed (e.g. for shared agents, cloning).
    */
-  private async getAgentRaw(userId: string, agentId: string): Promise<Agent | null> {
+  private async getAgentFromDb(userId: string, agentId: string): Promise<Agent | null> {
     try {
       const command = new GetItemCommand({
         TableName: this.tableName,
@@ -210,7 +209,7 @@ export class AgentsService {
 
       return fromDynamoAgent(unmarshall(response.Item) as DynamoAgent);
     } catch (error) {
-      console.error('Error getting agent (raw):', error);
+      console.error('Error getting agent from DB:', error);
       throw new Error('Failed to get agent', { cause: error });
     }
   }
@@ -226,13 +225,15 @@ export class AgentsService {
       // Extract env values and store in SSM
       let mcpConfigForDb = input.mcpConfig;
       let originalMcpConfig = input.mcpConfig;
+      let hasSecureEnv = false;
 
       if (input.mcpConfig) {
-        const { sanitizedConfig, envMap } = extractEnvFromMcpConfig(input.mcpConfig);
+        const { cleanedConfig, envMap } = extractEnvFromMcpConfig(input.mcpConfig);
         if (envMap) {
           await this.ssmEnvStore.save(userId, agentId, envMap);
-          mcpConfigForDb = sanitizedConfig;
+          mcpConfigForDb = cleanedConfig;
           originalMcpConfig = input.mcpConfig;
+          hasSecureEnv = true;
         }
       }
 
@@ -249,6 +250,7 @@ export class AgentsService {
           id: uuidv4(),
         })),
         mcpConfig: mcpConfigForDb,
+        hasSecureEnv,
         createdAt: now,
         updatedAt: now,
         isShared: false, // Default to private
@@ -335,21 +337,30 @@ export class AgentsService {
       if (input.mcpConfig !== undefined) {
         // Extract env values and store in SSM
         let mcpConfigForDb: MCPConfig | undefined = input.mcpConfig;
+        let hasSecureEnv = false;
 
         if (input.mcpConfig) {
-          const { sanitizedConfig, envMap } = extractEnvFromMcpConfig(input.mcpConfig);
+          const { cleanedConfig, envMap } = extractEnvFromMcpConfig(input.mcpConfig);
           if (envMap) {
             await this.ssmEnvStore.save(userId, input.agentId, envMap);
-            mcpConfigForDb = sanitizedConfig;
+            mcpConfigForDb = cleanedConfig;
+            hasSecureEnv = true;
           } else {
             // No env values — clean up any existing SSM parameter
             await this.ssmEnvStore.delete(userId, input.agentId).catch(() => {});
           }
+        } else {
+          // mcpConfig is being cleared — clean up any existing SSM parameter
+          await this.ssmEnvStore.delete(userId, input.agentId).catch(() => {});
         }
 
         updateExpressions.push('#mcpConfig = :mcpConfig');
         expressionAttributeNames['#mcpConfig'] = 'mcpConfig';
         expressionAttributeValues[':mcpConfig'] = mcpConfigForDb;
+
+        updateExpressions.push('#hasSecureEnv = :hasSecureEnv');
+        expressionAttributeNames['#hasSecureEnv'] = 'hasSecureEnv';
+        expressionAttributeValues[':hasSecureEnv'] = hasSecureEnv;
       }
 
       // updatedAt is always updated
@@ -556,23 +567,19 @@ export class AgentsService {
 
   /**
    * Get a shared Agent (from any user).
-   * Env values are stripped for security — non-owners must not see secrets.
+   * Env values are already absent from DynamoDB — no stripping needed.
    */
   async getSharedAgent(userId: string, agentId: string): Promise<Agent | null> {
     try {
-      // Use raw read (no SSM resolution) since we strip env anyway
-      const agent = await this.getAgentRaw(userId, agentId);
+      // Use raw read (no SSM resolution) since env is already absent from DynamoDB
+      const agent = await this.getAgentFromDb(userId, agentId);
 
       if (!agent || !agent.isShared) {
         return null;
       }
 
-      // Strip env values from mcpConfig for security
-      if (agent.mcpConfig) {
-        agent.mcpConfig = stripEnvFromMcpConfig(agent.mcpConfig);
-      }
-
-      return agent;
+      // Ensure hasSecureEnv is not exposed to non-owners
+      return { ...agent, hasSecureEnv: false };
     } catch (error) {
       console.error('Error getting shared agent:', error);
       throw new Error('Failed to get shared agent', { cause: error });

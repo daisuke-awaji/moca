@@ -35,6 +35,7 @@ export interface Agent {
   enabledTools: string[];
   scenarios: Scenario[];
   mcpConfig?: MCPConfig;
+  hasSecureEnv?: boolean; // true when env values are stored in SSM Parameter Store
   createdAt: string;
   updatedAt: string;
   isShared: boolean;
@@ -60,22 +61,7 @@ function fromDynamoAgent(dynamoAgent: DynamoAgent): Agent {
 }
 
 /**
- * Check whether an env object is the SSM sentinel marker.
- */
-function isSsmSentinel(env: unknown): boolean {
-  if (env == null || typeof env !== 'object') return false;
-  return (env as Record<string, unknown>).__ssm === true;
-}
-
-/**
- * Check whether any server in the mcpConfig has the SSM sentinel.
- */
-function hasSsmSentinel(mcpConfig: MCPConfig): boolean {
-  return Object.values(mcpConfig.mcpServers).some((server) => isSsmSentinel(server.env));
-}
-
-/**
- * Restore env values from an envMap into an mcpConfig that has SSM sentinels.
+ * Restore env values from an envMap into an mcpConfig.
  */
 function restoreEnvToMcpConfig(
   mcpConfig: MCPConfig,
@@ -84,7 +70,7 @@ function restoreEnvToMcpConfig(
   const restoredServers: Record<string, MCPServer> = {};
 
   for (const [serverName, server] of Object.entries(mcpConfig.mcpServers)) {
-    if (isSsmSentinel(server.env) && envMap[serverName]) {
+    if (envMap[serverName]) {
       restoredServers[serverName] = {
         ...server,
         env: { ...envMap[serverName] },
@@ -135,8 +121,8 @@ export class AgentsService {
       // Convert DynamoDB data to Agent type
       const agent = fromDynamoAgent(unmarshall(response.Item) as DynamoAgent);
 
-      // Resolve env values from SSM if sentinel is present
-      if (agent.mcpConfig && hasSsmSentinel(agent.mcpConfig)) {
+      // Resolve env values from SSM if hasSecureEnv flag is set
+      if (agent.hasSecureEnv && agent.mcpConfig) {
         try {
           const paramName = `${this.ssmParameterPrefix}/agents/${userId}/${agentId}/mcp-env`;
           const ssmResponse = await this.ssmClient.send(
@@ -154,7 +140,7 @@ export class AgentsService {
             ssmError instanceof ParameterNotFound ||
             (ssmError instanceof Error && ssmError.name === 'ParameterNotFound')
           ) {
-            console.warn('SSM parameter not found for agent MCP env, continuing with sentinel');
+            console.warn('SSM parameter not found for agent MCP env, continuing without env');
           } else {
             console.warn('Failed to resolve MCP env from SSM:', ssmError);
           }

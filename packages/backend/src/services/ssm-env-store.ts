@@ -19,17 +19,6 @@ import {
 /** Nested env map: serverName → { envKey: envValue } */
 export type McpEnvMap = Record<string, Record<string, string>>;
 
-/** Sentinel object stored in DynamoDB when env values are in SSM */
-export const SSM_SENTINEL = { __ssm: true } as const;
-
-/**
- * Check whether an env object is the SSM sentinel marker.
- */
-export function isSsmSentinel(env: unknown): boolean {
-  if (env == null || typeof env !== 'object') return false;
-  return (env as Record<string, unknown>).__ssm === true;
-}
-
 /**
  * Manages MCP env values in AWS Systems Manager Parameter Store.
  */
