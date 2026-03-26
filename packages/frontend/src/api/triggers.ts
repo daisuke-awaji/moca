@@ -65,14 +65,21 @@ function parseTriggerDates(trigger: Trigger): Trigger {
 }
 
 /**
- * Parse execution record dates
+ * Parse execution record dates (defensive: handles missing/invalid dates)
  */
 function parseExecutionDates(execution: ExecutionRecord): ExecutionRecord {
-  return {
-    ...execution,
-    startTime: new Date(execution.startTime).toISOString(),
-    endTime: execution.endTime ? new Date(execution.endTime).toISOString() : undefined,
-  };
+  if (!execution.executedAt) {
+    return execution;
+  }
+  try {
+    const date = new Date(execution.executedAt);
+    if (isNaN(date.getTime())) {
+      return { ...execution, executedAt: '' };
+    }
+    return { ...execution, executedAt: date.toISOString() };
+  } catch {
+    return { ...execution, executedAt: '' };
+  }
 }
 
 /**
