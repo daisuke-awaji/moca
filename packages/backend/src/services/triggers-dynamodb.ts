@@ -67,6 +67,7 @@ export interface TriggerExecution {
   executedAt: string;
   sessionId?: string;
   eventPayload?: string;
+  errorMessage?: string;
   ttl: number;
 }
 

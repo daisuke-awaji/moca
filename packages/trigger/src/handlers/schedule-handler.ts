@@ -90,25 +90,33 @@ export async function handleSchedulerEvent(event: SchedulerEvent): Promise<Handl
       eventContext
     );
 
+    // Step 4: Record execution (success or failure)
+    const executionId = await executionRecorder.recordExecution(
+      triggerId,
+      invocationResponse.sessionId,
+      event,
+      invocationResponse.success ? undefined : invocationResponse.error
+    );
+
+    // Step 5: Update trigger's last execution timestamp
+    await executionRecorder.updateTriggerLastExecution(userId, triggerId);
+
     if (!invocationResponse.success) {
+      console.error('Agent invocation failed:', {
+        triggerId,
+        executionId,
+        error: invocationResponse.error,
+      });
+
       return {
         statusCode: 500,
         body: JSON.stringify({
           error: 'Agent invocation failed',
           message: invocationResponse.error,
+          executionId,
         }),
       };
     }
-
-    // Step 4: Record execution (single PutItem — no status tracking)
-    const executionId = await executionRecorder.recordExecution(
-      triggerId,
-      invocationResponse.sessionId,
-      event
-    );
-
-    // Step 5: Update trigger's last execution timestamp
-    await executionRecorder.updateTriggerLastExecution(userId, triggerId);
 
     console.log('Trigger invocation dispatched successfully (fire-and-forget):', {
       triggerId,
@@ -127,6 +135,15 @@ export async function handleSchedulerEvent(event: SchedulerEvent): Promise<Handl
     };
   } catch (error) {
     console.error('Unexpected error during trigger execution:', error);
+
+    // Record unexpected errors too
+    try {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      await executionRecorder.recordExecution(triggerId, undefined, event, errorMsg);
+      await executionRecorder.updateTriggerLastExecution(userId, triggerId);
+    } catch (recordError) {
+      console.error('Failed to record execution error (non-critical):', recordError);
+    }
 
     return {
       statusCode: 500,

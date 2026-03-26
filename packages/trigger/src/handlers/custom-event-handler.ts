@@ -117,21 +117,36 @@ async function invokeTrigger(
     // Invoke agent (async fire-and-forget)
     const result = await agentInvoker.invokeAsync(payload, tokenResponse.accessToken, context);
 
-    if (!result.success) {
-      return { success: false, error: result.error };
-    }
-
-    // Record execution (single PutItem — no status tracking)
-    await executionRecorder.recordExecution(trigger.id, result.sessionId, event);
+    // Record execution (success or failure)
+    await executionRecorder.recordExecution(
+      trigger.id,
+      result.sessionId,
+      event,
+      result.success ? undefined : result.error
+    );
 
     // Update trigger's last execution timestamp
     await executionRecorder.updateTriggerLastExecution(trigger.userId, trigger.id);
+
+    if (!result.success) {
+      console.error('❌ Agent invocation failed for trigger: %s', trigger.name, result.error);
+      return { success: false, error: result.error };
+    }
 
     console.log(`✅ Trigger invocation dispatched (fire-and-forget): ${trigger.name}`);
     return { success: true };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     console.error('❌ Trigger invocation failed: %s', trigger.name, error);
+
+    // Record unexpected errors too
+    try {
+      await executionRecorder.recordExecution(trigger.id, undefined, event, errorMessage);
+      await executionRecorder.updateTriggerLastExecution(trigger.userId, trigger.id);
+    } catch (recordError) {
+      console.error('Failed to record execution error (non-critical):', recordError);
+    }
+
     return { success: false, error: errorMessage };
   }
 }

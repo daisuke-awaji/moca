@@ -46,13 +46,15 @@ export class ExecutionRecorder {
   }
 
   /**
-   * Record a trigger execution
+   * Record a trigger execution (success or failure)
    * Single PutItem call — no subsequent status updates needed
+   * @param errorMessage - If provided, indicates the execution failed
    */
   async recordExecution(
     triggerId: string,
     sessionId: string | undefined,
-    event: unknown
+    event: unknown,
+    errorMessage?: string
   ): Promise<string> {
     const executionId = nanoid();
     const now = new Date().toISOString();
@@ -70,6 +72,7 @@ export class ExecutionRecorder {
       executedAt: now,
       sessionId,
       eventPayload,
+      errorMessage,
       ttl,
     };
 
@@ -85,6 +88,7 @@ export class ExecutionRecorder {
       executionId,
       sessionId,
       eventPayloadSize: eventPayload.length,
+      hasError: !!errorMessage,
     });
 
     return executionId;

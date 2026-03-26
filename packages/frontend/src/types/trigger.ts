@@ -44,6 +44,7 @@ export interface ExecutionRecord {
   executedAt: string;
   sessionId?: string;
   eventPayload?: string;
+  errorMessage?: string;
 }
 
 export interface CreateTriggerRequest {

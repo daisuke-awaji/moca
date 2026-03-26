@@ -6,7 +6,7 @@
 
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Loader2, ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
+import { Loader2, ChevronDown, ChevronUp, ExternalLink, CheckCircle, XCircle } from 'lucide-react';
 import { LoadingIndicator } from '../../ui/LoadingIndicator';
 import type { ExecutionRecord } from '../../../types/trigger';
 
@@ -84,11 +84,21 @@ export function ExecutionList({ executions, isLoading, hasMore, onLoadMore }: Ex
                   <tr
                     key={execution.executionId}
                     className="hover:bg-surface-secondary transition-colors cursor-pointer"
-                    onClick={() => execution.eventPayload && toggleExpand(execution.executionId)}
+                    onClick={() =>
+                      (execution.eventPayload || execution.errorMessage) &&
+                      toggleExpand(execution.executionId)
+                    }
                   >
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-fg-default">
-                        {formatDate(execution.executedAt)}
+                      <div className="flex items-center gap-2">
+                        {execution.errorMessage ? (
+                          <XCircle className="w-4 h-4 text-feedback-error flex-shrink-0" />
+                        ) : (
+                          <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
+                        )}
+                        <span className="text-sm text-fg-default">
+                          {formatDate(execution.executedAt)}
+                        </span>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -111,7 +121,7 @@ export function ExecutionList({ executions, isLoading, hasMore, onLoadMore }: Ex
                       </div>
                     </td>
                     <td className="px-6 py-4 text-center">
-                      {execution.eventPayload && (
+                      {(execution.eventPayload || execution.errorMessage) && (
                         <button
                           type="button"
                           onClick={(e) => {
@@ -129,15 +139,29 @@ export function ExecutionList({ executions, isLoading, hasMore, onLoadMore }: Ex
                       )}
                     </td>
                   </tr>
-                  {isExpanded && execution.eventPayload && (
+                  {isExpanded && (
                     <tr key={`${execution.executionId}-detail`}>
-                      <td colSpan={4} className="px-6 py-4 bg-surface-secondary">
-                        <div className="text-xs font-medium text-fg-muted mb-2">
-                          {t('triggers.history.eventPayload', 'Event Payload')}
-                        </div>
-                        <pre className="text-xs text-fg-default whitespace-pre-wrap font-mono bg-surface-primary p-3 rounded-md border border-border max-h-64 overflow-auto">
-                          {execution.eventPayload}
-                        </pre>
+                      <td colSpan={4} className="px-6 py-4 bg-surface-secondary space-y-3">
+                        {execution.errorMessage && (
+                          <div>
+                            <div className="text-xs font-medium text-feedback-error mb-1">
+                              {t('triggers.history.error', 'Error')}
+                            </div>
+                            <pre className="text-xs text-feedback-error whitespace-pre-wrap font-mono bg-feedback-error-bg p-3 rounded-md border border-feedback-error-border max-h-32 overflow-auto">
+                              {execution.errorMessage}
+                            </pre>
+                          </div>
+                        )}
+                        {execution.eventPayload && (
+                          <div>
+                            <div className="text-xs font-medium text-fg-muted mb-1">
+                              {t('triggers.history.eventPayload', 'Event Payload')}
+                            </div>
+                            <pre className="text-xs text-fg-default whitespace-pre-wrap font-mono bg-surface-primary p-3 rounded-md border border-border max-h-64 overflow-auto">
+                              {execution.eventPayload}
+                            </pre>
+                          </div>
+                        )}
                       </td>
                     </tr>
                   )}

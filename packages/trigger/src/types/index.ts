@@ -118,6 +118,9 @@ export interface TriggerExecution {
   /** EventBridge event payload (JSON string, truncated to ~10KB) */
   eventPayload?: string;
 
+  /** Error message when invocation failed (undefined = success) */
+  errorMessage?: string;
+
   // TTL for auto-cleanup (30 days)
   ttl: number;
 }
@@ -178,6 +181,7 @@ export interface TriggerExecutionResponse {
   executedAt: string;
   sessionId?: string;
   eventPayload?: string;
+  errorMessage?: string;
 }
 
 /**

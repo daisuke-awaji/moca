@@ -917,6 +917,7 @@ router.get(
             new Date().toISOString(),
           sessionId: execution.sessionId,
           eventPayload: execution.eventPayload,
+          errorMessage: execution.errorMessage,
         })),
         nextToken: responseNextToken,
         metadata: {
