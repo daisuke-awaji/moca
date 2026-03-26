@@ -23,6 +23,11 @@ const DEFAULT_CONFIG = {
   githubTokenSecretName: 'agentcore/default/github-token',
   gitlabTokenSecretName: 'agentcore/default/gitlab-token',
   githubWebhookSecretName: 'agentcore/default/github-webhook-secret',
+  bedrockModels: [
+    { id: 'global.anthropic.claude-opus-4-6-v1', name: 'Claude Opus 4.6', provider: 'Anthropic' as const },
+    { id: 'global.anthropic.claude-sonnet-4-6', name: 'Claude Sonnet 4.6', provider: 'Anthropic' as const },
+    { id: 'global.amazon.nova-2-lite-v1:0', name: 'Nova Lite 2', provider: 'Amazon' as const },
+  ],
 };
 
 /**
@@ -66,6 +71,7 @@ function resolveConfig(env: Environment, input: EnvironmentConfigInput): Environ
     gitlabTokenSecretName: input.gitlabTokenSecretName ?? DEFAULT_CONFIG.gitlabTokenSecretName,
     githubWebhookSecretName:
       input.githubWebhookSecretName ?? DEFAULT_CONFIG.githubWebhookSecretName,
+    bedrockModels: input.bedrockModels ?? DEFAULT_CONFIG.bedrockModels,
   };
 }
 

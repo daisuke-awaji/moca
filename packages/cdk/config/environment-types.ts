@@ -10,6 +10,18 @@ import * as cdk from 'aws-cdk-lib';
 export type Environment = 'default' | 'dev' | 'stg' | 'prd' | string; // Allow dynamic PR environments
 
 /**
+ * Bedrock model configuration for frontend model selector
+ */
+export interface BedrockModelConfig {
+  /** Full model ID with inference profile prefix (e.g., 'jp.anthropic.claude-sonnet-4-6') */
+  id: string;
+  /** Display name (e.g., 'Claude Sonnet 4.6') */
+  name: string;
+  /** Provider name */
+  provider: 'Anthropic' | 'Amazon';
+}
+
+/**
  * Environment-specific configuration interface
  * Used throughout the stack - all core properties are required (defaults applied)
  */
@@ -180,6 +192,14 @@ export interface EnvironmentConfig {
    * pragma: allowlist secret
    */
   githubWebhookSecretName?: string;
+
+  /**
+   * Available Bedrock models for frontend model selector (optional)
+   * Each model ID should include the cross-region inference profile prefix
+   * (e.g., 'global.', 'jp.', 'us.', 'eu.', 'apac.')
+   * @default global.* prefixed models (Opus 4.6, Sonnet 4.6, Nova Lite 2)
+   */
+  bedrockModels?: BedrockModelConfig[];
 
   /**
    * Event rules configuration (optional)

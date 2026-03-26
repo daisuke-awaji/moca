@@ -9,6 +9,7 @@ import * as acm from 'aws-cdk-lib/aws-certificatemanager';
 import { NodejsBuild } from '@cdklabs/deploy-time-build';
 import { Construct } from 'constructs';
 import * as path from 'path';
+import type { BedrockModelConfig } from '../../../config';
 
 /**
  * Get project root directory from CDK package
@@ -68,6 +69,11 @@ export interface FrontendProps {
    * AppSync Events WebSocket endpoint for real-time updates (optional)
    */
   appsyncEventsEndpoint?: string;
+
+  /**
+   * Available Bedrock models for frontend model selector (optional)
+   */
+  bedrockModels?: BedrockModelConfig[];
 }
 
 export class Frontend extends Construct {
@@ -270,6 +276,7 @@ export class Frontend extends Construct {
         VITE_AGENT_ENDPOINT: props.runtimeEndpoint,
         VITE_BACKEND_URL: props.backendApiUrl || '',
         VITE_APPSYNC_EVENTS_ENDPOINT: props.appsyncEventsEndpoint || '',
+        VITE_BEDROCK_MODELS: JSON.stringify(props.bedrockModels ?? []),
       },
       outputSourceDirectory: 'packages/frontend/dist',
       destinationBucket: this.s3Bucket,

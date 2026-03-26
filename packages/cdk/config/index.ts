@@ -12,6 +12,7 @@ export type {
   Environment,
   EnvironmentConfig,
   EnvironmentConfigInput,
+  BedrockModelConfig,
   EventRuleConfig,
 } from './environment-types';
 

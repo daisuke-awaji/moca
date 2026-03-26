@@ -5,7 +5,7 @@
 
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
-import { DEFAULT_MODEL_ID } from '../config/models';
+import { DEFAULT_MODEL_ID, getModelById } from '../config/models';
 import { logger } from '../utils/logger';
 
 /**
@@ -60,6 +60,11 @@ export const useSettingsStore = create<SettingsState>()(
         },
       }),
       {
+        onRehydrateStorage: () => (state) => {
+          if (state && !getModelById(state.selectedModelId)) {
+            state.selectedModelId = DEFAULT_MODEL_ID;
+          }
+        },
         name: 'app-settings',
       }
     ),
