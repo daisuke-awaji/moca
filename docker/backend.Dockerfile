@@ -59,7 +59,6 @@ WORKDIR /app
 
 # Copy workspace root package files for npm workspace resolution
 COPY --chown=node:node package*.json ./
-COPY --chown=node:node .npmrc ./
 COPY --chown=node:node packages/backend/package.json ./packages/backend/
 COPY --chown=node:node packages/libs/tool-definitions/package.json ./packages/libs/tool-definitions/
 COPY --chown=node:node packages/libs/generative-ui-catalog/package.json ./packages/libs/generative-ui-catalog/
