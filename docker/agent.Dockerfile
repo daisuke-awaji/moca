@@ -63,6 +63,7 @@ WORKDIR /app
 
 # Copy workspace root package files for npm workspace resolution
 COPY --chown=node:node package*.json ./
+COPY --chown=node:node .npmrc ./
 COPY --chown=node:node packages/agent/package.json ./packages/agent/
 COPY --chown=node:node packages/libs/tool-definitions/package.json ./packages/libs/tool-definitions/
 COPY --chown=node:node packages/libs/s3-workspace-sync/package.json ./packages/libs/s3-workspace-sync/
