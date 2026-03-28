@@ -33,12 +33,13 @@
   },
   "devDependencies": {
     "@aws-sdk/client-cloudformation": "^3.716.0",
-    "@eslint/js": "^9.39.2",
+    "@eslint/compat": "^2.0.3",
+    "@eslint/js": "^10.0.0",
     "concurrently": "^9.1.2",
     "dotenv": "^17.2.3",
-    "eslint": "^9.39.2",
+    "eslint": "^10.0.0",
     "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-import-x": "^4.16.0",
     "eslint-plugin-prettier": "^5.5.4",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.26",
@@ -48,14 +49,17 @@
     "prettier": "^3.7.4",
     "tsx": "^4.19.2",
     "typescript": "~5.2.2",
-    "typescript-eslint": "^8.50.0"
+    "typescript-eslint": "^8.57.2"
   },
   "overrides": {
     "test-exclude": "^7.0.1",
     "glob": "^10.0.0",
     "fast-xml-parser": ">=5.3.6",
     "lodash-es": ">=4.17.23",
-    "serialize-javascript": ">=7.0.3"
+    "serialize-javascript": ">=7.0.3",
+    "eslint-plugin-react-hooks": {
+      "eslint": "$eslint"
+    }
   },
   "lint-staged": {
     "packages/**/src/**/*.{ts,tsx,js,jsx}": [

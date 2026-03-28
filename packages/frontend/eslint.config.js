@@ -4,6 +4,7 @@ import reactHooks from 'eslint-plugin-react-hooks';
 import reactRefresh from 'eslint-plugin-react-refresh';
 import tseslint from 'typescript-eslint';
 import i18next from 'eslint-plugin-i18next';
+import { fixupPluginRules } from '@eslint/compat';
 import { defineConfig, globalIgnores } from 'eslint/config';
 
 export default defineConfig([
@@ -24,9 +25,12 @@ export default defineConfig([
       },
     },
     plugins: {
-      i18next,
+      i18next: fixupPluginRules(i18next),
     },
     rules: {
+      // New rules added in eslint:recommended (eslint 10) - set to warn for gradual adoption
+      'preserve-caught-error': 'warn',
+      'no-useless-assignment': 'warn',
       'i18next/no-literal-string': [
         'warn',
         {
